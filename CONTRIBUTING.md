@@ -78,8 +78,8 @@ An AI API key is required to run the agent component:
 1. **Fork and clone** the repository:
 
    ```bash
-   git clone https://github.com/<your-username>/RedAmon.git
-   cd RedAmon
+   git clone https://github.com/<your-username>/parallax.git
+   cd parallax
    ```
 
 2. **Create your environment file** from the example:
@@ -461,19 +461,19 @@ When opening an issue, include:
 
 ## Security Vulnerabilities
 
-If you discover a security vulnerability in RedAmon itself (not in target systems being scanned), **do not open a public issue**. Instead:
+If you discover a security vulnerability in parallax itself (not in target systems being scanned), **do not open a public issue**. Instead:
 
 1. Contact the maintainer directly (see [Maintainer](#maintainer) below) with details of the vulnerability
 2. Include steps to reproduce
 3. Allow reasonable time for a fix before any public disclosure
 
-We follow responsible disclosure practices and appreciate your help keeping RedAmon secure.
+We follow responsible disclosure practices and appreciate your help keeping parallax secure.
 
 ---
 
 ## Maintainer
 
-**Samuele Giampieri** — creator and lead maintainer of RedAmon.
+**Samuele Giampieri** — creator and lead maintainer of parallax.
 
 - [LinkedIn](https://www.linkedin.com/in/samuele-giampieri-b1b67597/)
 - [Devergo Labs](https://www.devergolabs.com/)
@@ -485,4 +485,4 @@ We follow responsible disclosure practices and appreciate your help keeping RedA
 
 If you have questions about contributing, feel free to open a discussion or issue on GitHub, or reach out to the maintainer. We're happy to help you get started.
 
-Thank you for helping make RedAmon better!
+Thank you for helping make parallax better!

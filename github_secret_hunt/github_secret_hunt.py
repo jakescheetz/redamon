@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedAmon - GitHub Secret Hunter
+parallax - GitHub Secret Hunter
 ====================================
 Advanced reconnaissance tool for finding leaked secrets, credentials,
 and sensitive data in GitHub repositories.
@@ -34,14 +34,14 @@ except ImportError:
 
 # Default settings for GitHub scanning (used when no settings provided)
 DEFAULT_GITHUB_SETTINGS = {
-    'GITHUB_ACCESS_TOKEN': os.getenv('GITHUB_ACCESS_TOKEN', ''),
-    'GITHUB_TARGET_ORG': '',
-    'GITHUB_TARGET_REPOS': '',
-    'GITHUB_SCAN_MEMBERS': False,
-    'GITHUB_SCAN_GISTS': True,
-    'GITHUB_SCAN_COMMITS': True,
-    'GITHUB_MAX_COMMITS': 100,
-    'GITHUB_OUTPUT_JSON': True,
+    "GITHUB_ACCESS_TOKEN": os.getenv("GITHUB_ACCESS_TOKEN", ""),
+    "GITHUB_TARGET_ORG": "",
+    "GITHUB_TARGET_REPOS": "",
+    "GITHUB_SCAN_MEMBERS": False,
+    "GITHUB_SCAN_GISTS": True,
+    "GITHUB_SCAN_COMMITS": True,
+    "GITHUB_MAX_COMMITS": 100,
+    "GITHUB_OUTPUT_JSON": True,
 }
 
 # =============================================================================
@@ -53,63 +53,52 @@ SECRET_PATTERNS = {
     "AWS Access Key ID": r"AKIA[0-9A-Z]{16}",
     "AWS Secret Key": r"(?i)aws(.{0,20})?(?-i)['\"][0-9a-zA-Z/+]{40}['\"]",
     "AWS MWS Key": r"amzn\\.mws\\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
-
     # Azure
     "Azure Storage Key": r"(?i)DefaultEndpointsProtocol=https;AccountName=[^;]+;AccountKey=[A-Za-z0-9+/=]{88}",
     "Azure Connection String": r"(?i)(AccountKey|SharedAccessKey)=[A-Za-z0-9+/=]{40,}",
     "Azure SAS Token": r"(?i)[?&]sig=[A-Za-z0-9%]{40,}",
-
     # Google Cloud
     "GCP API Key": r"AIza[0-9A-Za-z\\-_]{35}",
     "GCP OAuth": r"[0-9]+-[0-9A-Za-z_]{32}\\.apps\\.googleusercontent\\.com",
     "GCP Service Account": r"\"type\":\\s*\"service_account\"",
     "Firebase URL": r"https://[a-z0-9-]+\\.firebaseio\\.com",
     "Firebase API Key": r"(?i)firebase.*['\"][A-Za-z0-9_]{30,}['\"]",
-
     # GitHub
     "GitHub Token (Classic)": r"ghp_[0-9a-zA-Z]{36}",
     "GitHub Token (Fine-grained)": r"github_pat_[0-9a-zA-Z]{22}_[0-9a-zA-Z]{59}",
     "GitHub OAuth": r"gho_[0-9a-zA-Z]{36}",
     "GitHub App Token": r"(?:ghu|ghs)_[0-9a-zA-Z]{36}",
     "GitHub Refresh Token": r"ghr_[0-9a-zA-Z]{36}",
-
     # GitLab
     "GitLab Token": r"glpat-[0-9a-zA-Z\\-_]{20}",
     "GitLab Runner Token": r"GR1348941[0-9a-zA-Z\\-_]{20}",
-
     # Slack
     "Slack Token": r"xox[baprs]-[0-9]{10,13}-[0-9]{10,13}[a-zA-Z0-9-]*",
     "Slack Webhook": r"https://hooks\\.slack\\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[a-zA-Z0-9]+",
-
     # Stripe
     "Stripe Live Key": r"sk_live_[0-9a-zA-Z]{24,}",
     "Stripe Test Key": r"sk_test_[0-9a-zA-Z]{24,}",
     "Stripe Restricted Key": r"rk_live_[0-9a-zA-Z]{24,}",
-
     # Payment Processors
     "PayPal Client ID": r"(?i)paypal.*client[_-]?id.*['\"][A-Za-z0-9-]{20,}['\"]",
     "Square Access Token": r"sq0atp-[0-9A-Za-z\\-_]{22}",
     "Square OAuth Secret": r"sq0csp-[0-9A-Za-z\\-_]{43}",
-
     # Social Media & APIs
     "Twitter API Key": r"(?i)twitter.*api[_-]?key.*['\"][0-9a-zA-Z]{25}['\"]",
     "Twitter Bearer Token": r"AAAAAAAAAAAAAAAAAAAAAA[0-9A-Za-z%]+",
     "Facebook Access Token": r"EAACEdEose0cBA[0-9A-Za-z]+",
     "Facebook OAuth": r"(?i)facebook.*['\"][0-9]{13,17}['\"]",
-
     # Messaging
     "Twilio API Key": r"SK[0-9a-fA-F]{32}",
     "Twilio Account SID": r"AC[a-zA-Z0-9]{32}",
     "SendGrid API Key": r"SG\\.[a-zA-Z0-9]{22}\\.[a-zA-Z0-9\\-_]{43}",
     "Mailgun API Key": r"key-[0-9a-zA-Z]{32}",
     "Mailchimp API Key": r"[0-9a-f]{32}-us[0-9]{1,2}",
-
     # Databases
     "MongoDB Connection String": r"mongodb(?:\\+srv)?://[^\\s'\"]+",
     "PostgreSQL Connection String": r"postgres(?:ql)?://[^\\s'\"]+",
     "MySQL Connection String": r"mysql://[^\\s'\"]+",
     "Redis URL": r"redis://[^\\s'\"]+",
-
     # CI/CD & DevOps
     "Heroku API Key": r"[h|H][e|E][r|R][o|O][k|K][u|U].*[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}",
     "Travis CI Token": r"(?i)travis.*['\"][a-zA-Z0-9]{20,}['\"]",
@@ -117,7 +106,6 @@ SECRET_PATTERNS = {
     "NPM Token": r"(?i)//registry\\.npmjs\\.org/:_authToken=[0-9a-f-]{36}",
     "PyPI Token": r"pypi-AgEIcHlwaS5vcmc[A-Za-z0-9-_]{50,}",
     "Docker Hub Token": r"dckr_pat_[A-Za-z0-9_-]{27}",
-
     # Cryptographic Keys
     "RSA Private Key": r"-----BEGIN RSA PRIVATE KEY-----",
     "DSA Private Key": r"-----BEGIN DSA PRIVATE KEY-----",
@@ -125,25 +113,21 @@ SECRET_PATTERNS = {
     "OpenSSH Private Key": r"-----BEGIN OPENSSH PRIVATE KEY-----",
     "PGP Private Key": r"-----BEGIN PGP PRIVATE KEY BLOCK-----",
     "Generic Private Key": r"-----BEGIN PRIVATE KEY-----",
-
     # JWT & Auth
     "JWT Token": r"eyJ[A-Za-z0-9-_]+\\.eyJ[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+",
     "Basic Auth Header": r"(?i)authorization:\\s*basic\\s+[a-zA-Z0-9+/=]+",
     "Bearer Token": r"(?i)bearer\\s+[a-zA-Z0-9\\-_\\.]+",
-
     # Generic Patterns
     "Generic API Key": r"(?i)(api[_-]?key|apikey|api_secret)[\"']?\\s*[:=]\\s*[\"']?[a-zA-Z0-9_\\-]{16,}[\"']?",
     "Generic Secret": r"(?i)(secret|password|passwd|pwd)[\"']?\\s*[:=]\\s*[\"'][^\"']{8,}[\"']",
     "Generic Token": r"(?i)(access[_-]?token|auth[_-]?token)[\"']?\\s*[:=]\\s*[\"']?[a-zA-Z0-9_\\-]{16,}[\"']?",
     "Hardcoded Password": r"(?i)(password|passwd|pwd)\\s*=\\s*[\"'][^\"']{4,}[\"']",
-
     # Cloud & Infrastructure
     "DigitalOcean Token": r"dop_v1_[a-f0-9]{64}",
     "DigitalOcean OAuth": r"doo_v1_[a-f0-9]{64}",
     "Cloudflare API Key": r"(?i)cloudflare.*['\"][a-z0-9]{37}['\"]",
     "Shopify Token": r"shpat_[a-fA-F0-9]{32}",
     "Shopify Shared Secret": r"shpss_[a-fA-F0-9]{32}",
-
     # Misc
     "Telegram Bot Token": r"[0-9]+:AA[0-9A-Za-z\\-_]{33}",
     "Discord Bot Token": r"[MN][A-Za-z\\d]{23,}\\.[\w-]{6}\\.[\w-]{27}",
@@ -154,44 +138,111 @@ SECRET_PATTERNS = {
 # Sensitive filenames to flag
 SENSITIVE_FILENAMES = {
     # Credentials & Keys
-    ".env", ".env.local", ".env.production", ".env.staging", ".env.development",
-    ".env.backup", ".env.old", ".env.example", "credentials", "credentials.json",
-    "id_rsa", "id_rsa.pub", "id_dsa", "id_ecdsa", "id_ed25519",
-    ".pem", ".key", ".p12", ".pfx", ".asc",
-
+    ".env",
+    ".env.local",
+    ".env.production",
+    ".env.staging",
+    ".env.development",
+    ".env.backup",
+    ".env.old",
+    ".env.example",
+    "credentials",
+    "credentials.json",
+    "id_rsa",
+    "id_rsa.pub",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx",
+    ".asc",
     # Config files
-    "config.json", "config.yaml", "config.yml", "secrets.json", "secrets.yaml",
-    "settings.json", "settings.yaml", "application.properties", "application.yml",
-    ".htpasswd", ".netrc", ".npmrc", ".pypirc", ".dockercfg",
-    "docker-compose.override.yml", "wp-config.php", "database.yml",
-
+    "config.json",
+    "config.yaml",
+    "config.yml",
+    "secrets.json",
+    "secrets.yaml",
+    "settings.json",
+    "settings.yaml",
+    "application.properties",
+    "application.yml",
+    ".htpasswd",
+    ".netrc",
+    ".npmrc",
+    ".pypirc",
+    ".dockercfg",
+    "docker-compose.override.yml",
+    "wp-config.php",
+    "database.yml",
     # Cloud configs
-    "terraform.tfvars", "terraform.tfstate", "*.auto.tfvars",
-    "ansible-vault", "vault.yml", "secrets.enc",
-
+    "terraform.tfvars",
+    "terraform.tfstate",
+    "*.auto.tfvars",
+    "ansible-vault",
+    "vault.yml",
+    "secrets.enc",
     # History & Backups
-    ".bash_history", ".zsh_history", ".mysql_history", ".psql_history",
-    "backup.sql", "dump.sql", "database.sql",
-
+    ".bash_history",
+    ".zsh_history",
+    ".mysql_history",
+    ".psql_history",
+    "backup.sql",
+    "dump.sql",
+    "database.sql",
     # AWS
-    ".aws/credentials", "aws_credentials", ".s3cfg",
-
+    ".aws/credentials",
+    "aws_credentials",
+    ".s3cfg",
     # GCP
-    "service-account.json", "gcp-credentials.json",
-
+    "service-account.json",
+    "gcp-credentials.json",
     # Kubernetes
-    "kubeconfig", ".kube/config",
+    "kubeconfig",
+    ".kube/config",
 }
 
 # File extensions to skip (binary/large files)
 SKIP_EXTENSIONS = {
-    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".svg", ".webp",
-    ".mp3", ".mp4", ".wav", ".avi", ".mov", ".mkv",
-    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-    ".zip", ".tar", ".gz", ".rar", ".7z",
-    ".exe", ".dll", ".so", ".dylib", ".bin",
-    ".woff", ".woff2", ".ttf", ".eot", ".otf",
-    ".min.js", ".min.css",  # Minified files
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".ico",
+    ".svg",
+    ".webp",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".avi",
+    ".mov",
+    ".mkv",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".rar",
+    ".7z",
+    ".exe",
+    ".dll",
+    ".so",
+    ".dylib",
+    ".bin",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".otf",
+    ".min.js",
+    ".min.css",  # Minified files
     ".map",  # Source maps
     ".lock",  # Lock files
 }
@@ -199,6 +250,7 @@ SKIP_EXTENSIONS = {
 # =============================================================================
 # ENTROPY DETECTION - Find high-entropy strings (potential secrets)
 # =============================================================================
+
 
 def calculate_shannon_entropy(data: str) -> float:
     """Calculate Shannon entropy of a string."""
@@ -211,6 +263,7 @@ def calculate_shannon_entropy(data: str) -> float:
         entropy -= p_x * math.log2(p_x)
     return entropy
 
+
 def find_high_entropy_strings(content: str, threshold: float = 4.5) -> List[Dict]:
     """Find high-entropy strings that might be secrets."""
     findings = []
@@ -218,7 +271,7 @@ def find_high_entropy_strings(content: str, threshold: float = 4.5) -> List[Dict
     # Look for quoted strings and assignments
     patterns = [
         r'["\']([A-Za-z0-9+/=_-]{20,})["\']',  # Quoted strings
-        r'=\s*([A-Za-z0-9+/=_-]{20,})',  # Assignments
+        r"=\s*([A-Za-z0-9+/=_-]{20,})",  # Assignments
     ]
 
     for pattern in patterns:
@@ -228,24 +281,38 @@ def find_high_entropy_strings(content: str, threshold: float = 4.5) -> List[Dict
 
             if entropy >= threshold and len(candidate) >= 20:
                 # Skip if it looks like a common word or path
-                if not re.match(r'^[a-z]+$', candidate, re.I):
-                    findings.append({
-                        "type": "High Entropy String",
-                        "value": candidate[:50] + "..." if len(candidate) > 50 else candidate,
-                        "entropy": round(entropy, 2),
-                        "length": len(candidate)
-                    })
+                if not re.match(r"^[a-z]+$", candidate, re.I):
+                    findings.append(
+                        {
+                            "type": "High Entropy String",
+                            "value": (
+                                candidate[:50] + "..."
+                                if len(candidate) > 50
+                                else candidate
+                            ),
+                            "entropy": round(entropy, 2),
+                            "length": len(candidate),
+                        }
+                    )
 
     return findings
+
 
 # =============================================================================
 # GITHUB SECRET HUNTER CLASS
 # =============================================================================
 
+
 class GitHubSecretHunter:
     """Advanced GitHub secret scanning tool."""
 
-    def __init__(self, token: str, target: str, project_id: str = "", settings: Optional[Dict] = None):
+    def __init__(
+        self,
+        token: str,
+        target: str,
+        project_id: str = "",
+        settings: Optional[Dict] = None,
+    ):
         self.token = token
         self.target = target
         self.project_id = project_id
@@ -256,8 +323,12 @@ class GitHubSecretHunter:
         self.settings = settings or DEFAULT_GITHUB_SETTINGS
 
         # Parse target repos filter (comma-separated → set of lowercase names)
-        repos_str = self.settings.get('GITHUB_TARGET_REPOS', '')
-        self.target_repos = {r.strip().lower() for r in repos_str.split(',') if r.strip()} if repos_str else set()
+        repos_str = self.settings.get("GITHUB_TARGET_REPOS", "")
+        self.target_repos = (
+            {r.strip().lower() for r in repos_str.split(",") if r.strip()}
+            if repos_str
+            else set()
+        )
 
         self.findings: List[Dict] = []
         self.scanned_repos: Set[str] = set()
@@ -290,7 +361,7 @@ class GitHubSecretHunter:
 
     def _init_output_file(self):
         """Initialize the JSON output file at scan start."""
-        if not self.settings.get('GITHUB_OUTPUT_JSON', True):
+        if not self.settings.get("GITHUB_OUTPUT_JSON", True):
             return
 
         initial_data = {
@@ -299,17 +370,17 @@ class GitHubSecretHunter:
             "scan_end_time": None,
             "status": "in_progress",
             "statistics": self.stats,
-            "findings": []
+            "findings": [],
         }
 
-        with open(self.output_file, 'w') as f:
+        with open(self.output_file, "w") as f:
             json.dump(initial_data, f, indent=2)
 
         print(f"[*] Output file initialized: {self.output_file}")
 
     def _save_incremental(self):
         """Save current state to JSON file (called after each finding)."""
-        if not self.settings.get('GITHUB_OUTPUT_JSON', True):
+        if not self.settings.get("GITHUB_OUTPUT_JSON", True):
             return
 
         data = {
@@ -319,20 +390,20 @@ class GitHubSecretHunter:
             "status": "in_progress",
             "last_update": datetime.now().isoformat(),
             "statistics": self.stats,
-            "findings": self.findings
+            "findings": self.findings,
         }
 
         # Write to temp file first, then rename (atomic operation)
-        temp_file = self.output_file.with_suffix('.tmp')
+        temp_file = self.output_file.with_suffix(".tmp")
         try:
-            with open(temp_file, 'w') as f:
+            with open(temp_file, "w") as f:
                 json.dump(data, f, indent=2)
             temp_file.replace(self.output_file)
         except Exception as e:
             print(f"    [!] Error saving incremental: {e}")
             # Fallback: write directly
             try:
-                with open(self.output_file, 'w') as f:
+                with open(self.output_file, "w") as f:
                     json.dump(data, f, indent=2)
             except:
                 pass
@@ -366,8 +437,14 @@ class GitHubSecretHunter:
             sens.lower() in filepath.lower() for sens in SENSITIVE_FILENAMES
         )
 
-    def _add_finding(self, finding_type: str, repo: str, path: str,
-                     secret_type: str, details: Optional[Dict] = None):
+    def _add_finding(
+        self,
+        finding_type: str,
+        repo: str,
+        path: str,
+        secret_type: str,
+        details: Optional[Dict] = None,
+    ):
         """Add a finding to the results and save incrementally."""
         finding = {
             "timestamp": datetime.now().isoformat(),
@@ -375,7 +452,7 @@ class GitHubSecretHunter:
             "repository": repo,
             "path": path,
             "secret_type": secret_type,
-            "details": details or {}
+            "details": details or {},
         }
         self.findings.append(finding)
 
@@ -408,8 +485,11 @@ class GitHubSecretHunter:
                 matches = re.findall(pattern, content)
                 if matches:
                     self._add_finding(
-                        "SECRET", repo_name, path, secret_type,
-                        {"matches": len(matches), "sample": str(matches[0])[:100]}
+                        "SECRET",
+                        repo_name,
+                        path,
+                        secret_type,
+                        {"matches": len(matches), "sample": str(matches[0])[:100]},
                     )
             except re.error:
                 continue
@@ -418,9 +498,11 @@ class GitHubSecretHunter:
         high_entropy = find_high_entropy_strings(content)
         for finding in high_entropy[:5]:  # Limit to top 5 per file
             self._add_finding(
-                "HIGH_ENTROPY", repo_name, path,
+                "HIGH_ENTROPY",
+                repo_name,
+                path,
                 f"High Entropy ({finding['entropy']})",
-                finding
+                finding,
             )
 
     def scan_repo_contents(self, repo, path: str = ""):
@@ -437,8 +519,10 @@ class GitHubSecretHunter:
                     # Check sensitive filename
                     if self._is_sensitive_filename(item.path):
                         self._add_finding(
-                            "SENSITIVE_FILE", repo.full_name, item.path,
-                            "Sensitive Filename"
+                            "SENSITIVE_FILE",
+                            repo.full_name,
+                            item.path,
+                            "Sensitive Filename",
                         )
 
                     # Skip binary/large files
@@ -448,7 +532,9 @@ class GitHubSecretHunter:
                     # Scan file content
                     try:
                         if item.size < 500000:  # Skip files > 500KB
-                            decoded = item.decoded_content.decode('utf-8', errors='ignore')
+                            decoded = item.decoded_content.decode(
+                                "utf-8", errors="ignore"
+                            )
                             self.scan_file_content(repo.full_name, decoded, item.path)
                             self.stats["files_scanned"] += 1
                             # Save every 50 files to track progress
@@ -466,14 +552,16 @@ class GitHubSecretHunter:
 
     def scan_commit_history(self, repo):
         """Scan commit history for leaked secrets."""
-        if not self.settings.get('GITHUB_SCAN_COMMITS', True):
+        if not self.settings.get("GITHUB_SCAN_COMMITS", True):
             return
 
         try:
             commits = repo.get_commits()
             count = 0
-            max_commits_setting = self.settings.get('GITHUB_MAX_COMMITS', 100)
-            max_commits = max_commits_setting if max_commits_setting > 0 else float('inf')
+            max_commits_setting = self.settings.get("GITHUB_MAX_COMMITS", 100)
+            max_commits = (
+                max_commits_setting if max_commits_setting > 0 else float("inf")
+            )
 
             for commit in commits:
                 if count >= max_commits:
@@ -485,7 +573,7 @@ class GitHubSecretHunter:
                             self.scan_file_content(
                                 repo.full_name,
                                 file.patch,
-                                f"{file.filename} (commit: {commit.sha[:7]})"
+                                f"{file.filename} (commit: {commit.sha[:7]})",
                             )
                     self.stats["commits_scanned"] += 1
                     count += 1
@@ -517,7 +605,7 @@ class GitHubSecretHunter:
         self.scan_repo_contents(repo)
 
         # 2. Commit history scan (optional, slow)
-        if self.settings.get('GITHUB_SCAN_COMMITS', True):
+        if self.settings.get("GITHUB_SCAN_COMMITS", True):
             self.scan_commit_history(repo)
 
         self.stats["repos_scanned"] += 1
@@ -528,7 +616,7 @@ class GitHubSecretHunter:
 
     def scan_gists(self, user):
         """Scan user gists for secrets."""
-        if not self.settings.get('GITHUB_SCAN_GISTS', True):
+        if not self.settings.get("GITHUB_SCAN_GISTS", True):
             return
 
         try:
@@ -539,9 +627,7 @@ class GitHubSecretHunter:
                         try:
                             content = file.content
                             self.scan_file_content(
-                                f"gist:{user.login}",
-                                content,
-                                f"{gist.id}/{filename}"
+                                f"gist:{user.login}", content, f"{gist.id}/{filename}"
                             )
                             self.stats["gists_scanned"] += 1
                         except Exception:
@@ -558,14 +644,16 @@ class GitHubSecretHunter:
             org = self.github.get_organization(self.target)
             print(f"\n[*] Organization found: {org.login}")
             print(f"    Public repos: {org.public_repos}")
-            print(f"    Members: {org.get_members().totalCount if org.get_members() else 'N/A'}")
+            print(
+                f"    Members: {org.get_members().totalCount if org.get_members() else 'N/A'}"
+            )
 
             # Scan organization repos
             for repo in org.get_repos():
                 self.scan_repo(repo)
 
             # Scan member repos and gists
-            if self.settings.get('GITHUB_SCAN_MEMBERS', False):
+            if self.settings.get("GITHUB_SCAN_MEMBERS", False):
                 print("\n[*] Scanning organization members...")
                 for member in org.get_members():
                     print(f"\n[*] Member: {member.login}")
@@ -573,7 +661,7 @@ class GitHubSecretHunter:
                     for repo in member.get_repos():
                         self.scan_repo(repo)
 
-                    if self.settings.get('GITHUB_SCAN_GISTS', True):
+                    if self.settings.get("GITHUB_SCAN_GISTS", True):
                         self.scan_gists(member)
 
         except GithubException as e:
@@ -593,7 +681,7 @@ class GitHubSecretHunter:
             for repo in user.get_repos():
                 self.scan_repo(repo)
 
-            if self.settings.get('GITHUB_SCAN_GISTS', True):
+            if self.settings.get("GITHUB_SCAN_GISTS", True):
                 print("\n[*] Scanning user gists...")
                 self.scan_gists(user)
 
@@ -602,7 +690,7 @@ class GitHubSecretHunter:
 
     def save_results(self, status: str = "completed"):
         """Save final results to JSON file."""
-        if not self.settings.get('GITHUB_OUTPUT_JSON', True):
+        if not self.settings.get("GITHUB_OUTPUT_JSON", True):
             return
 
         scan_end_time = datetime.now()
@@ -616,10 +704,10 @@ class GitHubSecretHunter:
             "status": status,
             "last_update": scan_end_time.isoformat(),
             "statistics": self.stats,
-            "findings": self.findings
+            "findings": self.findings,
         }
 
-        with open(self.output_file, 'w') as f:
+        with open(self.output_file, "w") as f:
             json.dump(results, f, indent=2)
 
         print(f"\n[*] Final results saved to: {self.output_file}")
@@ -641,8 +729,10 @@ class GitHubSecretHunter:
         print(f"  Rate Limit Hits:     {self.rate_limit_hits}")
         print("=" * 70)
 
-        if self.stats['secrets_found'] > 0:
-            print("\n\033[91m[!!!] CRITICAL: Secrets were found! Review findings immediately.\033[0m")
+        if self.stats["secrets_found"] > 0:
+            print(
+                "\n\033[91m[!!!] CRITICAL: Secrets were found! Review findings immediately.\033[0m"
+            )
 
     def run(self):
         """Run the complete scan."""

@@ -1,5 +1,5 @@
 """
-RedAmon - Vulnerability Scan Helpers
+parallax - Vulnerability Scan Helpers
 =====================================
 
 This package contains helper functions organized by category:
@@ -129,4 +129,3 @@ __all__ = [
     "require_tor",
     "TorProxy",
 ]
-

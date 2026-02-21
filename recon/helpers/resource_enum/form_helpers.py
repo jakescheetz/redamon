@@ -1,5 +1,5 @@
 """
-RedAmon - Form Parsing Helpers
+parallax - Form Parsing Helpers
 ==============================
 HTML form parsing and extraction utilities for resource enumeration.
 """
@@ -13,6 +13,7 @@ from urllib.parse import urljoin
 # HTML Form Parser Class
 # =============================================================================
 
+
 class FormParser(HTMLParser):
     """Parse HTML to extract form elements and their inputs."""
 
@@ -25,58 +26,60 @@ class FormParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs_dict = dict(attrs)
 
-        if tag == 'form':
+        if tag == "form":
             self.in_form = True
             self.current_form = {
-                'action': attrs_dict.get('action', ''),
-                'method': attrs_dict.get('method', 'GET').upper(),
-                'enctype': attrs_dict.get('enctype', 'application/x-www-form-urlencoded'),
-                'inputs': []
+                "action": attrs_dict.get("action", ""),
+                "method": attrs_dict.get("method", "GET").upper(),
+                "enctype": attrs_dict.get(
+                    "enctype", "application/x-www-form-urlencoded"
+                ),
+                "inputs": [],
             }
 
-        elif self.in_form and tag == 'input':
+        elif self.in_form and tag == "input":
             input_info = {
-                'name': attrs_dict.get('name', ''),
-                'type': attrs_dict.get('type', 'text'),
-                'value': attrs_dict.get('value', ''),
-                'required': 'required' in attrs_dict,
-                'placeholder': attrs_dict.get('placeholder', '')
+                "name": attrs_dict.get("name", ""),
+                "type": attrs_dict.get("type", "text"),
+                "value": attrs_dict.get("value", ""),
+                "required": "required" in attrs_dict,
+                "placeholder": attrs_dict.get("placeholder", ""),
             }
-            if input_info['name']:  # Only add inputs with names
-                self.current_form['inputs'].append(input_info)
+            if input_info["name"]:  # Only add inputs with names
+                self.current_form["inputs"].append(input_info)
 
-        elif self.in_form and tag == 'textarea':
+        elif self.in_form and tag == "textarea":
             input_info = {
-                'name': attrs_dict.get('name', ''),
-                'type': 'textarea',
-                'value': '',
-                'required': 'required' in attrs_dict
+                "name": attrs_dict.get("name", ""),
+                "type": "textarea",
+                "value": "",
+                "required": "required" in attrs_dict,
             }
-            if input_info['name']:
-                self.current_form['inputs'].append(input_info)
+            if input_info["name"]:
+                self.current_form["inputs"].append(input_info)
 
-        elif self.in_form and tag == 'select':
+        elif self.in_form and tag == "select":
             input_info = {
-                'name': attrs_dict.get('name', ''),
-                'type': 'select',
-                'value': '',
-                'required': 'required' in attrs_dict
+                "name": attrs_dict.get("name", ""),
+                "type": "select",
+                "value": "",
+                "required": "required" in attrs_dict,
             }
-            if input_info['name']:
-                self.current_form['inputs'].append(input_info)
+            if input_info["name"]:
+                self.current_form["inputs"].append(input_info)
 
-        elif self.in_form and tag == 'button':
-            btn_type = attrs_dict.get('type', 'submit')
-            if btn_type == 'submit' and attrs_dict.get('name'):
+        elif self.in_form and tag == "button":
+            btn_type = attrs_dict.get("type", "submit")
+            if btn_type == "submit" and attrs_dict.get("name"):
                 input_info = {
-                    'name': attrs_dict.get('name', ''),
-                    'type': 'submit',
-                    'value': attrs_dict.get('value', '')
+                    "name": attrs_dict.get("name", ""),
+                    "type": "submit",
+                    "value": attrs_dict.get("value", ""),
                 }
-                self.current_form['inputs'].append(input_info)
+                self.current_form["inputs"].append(input_info)
 
     def handle_endtag(self, tag):
-        if tag == 'form' and self.in_form:
+        if tag == "form" and self.in_form:
             self.in_form = False
             if self.current_form:
                 self.forms.append(self.current_form)
@@ -86,6 +89,7 @@ class FormParser(HTMLParser):
 # =============================================================================
 # Form Parsing Functions
 # =============================================================================
+
 
 def parse_forms_from_html(html_content: str, base_url: str) -> List[Dict]:
     """
@@ -108,15 +112,15 @@ def parse_forms_from_html(html_content: str, base_url: str) -> List[Dict]:
         forms = []
         for form in parser.forms:
             # Resolve relative action URLs
-            action = form['action']
+            action = form["action"]
             if action:
-                if not action.startswith(('http://', 'https://')):
+                if not action.startswith(("http://", "https://")):
                     action = urljoin(base_url, action)
             else:
                 action = base_url  # Form submits to current URL
 
-            form['action'] = action
-            form['found_at'] = base_url
+            form["action"] = action
+            form["found_at"] = base_url
             forms.append(form)
 
         return forms

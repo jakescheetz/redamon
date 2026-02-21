@@ -1,5 +1,5 @@
 """
-RedAmon - GAU (GetAllUrls) Helpers
+parallax - GAU (GetAllUrls) Helpers
 ==================================
 Passive URL discovery from web archives using GAU.
 """
@@ -17,8 +17,8 @@ from .classification import classify_parameter, classify_endpoint
 
 
 def _create_temp_dir(prefix: str = "gau") -> Path:
-    """Create a temp directory under /tmp/redamon for Docker-in-Docker compatibility."""
-    temp_dir = Path(f"/tmp/redamon/.{prefix}_{uuid.uuid4().hex[:8]}")
+    """Create a temp directory under /tmp/parallax for Docker-in-Docker compatibility."""
+    temp_dir = Path(f"/tmp/parallax/.{prefix}_{uuid.uuid4().hex[:8]}")
     temp_dir.mkdir(parents=True, exist_ok=True)
     return temp_dir
 
@@ -35,10 +35,10 @@ def _cleanup_temp_dir(temp_dir: Path):
 def pull_gau_docker_image(docker_image: str) -> bool:
     """
     Pull the GAU Docker image if not present.
-    
+
     Args:
         docker_image: Docker image name to pull
-        
+
     Returns:
         True if successful, False otherwise
     """
@@ -48,7 +48,7 @@ def pull_gau_docker_image(docker_image: str) -> bool:
             ["docker", "pull", docker_image],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
         return result.returncode == 0
     except Exception:
@@ -93,7 +93,7 @@ def run_gau_for_domain(
     max_urls: int,
     year_range: Optional[List[str]] = None,
     verbose: bool = False,
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> List[str]:
     """
     Run GAU for a single domain to fetch historical URLs.
@@ -121,17 +121,26 @@ def run_gau_for_domain(
     # Network mode for Tor proxy
     if use_proxy:
         cmd.extend(["--network", "host"])
-        cmd.extend([
-            "-e", "HTTP_PROXY=socks5://127.0.0.1:9050",
-            "-e", "HTTPS_PROXY=socks5://127.0.0.1:9050"
-        ])
+        cmd.extend(
+            [
+                "-e",
+                "HTTP_PROXY=socks5://127.0.0.1:9050",
+                "-e",
+                "HTTPS_PROXY=socks5://127.0.0.1:9050",
+            ]
+        )
 
-    cmd.extend([
-        docker_image,
-        "--threads", str(threads),
-        "--timeout", str(timeout),
-        "--providers", ",".join(providers),
-    ])
+    cmd.extend(
+        [
+            docker_image,
+            "--threads",
+            str(threads),
+            "--timeout",
+            str(timeout),
+            "--providers",
+            ",".join(providers),
+        ]
+    )
 
     # Blacklist extensions
     if blacklist_extensions:
@@ -151,14 +160,11 @@ def run_gau_for_domain(
 
     try:
         result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout * len(providers) + 120
+            cmd, capture_output=True, text=True, timeout=timeout * len(providers) + 120
         )
 
         if result.stdout:
-            for line in result.stdout.strip().split('\n'):
+            for line in result.stdout.strip().split("\n"):
                 url = line.strip()
                 if url and filter_gau_url(url, blacklist_extensions):
                     discovered_urls.add(url)
@@ -187,7 +193,7 @@ def run_gau_discovery(
     max_urls: int,
     year_range: Optional[List[str]] = None,
     verbose: bool = False,
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> Tuple[List[str], Dict[str, List[str]]]:
     """
     Run GAU passive URL discovery for multiple domains.
@@ -220,7 +226,7 @@ def run_gau_discovery(
             max_urls=max_urls,
             year_range=year_range,
             verbose=verbose,
-            use_proxy=use_proxy
+            use_proxy=use_proxy,
         )
         urls_by_domain[domain] = domain_urls
         all_discovered_urls.update(domain_urls)
@@ -266,7 +272,7 @@ def parse_gau_url_to_endpoint(url: str) -> Optional[Dict]:
         return {
             "base_url": base_url,
             "path": path,
-            "parameters": {"query": query_params} if query_params else {}
+            "parameters": {"query": query_params} if query_params else {},
         }
     except Exception:
         return None
@@ -279,7 +285,7 @@ def verify_gau_urls(
     timeout: int,
     rate_limit: int,
     accept_status: List[int],
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> Set[str]:
     """
     Verify GAU-discovered URLs are live using httpx.
@@ -308,23 +314,31 @@ def verify_gau_urls(
         output_file = temp_dir / "verified.json"
 
         # Write URLs to file
-        with open(urls_file, 'w') as f:
+        with open(urls_file, "w") as f:
             for url in urls:
                 f.write(f"{url}\n")
 
         # Build httpx command
         cmd = [
-            "docker", "run", "--rm",
-            "-v", f"{temp_dir}:/data",
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{temp_dir}:/data",
             docker_image,
-            "-l", "/data/urls.txt",
-            "-o", "/data/verified.json",
+            "-l",
+            "/data/urls.txt",
+            "-o",
+            "/data/verified.json",
             "-json",
             "-silent",
             "-nc",
-            "-t", str(threads),
-            "-timeout", str(timeout),
-            "-rl", str(rate_limit),
+            "-t",
+            str(threads),
+            "-timeout",
+            str(timeout),
+            "-rl",
+            str(rate_limit),
         ]
 
         if use_proxy:
@@ -344,12 +358,12 @@ def verify_gau_urls(
         accept_codes = set(accept_status)
 
         if output_file.exists():
-            with open(output_file, 'r') as f:
+            with open(output_file, "r") as f:
                 for line in f:
                     try:
                         entry = json.loads(line.strip())
-                        url = entry.get('url', '')
-                        status = entry.get('status_code') or entry.get('status-code')
+                        url = entry.get("url", "")
+                        status = entry.get("status_code") or entry.get("status-code")
                         if status and status in accept_codes:
                             live_urls.add(url)
                     except json.JSONDecodeError:
@@ -368,7 +382,7 @@ def detect_gau_methods(
     timeout: int,
     rate_limit: int,
     filter_dead: bool = True,
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> Dict[str, List[str]]:
     """
     Detect allowed HTTP methods for GAU URLs using OPTIONS probe.
@@ -398,24 +412,34 @@ def detect_gau_methods(
         urls_file = temp_dir / "urls.txt"
         output_file = temp_dir / "options_output.json"
 
-        with open(urls_file, 'w') as f:
+        with open(urls_file, "w") as f:
             for url in urls:
                 f.write(f"{url}\n")
 
         cmd = [
-            "docker", "run", "--rm",
-            "-v", f"{temp_dir}:/data",
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{temp_dir}:/data",
             docker_image,
-            "-l", "/data/urls.txt",
-            "-o", "/data/options_output.json",
+            "-l",
+            "/data/urls.txt",
+            "-o",
+            "/data/options_output.json",
             "-json",
             "-silent",
             "-nc",
-            "-X", "OPTIONS",
-            "-include-response-header", "Allow,allow",
-            "-t", str(threads),
-            "-timeout", str(timeout),
-            "-rl", str(rate_limit),
+            "-X",
+            "OPTIONS",
+            "-include-response-header",
+            "Allow,allow",
+            "-t",
+            str(threads),
+            "-timeout",
+            str(timeout),
+            "-rl",
+            str(rate_limit),
         ]
 
         if use_proxy:
@@ -433,31 +457,49 @@ def detect_gau_methods(
         options_responded = set()
 
         if output_file.exists():
-            with open(output_file, 'r') as f:
+            with open(output_file, "r") as f:
                 for line in f:
                     try:
                         entry = json.loads(line.strip())
-                        url = entry.get('url', '')
-                        status = entry.get('status_code') or entry.get('status-code', 0)
+                        url = entry.get("url", "")
+                        status = entry.get("status_code") or entry.get("status-code", 0)
 
-                        headers = entry.get('header', {}) or entry.get('headers', {})
+                        headers = entry.get("header", {}) or entry.get("headers", {})
                         allow_header = None
 
-                        for key in ['Allow', 'allow', 'ALLOW']:
+                        for key in ["Allow", "allow", "ALLOW"]:
                             if key in headers:
                                 allow_value = headers[key]
                                 if isinstance(allow_value, list):
-                                    allow_header = allow_value[0] if allow_value else None
+                                    allow_header = (
+                                        allow_value[0] if allow_value else None
+                                    )
                                 else:
                                     allow_header = allow_value
                                 break
 
                         if allow_header and status and status < 500:
-                            methods = [m.strip().upper() for m in allow_header.split(',')]
-                            valid_methods = [m for m in methods if m in
-                                           ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']]
+                            methods = [
+                                m.strip().upper() for m in allow_header.split(",")
+                            ]
+                            valid_methods = [
+                                m
+                                for m in methods
+                                if m
+                                in [
+                                    "GET",
+                                    "POST",
+                                    "PUT",
+                                    "DELETE",
+                                    "PATCH",
+                                    "HEAD",
+                                    "OPTIONS",
+                                ]
+                            ]
                             if valid_methods:
-                                valid_methods = [m for m in valid_methods if m != 'OPTIONS']
+                                valid_methods = [
+                                    m for m in valid_methods if m != "OPTIONS"
+                                ]
                                 if valid_methods:
                                     url_methods[url] = valid_methods
                                     options_responded.add(url)
@@ -472,27 +514,37 @@ def detect_gau_methods(
         urls_needing_get_check = [url for url in urls if url not in options_responded]
 
         if urls_needing_get_check and filter_dead:
-            print(f"    [*] Checking {len(urls_needing_get_check)} endpoints with GET fallback...")
+            print(
+                f"    [*] Checking {len(urls_needing_get_check)} endpoints with GET fallback..."
+            )
 
             get_urls_file = temp_dir / "get_urls.txt"
             get_output_file = temp_dir / "get_output.json"
 
-            with open(get_urls_file, 'w') as f:
+            with open(get_urls_file, "w") as f:
                 for url in urls_needing_get_check:
                     f.write(f"{url}\n")
 
             get_cmd = [
-                "docker", "run", "--rm",
-                "-v", f"{temp_dir}:/data",
+                "docker",
+                "run",
+                "--rm",
+                "-v",
+                f"{temp_dir}:/data",
                 docker_image,
-                "-l", "/data/get_urls.txt",
-                "-o", "/data/get_output.json",
+                "-l",
+                "/data/get_urls.txt",
+                "-o",
+                "/data/get_output.json",
                 "-json",
                 "-silent",
                 "-nc",
-                "-t", str(threads),
-                "-timeout", str(timeout),
-                "-rl", str(rate_limit),
+                "-t",
+                str(threads),
+                "-timeout",
+                str(timeout),
+                "-rl",
+                str(rate_limit),
             ]
 
             if use_proxy:
@@ -502,12 +554,14 @@ def detect_gau_methods(
                 subprocess.run(get_cmd, capture_output=True, text=True, timeout=300)
 
                 if get_output_file.exists():
-                    with open(get_output_file, 'r') as f:
+                    with open(get_output_file, "r") as f:
                         for line in f:
                             try:
                                 entry = json.loads(line.strip())
-                                url = entry.get('url', '')
-                                status = entry.get('status_code') or entry.get('status-code', 0)
+                                url = entry.get("url", "")
+                                status = entry.get("status_code") or entry.get(
+                                    "status-code", 0
+                                )
 
                                 if status and status < 500 and status != 404:
                                     url_methods[url] = ["GET"]
@@ -540,7 +594,7 @@ def merge_gau_into_by_base_url(
     gau_urls: List[str],
     by_base_url: Dict,
     verified_urls: Set[str] = None,
-    url_methods: Dict[str, List[str]] = None
+    url_methods: Dict[str, List[str]] = None,
 ) -> Tuple[Dict, Dict[str, int]]:
     """
     Merge GAU endpoints into existing by_base_url structure.
@@ -562,7 +616,7 @@ def merge_gau_into_by_base_url(
         "gau_skipped_unverified": 0,
         "gau_skipped_dead": 0,
         "gau_with_post": 0,
-        "gau_with_multiple_methods": 0
+        "gau_with_multiple_methods": 0,
     }
 
     for url in gau_urls:
@@ -591,98 +645,107 @@ def merge_gau_into_by_base_url(
 
         if base not in by_base_url:
             by_base_url[base] = {
-                'base_url': base,
-                'endpoints': {},
-                'summary': {
-                    'total_endpoints': 0,
-                    'total_parameters': 0,
-                    'methods': {},
-                    'categories': {}
-                }
+                "base_url": base,
+                "endpoints": {},
+                "summary": {
+                    "total_endpoints": 0,
+                    "total_parameters": 0,
+                    "methods": {},
+                    "categories": {},
+                },
             }
 
-        endpoints = by_base_url[base]['endpoints']
+        endpoints = by_base_url[base]["endpoints"]
 
         if path in endpoints:
-            existing_sources = endpoints[path].get('sources', [])
+            existing_sources = endpoints[path].get("sources", [])
             if not existing_sources:
-                old_source = endpoints[path].get('source', '')
+                old_source = endpoints[path].get("source", "")
                 if old_source:
                     existing_sources = [old_source]
-            if 'gau' not in existing_sources:
-                existing_sources.append('gau')
+            if "gau" not in existing_sources:
+                existing_sources.append("gau")
                 stats["gau_overlap"] += 1
-            endpoints[path]['sources'] = existing_sources
-            endpoints[path].pop('source', None)
+            endpoints[path]["sources"] = existing_sources
+            endpoints[path].pop("source", None)
 
-            existing_methods = set(endpoints[path].get('methods', []))
+            existing_methods = set(endpoints[path].get("methods", []))
             new_methods = existing_methods.union(set(methods))
-            endpoints[path]['methods'] = sorted(list(new_methods))
+            endpoints[path]["methods"] = sorted(list(new_methods))
 
             for method in methods:
                 if method not in existing_methods:
-                    by_base_url[base]['summary']['methods'][method] = \
-                        by_base_url[base]['summary']['methods'].get(method, 0) + 1
+                    by_base_url[base]["summary"]["methods"][method] = (
+                        by_base_url[base]["summary"]["methods"].get(method, 0) + 1
+                    )
 
-            existing_query = endpoints[path].get('parameters', {}).get('query', [])
+            existing_query = endpoints[path].get("parameters", {}).get("query", [])
             new_query = parsed["parameters"].get("query", [])
 
             if new_query:
                 if isinstance(existing_query, list):
-                    existing_names = [p.get('name', p) if isinstance(p, dict) else p for p in existing_query]
+                    existing_names = [
+                        p.get("name", p) if isinstance(p, dict) else p
+                        for p in existing_query
+                    ]
                 else:
                     existing_names = []
 
                 for param_name in new_query:
                     if param_name not in existing_names:
                         param_info = {
-                            'name': param_name,
-                            'category': classify_parameter(param_name),
-                            'source': 'gau'
+                            "name": param_name,
+                            "category": classify_parameter(param_name),
+                            "source": "gau",
                         }
-                        if 'parameters' not in endpoints[path]:
-                            endpoints[path]['parameters'] = {'query': [], 'body': [], 'path': []}
-                        if 'query' not in endpoints[path]['parameters']:
-                            endpoints[path]['parameters']['query'] = []
-                        endpoints[path]['parameters']['query'].append(param_info)
+                        if "parameters" not in endpoints[path]:
+                            endpoints[path]["parameters"] = {
+                                "query": [],
+                                "body": [],
+                                "path": [],
+                            }
+                        if "query" not in endpoints[path]["parameters"]:
+                            endpoints[path]["parameters"]["query"] = []
+                        endpoints[path]["parameters"]["query"].append(param_info)
         else:
             stats["gau_new"] += 1
 
             query_params = []
             for param_name in parsed["parameters"].get("query", []):
-                query_params.append({
-                    'name': param_name,
-                    'category': classify_parameter(param_name),
-                    'source': 'gau'
-                })
+                query_params.append(
+                    {
+                        "name": param_name,
+                        "category": classify_parameter(param_name),
+                        "source": "gau",
+                    }
+                )
 
-            category = classify_endpoint(path, methods, {'query': query_params, 'body': [], 'path': []})
+            category = classify_endpoint(
+                path, methods, {"query": query_params, "body": [], "path": []}
+            )
 
             endpoints[path] = {
-                'methods': methods,
-                'parameters': {
-                    'query': query_params,
-                    'body': [],
-                    'path': []
+                "methods": methods,
+                "parameters": {"query": query_params, "body": [], "path": []},
+                "sources": ["gau"],
+                "category": category,
+                "parameter_count": {
+                    "query": len(query_params),
+                    "body": 0,
+                    "path": 0,
+                    "total": len(query_params),
                 },
-                'sources': ['gau'],
-                'category': category,
-                'parameter_count': {
-                    'query': len(query_params),
-                    'body': 0,
-                    'path': 0,
-                    'total': len(query_params)
-                },
-                'sample_urls': [url]
+                "sample_urls": [url],
             }
 
-            by_base_url[base]['summary']['total_endpoints'] += 1
-            by_base_url[base]['summary']['total_parameters'] += len(query_params)
+            by_base_url[base]["summary"]["total_endpoints"] += 1
+            by_base_url[base]["summary"]["total_parameters"] += len(query_params)
             for method in methods:
-                by_base_url[base]['summary']['methods'][method] = \
-                    by_base_url[base]['summary']['methods'].get(method, 0) + 1
-            by_base_url[base]['summary']['categories'][category] = \
-                by_base_url[base]['summary']['categories'].get(category, 0) + 1
+                by_base_url[base]["summary"]["methods"][method] = (
+                    by_base_url[base]["summary"]["methods"].get(method, 0) + 1
+                )
+            by_base_url[base]["summary"]["categories"][category] = (
+                by_base_url[base]["summary"]["categories"].get(category, 0) + 1
+            )
 
     return by_base_url, stats
-

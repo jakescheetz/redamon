@@ -28,7 +28,7 @@
   <img src="https://img.shields.io/badge/400+-AI%20MODELS-04A878?style=for-the-badge&logo=huggingface&logoColor=white" alt="400+ AI Models"/>
   <img src="https://img.shields.io/badge/%F0%9F%96%A5%EF%B8%8F_LOCAL%20MODELS-OLLAMA%20%7C%20vLLM%20%7C%20LM%20Studio-B85C00?style=for-the-badge" alt="Local Models Support"/>
   <br/>
-  <a href="https://github.com/samugit83/redamon/wiki"><img src="https://img.shields.io/badge/📖_WIKI-FULL%20DOCUMENTATION-1A73E8?style=for-the-badge" alt="Wiki Documentation"/></a>
+  <a href="https://github.com/samugit83/parallax/wiki"><img src="https://img.shields.io/badge/📖_WIKI-FULL%20DOCUMENTATION-1A73E8?style=for-the-badge" alt="Wiki Documentation"/></a>
 </p>
 
 > **LEGAL DISCLAIMER**: This tool is intended for **authorized security testing**, **educational purposes**, and **research only**. Never use this system to scan, probe, or attack any system you do not own or have explicit written permission to test. Unauthorized access is **illegal** and punishable by law. By using this tool, you accept **full responsibility** for your actions. **[Read Full Disclaimer](DISCLAIMER.md)**
@@ -62,8 +62,8 @@ That's it. No Node.js, Python, or security tools needed on your host.
 ### 1. Clone & Configure
 
 ```bash
-git clone https://github.com/samugit83/redamon.git
-cd redamon
+git clone https://github.com/samugit83/parallax.git
+cd parallax
 cp .env.example .env
 ```
 
@@ -110,7 +110,7 @@ docker compose up -d postgres neo4j recon-orchestrator kali-sandbox agent webapp
 
 Go to **http://localhost:3000** — create a project, configure your target, and start scanning.
 
-> For a detailed walkthrough of every feature, check the **[Wiki](https://github.com/samugit83/redamon/wiki)**.
+> For a detailed walkthrough of every feature, check the **[Wiki](https://github.com/samugit83/parallax/wiki)**.
 
 ### Common Commands
 
@@ -709,9 +709,9 @@ Every project in Parallax has **180+ configurable parameters** across 11 setting
 | **Agent Behaviour** | LLM model (400+), phases, payloads, approval gates, limits |
 | **Attack Paths** | Hydra brute force, tool phase restriction matrix |
 
-> **Full parameter reference:** See the **[Project Settings Reference](https://github.com/samugit83/redamon/wiki/9.-Project-Settings-Reference)** in the Wiki for all 180+ parameters with defaults and descriptions.
+> **Full parameter reference:** See the **[Project Settings Reference](https://github.com/samugit83/parallax/wiki/9.-Project-Settings-Reference)** in the Wiki for all 180+ parameters with defaults and descriptions.
 >
-> **Complete user guide:** See the **[Parallax Wiki](https://github.com/samugit83/redamon/wiki)** for step-by-step instructions on creating users, projects, running scans, and using the AI agent.
+> **Complete user guide:** See the **[Parallax Wiki](https://github.com/samugit83/parallax/wiki)** for step-by-step instructions on creating users, projects, running scans, and using the AI agent.
 
 ---
 

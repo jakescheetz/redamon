@@ -1,5 +1,5 @@
 """
-RedAmon - GVM/OpenVAS Vulnerability Scanner
+parallax - GVM/OpenVAS Vulnerability Scanner
 ============================================
 Connects to GVM via python-gvm to run vulnerability scans.
 Extracts targets from recon JSON data and saves results as JSON.
@@ -23,6 +23,7 @@ import sys
 # XML to dict conversion for complete data extraction
 try:
     import xmltodict
+
     XMLTODICT_AVAILABLE = True
 except ImportError:
     XMLTODICT_AVAILABLE = False
@@ -54,6 +55,7 @@ try:
     from gvm.protocols.gmp.requests.v224._targets import AliveTest
     from gvm.transforms import EtreeTransform
     from gvm.errors import GvmError
+
     GVM_AVAILABLE = True
 except ImportError:
     GVM_AVAILABLE = False
@@ -65,11 +67,11 @@ except ImportError:
 class GVMScanner:
     """
     GVM/OpenVAS vulnerability scanner using python-gvm.
-    
+
     Connects to gvmd via Unix socket and executes vulnerability scans
-    against targets extracted from RedAmon recon data.
+    against targets extracted from parallax recon data.
     """
-    
+
     def __init__(
         self,
         socket_path: str = None,
@@ -96,21 +98,31 @@ class GVMScanner:
         self.socket_path = socket_path or GVM_SOCKET_PATH
         self.username = username or GVM_USERNAME
         self.password = password or GVM_PASSWORD
-        self.scan_config_name = scan_config or get_setting('SCAN_CONFIG', 'Full and fast')
-        self.task_timeout = task_timeout if task_timeout is not None else get_setting('TASK_TIMEOUT', 14400)
-        self.poll_interval = poll_interval if poll_interval is not None else get_setting('POLL_INTERVAL', 30)
-        
+        self.scan_config_name = scan_config or get_setting(
+            "SCAN_CONFIG", "Full and fast"
+        )
+        self.task_timeout = (
+            task_timeout
+            if task_timeout is not None
+            else get_setting("TASK_TIMEOUT", 14400)
+        )
+        self.poll_interval = (
+            poll_interval
+            if poll_interval is not None
+            else get_setting("POLL_INTERVAL", 30)
+        )
+
         # Connection state
         self._connection = None
         self.gmp = None
         self.connected = False
-        
+
         # Cached IDs
         self.scanner_id: Optional[str] = None
         self.config_id: Optional[str] = None
         self.xml_format_id: Optional[str] = None
         self.port_list_id: Optional[str] = None
-    
+
     def connect(self, max_retries: int = 60, retry_interval: int = 30) -> bool:
         """
         Establish connection to GVMD with retry logic.
@@ -164,9 +176,15 @@ class GVMScanner:
                     # Determine a user-friendly reason
                     if "Connection refused" in error_msg or "No such file" in error_msg:
                         reason = "gvmd socket not available yet"
-                    elif "not found" in error_msg.lower() and "config" in error_msg.lower():
+                    elif (
+                        "not found" in error_msg.lower()
+                        and "config" in error_msg.lower()
+                    ):
                         reason = "scan configs not loaded yet (feed sync in progress)"
-                    elif "not found" in error_msg.lower() and "scanner" in error_msg.lower():
+                    elif (
+                        "not found" in error_msg.lower()
+                        and "scanner" in error_msg.lower()
+                    ):
                         reason = "OpenVAS scanner not registered yet"
                     elif "Authentication failed" in error_msg:
                         reason = "admin user not created yet"
@@ -183,12 +201,14 @@ class GVMScanner:
                     )
                     time.sleep(retry_interval)
                 else:
-                    print(f"[!] Failed to connect to GVM after {max_retries} attempts: {error_msg}")
+                    print(
+                        f"[!] Failed to connect to GVM after {max_retries} attempts: {error_msg}"
+                    )
                     self.connected = False
                     return False
 
         return False
-    
+
     def disconnect(self):
         """Close connection to GVMD."""
         if self._connection:
@@ -199,45 +219,48 @@ class GVMScanner:
         self._connection = None
         self.connected = False
         self.gmp = None
-    
+
     def _cache_scanner_id(self):
         """Get and cache OpenVAS scanner ID."""
         scanners = self.gmp.get_scanners()
-        for scanner in scanners.findall('.//scanner'):
-            name = scanner.find('name')
-            if name is not None and 'OpenVAS' in name.text:
-                self.scanner_id = scanner.get('id')
+        for scanner in scanners.findall(".//scanner"):
+            name = scanner.find("name")
+            if name is not None and "OpenVAS" in name.text:
+                self.scanner_id = scanner.get("id")
                 return
         raise RuntimeError("OpenVAS scanner not found in GVM")
-    
+
     def _cache_config_id(self):
         """Get and cache scan config ID."""
         configs = self.gmp.get_scan_configs()
-        for config in configs.findall('.//config'):
-            name = config.find('name')
+        for config in configs.findall(".//config"):
+            name = config.find("name")
             if name is not None and self.scan_config_name in name.text:
-                self.config_id = config.get('id')
+                self.config_id = config.get("id")
                 return
-        
+
         # List available configs for debugging
-        available = [c.find('name').text for c in configs.findall('.//config') 
-                     if c.find('name') is not None]
+        available = [
+            c.find("name").text
+            for c in configs.findall(".//config")
+            if c.find("name") is not None
+        ]
         raise RuntimeError(
             f"Scan config '{self.scan_config_name}' not found. "
             f"Available: {available}"
         )
-    
+
     def _cache_report_format_id(self):
         """Get and cache XML report format ID."""
         formats = self.gmp.get_report_formats()
-        for fmt in formats.findall('.//report_format'):
-            name = fmt.find('name')
+        for fmt in formats.findall(".//report_format"):
+            name = fmt.find("name")
             if name is not None and name.text == "XML":
-                self.xml_format_id = fmt.get('id')
+                self.xml_format_id = fmt.get("id")
                 return
         # Default XML format UUID
         self.xml_format_id = "a994b278-1f62-11e1-96ac-406186ea4fc5"
-    
+
     def _cache_port_list_id(self):
         """Get and cache port list ID (All IANA assigned TCP and UDP)."""
         port_lists = self.gmp.get_port_lists()
@@ -247,35 +270,37 @@ class GVMScanner:
             "All IANA assigned TCP",
             "All TCP and Nmap top 1000 UDP",
         ]
-        
+
         for preferred in preferred_lists:
-            for pl in port_lists.findall('.//port_list'):
-                name = pl.find('name')
+            for pl in port_lists.findall(".//port_list"):
+                name = pl.find("name")
                 if name is not None and name.text == preferred:
-                    self.port_list_id = pl.get('id')
+                    self.port_list_id = pl.get("id")
                     print(f"    [+] Using port list: {preferred}")
                     return
-        
+
         # Fallback: use first available port list
-        first_pl = port_lists.find('.//port_list')
+        first_pl = port_lists.find(".//port_list")
         if first_pl is not None:
-            self.port_list_id = first_pl.get('id')
-            name = first_pl.find('name')
-            print(f"    [+] Using port list: {name.text if name is not None else 'default'}")
+            self.port_list_id = first_pl.get("id")
+            name = first_pl.find("name")
+            print(
+                f"    [+] Using port list: {name.text if name is not None else 'default'}"
+            )
             return
-            
+
         # Default UUID for "All IANA assigned TCP and UDP"
         self.port_list_id = "33d0cd82-57c6-11e1-8ed1-406186ea4fc5"
-    
+
     def create_target(self, name: str, hosts: List[str], comment: str = "") -> str:
         """
         Create a scan target in GVM.
-        
+
         Args:
             name: Target name
             hosts: List of IPs or hostnames
             comment: Optional description
-            
+
         Returns:
             Target ID
         """
@@ -285,119 +310,122 @@ class GVMScanner:
             hosts=hosts,
             port_list_id=self.port_list_id,
             alive_test=AliveTest.CONSIDER_ALIVE,
-            comment=comment or f"RedAmon auto-generated - {datetime.now().isoformat()}"
+            comment=comment
+            or f"parallax auto-generated - {datetime.now().isoformat()}",
         )
         # Extract ID from XML response (attribute on root element)
-        target_id = response.get('id') if hasattr(response, 'get') else None
-        if target_id is None and hasattr(response, 'attrib'):
-            target_id = response.attrib.get('id')
-        
+        target_id = response.get("id") if hasattr(response, "get") else None
+        if target_id is None and hasattr(response, "attrib"):
+            target_id = response.attrib.get("id")
+
         # Check response status
-        status = response.get('status') if hasattr(response, 'get') else None
-        if status and status != '201':
-            status_text = response.get('status_text', 'Unknown error')
+        status = response.get("status") if hasattr(response, "get") else None
+        if status and status != "201":
+            status_text = response.get("status_text", "Unknown error")
             raise RuntimeError(f"Failed to create target: {status_text}")
-        
+
         if not target_id:
             raise RuntimeError(f"Failed to create target '{name}': No ID returned")
-            
+
         print(f"    [+] Created target '{name}': {target_id}")
         return target_id
-    
+
     def create_task(self, name: str, target_id: str, comment: str = "") -> str:
         """
         Create a scan task in GVM.
-        
+
         Args:
             name: Task name
             target_id: ID of target to scan
             comment: Optional description
-            
+
         Returns:
             Task ID
         """
         if not target_id:
             raise ValueError("create_task requires a target_id argument")
-            
+
         response = self.gmp.create_task(
             name=name,
             config_id=self.config_id,
             target_id=target_id,
             scanner_id=self.scanner_id,
-            comment=comment or f"RedAmon scan - {datetime.now().isoformat()}"
+            comment=comment or f"parallax scan - {datetime.now().isoformat()}",
         )
         # Extract ID from XML response
-        task_id = response.get('id') if hasattr(response, 'get') else None
-        if task_id is None and hasattr(response, 'attrib'):
-            task_id = response.attrib.get('id')
-            
+        task_id = response.get("id") if hasattr(response, "get") else None
+        if task_id is None and hasattr(response, "attrib"):
+            task_id = response.attrib.get("id")
+
         # Check response status
-        status = response.get('status') if hasattr(response, 'get') else None
-        if status and status != '201':
-            status_text = response.get('status_text', 'Unknown error')
+        status = response.get("status") if hasattr(response, "get") else None
+        if status and status != "201":
+            status_text = response.get("status_text", "Unknown error")
             raise RuntimeError(f"Failed to create task: {status_text}")
-            
+
         if not task_id:
             raise RuntimeError(f"Failed to create task '{name}': No ID returned")
-            
+
         print(f"    [+] Created task '{name}': {task_id}")
         return task_id
-    
+
     def start_task(self, task_id: str) -> str:
         """
         Start a scan task.
-        
+
         Args:
             task_id: Task ID to start
-            
+
         Returns:
             Report ID for the running task
         """
         response = self.gmp.start_task(task_id)
-        report_id = response.find('.//report_id')
+        report_id = response.find(".//report_id")
         report_id_str = report_id.text if report_id is not None else None
         print(f"    [+] Started task {task_id}")
         return report_id_str
-    
+
     def wait_for_task(self, task_id: str) -> Tuple[str, str]:
         """
         Wait for task completion.
-        
+
         Args:
             task_id: Task ID to wait for
-            
+
         Returns:
             Tuple of (status, report_id)
-            
+
         Raises:
             TimeoutError: If task exceeds timeout
             RuntimeError: If task fails
         """
         print(f"    [⏳] Waiting for task {task_id}...")
         start_time = time.time()
-        
+
         while True:
             elapsed = time.time() - start_time
-            
+
             if self.task_timeout > 0 and elapsed > self.task_timeout:
                 raise TimeoutError(
                     f"Task {task_id} exceeded timeout of {self.task_timeout}s"
                 )
-            
+
             task = self.gmp.get_task(task_id)
-            status = task.find('.//status')
+            status = task.find(".//status")
             status_text = status.text if status is not None else "Unknown"
-            
-            progress = task.find('.//progress')
+
+            progress = task.find(".//progress")
             progress_text = progress.text if progress is not None else "0"
-            
+
             # Get report ID
-            report = task.find('.//report')
-            report_id = report.get('id') if report is not None else None
-            
-            print(f"        Status: {status_text} | Progress: {progress_text}% | "
-                  f"Elapsed: {int(elapsed)}s")
-            
+            report = task.find(".//report")
+            report_id = report.get("id") if report is not None else None
+
+            print(
+                f"        Status: {status_text} | Progress: {progress_text}% | "
+                f"Elapsed: {int(elapsed)}s"
+            )
+
             if status_text == "Done":
                 return status_text, report_id
             elif status_text in ("Stopped", "Stop Requested"):
@@ -409,9 +437,9 @@ class GVMScanner:
                 )
             elif "Error" in status_text:
                 raise RuntimeError(f"Task failed: {status_text}")
-            
+
             time.sleep(self.poll_interval)
-    
+
     def get_report(self, report_id: str) -> Dict:
         """
         Fetch and parse a scan report with full details.
@@ -429,10 +457,10 @@ class GVMScanner:
             report_id=report_id,
             report_format_id=self.xml_format_id,
             ignore_pagination=True,
-            details=True
+            details=True,
         )
         return self._parse_report_full(report_xml)
-    
+
     def _parse_report_full(self, report_xml: ET.Element) -> Dict:
         """
         Parse GVM XML report using xmltodict for complete data extraction,
@@ -448,11 +476,11 @@ class GVMScanner:
             - Enriched vulnerability list with severity classifications
         """
         # Convert XML to string for xmltodict
-        xml_string = ET.tostring(report_xml, encoding='unicode')
+        xml_string = ET.tostring(report_xml, encoding="unicode")
 
         # Convert to dict using xmltodict - captures ALL fields
         if XMLTODICT_AVAILABLE:
-            raw_data = xmltodict.parse(xml_string, attr_prefix='@', cdata_key='#text')
+            raw_data = xmltodict.parse(xml_string, attr_prefix="@", cdata_key="#text")
         else:
             # Fallback: use basic ElementTree conversion
             raw_data = self._element_to_dict(report_xml)
@@ -469,7 +497,6 @@ class GVMScanner:
             "scan_start": summary.get("scan_start"),
             "scan_end": summary.get("scan_end"),
             "scan_run_status": summary.get("scan_run_status"),
-
             # Computed statistics
             "hosts_scanned": summary.get("hosts_scanned", 0),
             "vulnerability_count": summary.get("vulnerability_count", 0),
@@ -477,12 +504,10 @@ class GVMScanner:
             "unique_cves": summary.get("unique_cves", []),
             "unique_cve_count": summary.get("unique_cve_count", 0),
             "ports_affected": summary.get("ports_affected", []),
-
             # Enriched vulnerabilities with severity_class
             "vulnerabilities": summary.get("vulnerabilities", []),
-
             # Complete raw data - ALL GVM fields preserved
-            "raw_data": report_data
+            "raw_data": report_data,
         }
 
     def _extract_report_data(self, raw_data: Dict) -> Dict:
@@ -496,17 +521,17 @@ class GVMScanner:
             The actual report data
         """
         # Navigate through possible wrapper structures
-        if 'get_reports_response' in raw_data:
-            response = raw_data['get_reports_response']
-            if 'report' in response:
-                report_wrapper = response['report']
+        if "get_reports_response" in raw_data:
+            response = raw_data["get_reports_response"]
+            if "report" in response:
+                report_wrapper = response["report"]
                 # Handle nested report structure
-                if isinstance(report_wrapper, dict) and 'report' in report_wrapper:
+                if isinstance(report_wrapper, dict) and "report" in report_wrapper:
                     return report_wrapper
-                return {'report': report_wrapper}
-        elif 'get_report_response' in raw_data:
-            response = raw_data['get_report_response']
-            if 'report' in response:
+                return {"report": report_wrapper}
+        elif "get_report_response" in raw_data:
+            response = raw_data["get_report_response"]
+            if "report" in response:
                 return response
         # Return as-is if structure not recognized
         return raw_data
@@ -528,34 +553,40 @@ class GVMScanner:
             "scan_run_status": None,
             "hosts_scanned": 0,
             "vulnerability_count": 0,
-            "severity_summary": {"critical": 0, "high": 0, "medium": 0, "low": 0, "log": 0},
+            "severity_summary": {
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+                "log": 0,
+            },
             "unique_cves": [],
             "unique_cve_count": 0,
             "ports_affected": [],
-            "vulnerabilities": []
+            "vulnerabilities": [],
         }
 
         # Navigate to the inner report
-        report = report_data.get('report', {})
-        if isinstance(report, dict) and 'report' in report:
-            inner_report = report.get('report', {})
+        report = report_data.get("report", {})
+        if isinstance(report, dict) and "report" in report:
+            inner_report = report.get("report", {})
         else:
             inner_report = report
 
         # Extract metadata
-        summary["report_id"] = report.get('@id') or self._safe_get(report, 'id')
-        summary["scan_start"] = self._safe_get(inner_report, 'scan_start')
-        summary["scan_end"] = self._safe_get(inner_report, 'scan_end')
-        summary["scan_run_status"] = self._safe_get(inner_report, 'scan_run_status')
+        summary["report_id"] = report.get("@id") or self._safe_get(report, "id")
+        summary["scan_start"] = self._safe_get(inner_report, "scan_start")
+        summary["scan_end"] = self._safe_get(inner_report, "scan_end")
+        summary["scan_run_status"] = self._safe_get(inner_report, "scan_run_status")
 
         # Get hosts count
-        hosts_data = self._safe_get(inner_report, 'hosts')
+        hosts_data = self._safe_get(inner_report, "hosts")
         if isinstance(hosts_data, dict):
-            summary["hosts_scanned"] = self._safe_int(hosts_data.get('count', 0))
+            summary["hosts_scanned"] = self._safe_int(hosts_data.get("count", 0))
 
         # Extract and enrich results
-        results_data = self._safe_get(inner_report, 'results', {})
-        results_list = self._safe_get(results_data, 'result', [])
+        results_data = self._safe_get(inner_report, "results", {})
+        results_list = self._safe_get(results_data, "result", [])
 
         # Ensure results_list is a list
         if isinstance(results_list, dict):
@@ -572,7 +603,7 @@ class GVMScanner:
                 continue
 
             # Get severity and classify
-            severity = self._safe_float(self._safe_get(result, 'severity', 0))
+            severity = self._safe_float(self._safe_get(result, "severity", 0))
             severity_class = self._classify_severity(severity)
             summary["severity_summary"][severity_class] += 1
 
@@ -581,7 +612,7 @@ class GVMScanner:
             unique_cves.update(cves)
 
             # Extract port
-            port = self._safe_get(result, 'port')
+            port = self._safe_get(result, "port")
             if port:
                 ports_affected.add(port)
 
@@ -595,7 +626,7 @@ class GVMScanner:
             enriched_vulns.append(enriched_vuln)
 
         # Sort by severity (highest first)
-        enriched_vulns.sort(key=lambda x: x.get('severity_float', 0), reverse=True)
+        enriched_vulns.sort(key=lambda x: x.get("severity_float", 0), reverse=True)
 
         summary["vulnerability_count"] = len(enriched_vulns)
         summary["vulnerabilities"] = enriched_vulns
@@ -618,18 +649,18 @@ class GVMScanner:
         cves = []
 
         # Check nvt/refs/ref structure
-        nvt = self._safe_get(result, 'nvt', {})
-        refs = self._safe_get(nvt, 'refs', {})
-        ref_list = self._safe_get(refs, 'ref', [])
+        nvt = self._safe_get(result, "nvt", {})
+        refs = self._safe_get(nvt, "refs", {})
+        ref_list = self._safe_get(refs, "ref", [])
 
         if isinstance(ref_list, dict):
             ref_list = [ref_list]
 
         for ref in ref_list:
             if isinstance(ref, dict):
-                ref_type = ref.get('@type', '')
-                ref_id = ref.get('@id', '')
-                if ref_type.lower() == 'cve' and ref_id:
+                ref_type = ref.get("@type", "")
+                ref_id = ref.get("@id", "")
+                if ref_type.lower() == "cve" and ref_id:
                     cves.append(ref_id)
 
         return cves
@@ -648,11 +679,11 @@ class GVMScanner:
 
         # Add attributes
         if element.attrib:
-            result['@attributes'] = dict(element.attrib)
+            result["@attributes"] = dict(element.attrib)
 
         # Add text content
         if element.text and element.text.strip():
-            result['#text'] = element.text.strip()
+            result["#text"] = element.text.strip()
 
         # Add children
         for child in element:
@@ -709,7 +740,7 @@ class GVMScanner:
             print(f"    [+] Deleted target {target_id}")
         except Exception as e:
             print(f"    [!] Failed to delete target {target_id}: {e}")
-    
+
     def delete_task(self, task_id: str):
         """Delete a task from GVM."""
         try:
@@ -717,60 +748,61 @@ class GVMScanner:
             print(f"    [+] Deleted task {task_id}")
         except Exception as e:
             print(f"    [!] Failed to delete task {task_id}: {e}")
-    
+
     def scan_targets(
-        self,
-        targets: List[str],
-        target_name: str,
-        cleanup: Optional[bool] = None
+        self, targets: List[str], target_name: str, cleanup: Optional[bool] = None
     ) -> Dict:
         """
         Run a complete vulnerability scan on targets.
-        
+
         Args:
             targets: List of IPs or hostnames to scan
             target_name: Name for the scan target/task
             cleanup: Delete target and task after scan
-            
+
         Returns:
             Scan results dictionary
         """
         if cleanup is None:
-            cleanup = get_setting('CLEANUP_AFTER_SCAN', True)
+            cleanup = get_setting("CLEANUP_AFTER_SCAN", True)
 
         if not targets:
             return {"error": "No targets provided", "vulnerabilities": []}
 
         print(f"\n[*] Scanning {len(targets)} targets: {target_name}")
-        print(f"    Targets: {', '.join(targets[:5])}{'...' if len(targets) > 5 else ''}")
-        
+        print(
+            f"    Targets: {', '.join(targets[:5])}{'...' if len(targets) > 5 else ''}"
+        )
+
         target_id = None
         task_id = None
-        
+
         try:
             # Create target
             target_id = self.create_target(
-                name=f"RedAmon_{target_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                hosts=targets
+                name=f"parallax_{target_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                hosts=targets,
             )
-            
+
             # Create and start task
             task_id = self.create_task(
-                name=f"RedAmon_Scan_{target_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                target_id=target_id
+                name=f"parallax_Scan_{target_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                target_id=target_id,
             )
             self.start_task(task_id)
-            
+
             # Wait for completion
             status, report_id = self.wait_for_task(task_id)
-            
+
             # Get results
             if report_id:
                 results = self.get_report(report_id)
                 results["scan_name"] = target_name
                 results["targets"] = targets
                 results["status"] = status
-                print(f"    [+] Scan complete: {results['vulnerability_count']} vulnerabilities found")
+                print(
+                    f"    [+] Scan complete: {results['vulnerability_count']} vulnerabilities found"
+                )
                 return results
             else:
                 return {
@@ -778,9 +810,9 @@ class GVMScanner:
                     "targets": targets,
                     "status": status,
                     "error": "No report generated",
-                    "vulnerabilities": []
+                    "vulnerabilities": [],
                 }
-                
+
         except Exception as e:
             print(f"    [!] Scan failed: {e}")
             return {
@@ -788,9 +820,9 @@ class GVMScanner:
                 "targets": targets,
                 "status": "error",
                 "error": str(e),
-                "vulnerabilities": []
+                "vulnerabilities": [],
             }
-            
+
         finally:
             if cleanup:
                 if task_id:
@@ -802,35 +834,37 @@ class GVMScanner:
 def extract_targets_from_recon(recon_data: Dict) -> Tuple[Set[str], Set[str]]:
     """
     Extract unique IPs and hostnames from recon JSON data.
-    
+
     Respects SUBDOMAIN_LIST filtering:
     - Only includes root domain if it has DNS records (was resolved during scan)
     - Only includes subdomains that have DNS records
-    
+
     Args:
-        recon_data: RedAmon recon JSON data
-        
+        recon_data: parallax recon JSON data
+
     Returns:
         Tuple of (ips_set, hostnames_set)
     """
     ips = set()
     hostnames = set()
-    
+
     dns_data = recon_data.get("dns", {})
     if not dns_data:
         return ips, hostnames
-    
+
     # Root domain - only include if it has DNS records (respects SUBDOMAIN_LIST filtering)
-    domain = recon_data.get("metadata", {}).get("root_domain", "") or recon_data.get("domain", "")
+    domain = recon_data.get("metadata", {}).get("root_domain", "") or recon_data.get(
+        "domain", ""
+    )
     domain_dns = dns_data.get("domain", {})
-    
+
     if domain and domain_dns and domain_dns.get("has_records"):
         # Root domain was resolved (included in scan via "." in SUBDOMAIN_LIST or full discovery)
         hostnames.add(domain)
         domain_ips = domain_dns.get("ips", {})
         ips.update(domain_ips.get("ipv4", []))
         ips.update(domain_ips.get("ipv6", []))
-    
+
     # Subdomains - only include those with DNS records
     for subdomain, subdomain_data in dns_data.get("subdomains", {}).items():
         if subdomain_data and subdomain_data.get("has_records"):
@@ -838,11 +872,11 @@ def extract_targets_from_recon(recon_data: Dict) -> Tuple[Set[str], Set[str]]:
             subdomain_ips = subdomain_data.get("ips", {})
             ips.update(subdomain_ips.get("ipv4", []))
             ips.update(subdomain_ips.get("ipv6", []))
-    
+
     # Filter empty values
     ips = {ip for ip in ips if ip}
     hostnames = {h for h in hostnames if h}
-    
+
     return ips, hostnames
 
 
@@ -865,15 +899,11 @@ def load_recon_file(project_id: str, recon_dir: Path = None) -> Dict:
     if not recon_file.exists():
         raise FileNotFoundError(f"Recon file not found: {recon_file}")
 
-    with open(recon_file, 'r') as f:
+    with open(recon_file, "r") as f:
         return json.load(f)
 
 
-def save_vuln_results(
-    results: Dict,
-    project_id: str,
-    output_dir: Path = None
-) -> Path:
+def save_vuln_results(results: Dict, project_id: str, output_dir: Path = None) -> Path:
     """
     Save vulnerability scan results to JSON file.
 
@@ -891,7 +921,7 @@ def save_vuln_results(
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"gvm_{project_id}.json"
 
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
 
     print(f"[+] Results saved to: {output_file}")
@@ -899,9 +929,7 @@ def save_vuln_results(
 
 
 def update_graph_from_gvm_results(
-    gvm_data: Dict,
-    user_id: str = None,
-    project_id: str = None
+    gvm_data: Dict, user_id: str = None, project_id: str = None
 ) -> Dict:
     """
     Update Neo4j graph database with GVM scan results.
@@ -936,9 +964,7 @@ def update_graph_from_gvm_results(
                 return {"error": "Neo4j connection failed"}
 
             stats = client.update_graph_from_gvm_scan(
-                gvm_data=gvm_data,
-                user_id=user_id,
-                project_id=project_id
+                gvm_data=gvm_data, user_id=user_id, project_id=project_id
             )
 
             print("[+] Graph update completed successfully")
@@ -947,4 +973,3 @@ def update_graph_from_gvm_results(
     except Exception as e:
         print(f"[!] Graph update failed: {e}")
         return {"error": str(e)}
-

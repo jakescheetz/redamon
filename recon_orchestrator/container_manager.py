@@ -1,6 +1,7 @@
 """
 Docker container lifecycle management for recon processes
 """
+
 import asyncio
 import logging
 import os
@@ -14,15 +15,21 @@ from docker.errors import NotFound, APIError
 from docker.models.containers import Container
 
 from models import (
-    ReconState, ReconStatus, ReconLogEvent,
-    GvmState, GvmStatus, GvmLogEvent,
-    GithubHuntState, GithubHuntStatus, GithubHuntLogEvent,
+    ReconState,
+    ReconStatus,
+    ReconLogEvent,
+    GvmState,
+    GvmStatus,
+    GvmLogEvent,
+    GithubHuntState,
+    GithubHuntStatus,
+    GithubHuntLogEvent,
 )
 
 logger = logging.getLogger(__name__)
 
 # ANSI escape code pattern for stripping terminal colors from logs
-ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*m|\033\[[0-9;]*m')
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m|\033\[[0-9;]*m")
 
 # Sub-container images spawned by recon (Docker-in-Docker sibling containers)
 SUB_CONTAINER_IMAGES = [
@@ -36,11 +43,31 @@ SUB_CONTAINER_IMAGES = [
 # Phase patterns to detect from logs
 # Order matters - more specific patterns should come first within each phase
 PHASE_PATTERNS = [
-    (r"\[Phase 1\]|\[PHASE 1\]|Phase 1:|WHOIS Lookup|domain.*discovery|Domain Reconnaissance", "Domain Discovery", 1),
-    (r"\[Phase 2\]|\[PHASE 2\]|Phase 2:|NAABU PORT SCANNER|port.*scan", "Port Scanning", 2),
-    (r"\[Phase 3\]|\[PHASE 3\]|Phase 3:|HTTPX HTTP PROBER|http.*prob", "HTTP Probing", 3),
-    (r"\[Phase 4\]|\[PHASE 4\]|Phase 4:|Resource Enumeration|Katana.*GAU|resource.*enum", "Resource Enumeration", 4),
-    (r"\[Phase 5\]|\[PHASE 5\]|Phase 5:|NUCLEI|Vulnerability Scan|vuln.*scan", "Vulnerability Scanning", 5),
+    (
+        r"\[Phase 1\]|\[PHASE 1\]|Phase 1:|WHOIS Lookup|domain.*discovery|Domain Reconnaissance",
+        "Domain Discovery",
+        1,
+    ),
+    (
+        r"\[Phase 2\]|\[PHASE 2\]|Phase 2:|NAABU PORT SCANNER|port.*scan",
+        "Port Scanning",
+        2,
+    ),
+    (
+        r"\[Phase 3\]|\[PHASE 3\]|Phase 3:|HTTPX HTTP PROBER|http.*prob",
+        "HTTP Probing",
+        3,
+    ),
+    (
+        r"\[Phase 4\]|\[PHASE 4\]|Phase 4:|Resource Enumeration|Katana.*GAU|resource.*enum",
+        "Resource Enumeration",
+        4,
+    ),
+    (
+        r"\[Phase 5\]|\[PHASE 5\]|Phase 5:|NUCLEI|Vulnerability Scan|vuln.*scan",
+        "Vulnerability Scanning",
+        5,
+    ),
     (r"\[Phase 6\]|\[PHASE 6\]|Phase 6:|CVE LOOKUP|MITRE|CWE|CAPEC", "CVE & MITRE", 6),
 ]
 
@@ -58,7 +85,11 @@ GVM_PHASE_PATTERNS = [
 # GitHub Secret Hunt phase patterns to detect from logs
 GITHUB_HUNT_PHASE_PATTERNS = [
     (r"GitHub Secret Hunter|Loading.*settings|Initializing", "Loading Settings", 1),
-    (r"Scanning repository|Organization found|User found|Scanning organization", "Scanning Repositories", 2),
+    (
+        r"Scanning repository|Organization found|User found|Scanning organization",
+        "Scanning Repositories",
+        2,
+    ),
     (r"SCAN SUMMARY|Final results saved|Scan complete", "Complete", 3),
 ]
 
@@ -66,7 +97,12 @@ GITHUB_HUNT_PHASE_PATTERNS = [
 class ContainerManager:
     """Manages Docker containers for recon, GVM scan, and GitHub hunt processes"""
 
-    def __init__(self, recon_image: str = "redamon-recon:latest", gvm_image: str = "redamon-vuln-scanner:latest", github_hunt_image: str = "redamon-github-hunter:latest"):
+    def __init__(
+        self,
+        recon_image: str = "parallax-recon:latest",
+        gvm_image: str = "parallax-vuln-scanner:latest",
+        github_hunt_image: str = "parallax-github-hunter:latest",
+    ):
         self.client = docker.from_env()
         self.recon_image = recon_image
         self.gvm_image = gvm_image
@@ -79,8 +115,8 @@ class ContainerManager:
     def _get_container_name(self, project_id: str) -> str:
         """Generate container name for a project"""
         # Sanitize project_id for container name
-        safe_id = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_id)
-        return f"redamon-recon-{safe_id}"
+        safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", project_id)
+        return f"parallax-recon-{safe_id}"
 
     async def get_status(self, project_id: str) -> ReconState:
         """Get current status of a recon process"""
@@ -105,7 +141,9 @@ class ContainerManager:
                         # Auto-cleanup: remove finished container
                         try:
                             container.remove()
-                            logger.info(f"Auto-removed finished container for project {project_id}")
+                            logger.info(
+                                f"Auto-removed finished container for project {project_id}"
+                            )
                         except Exception as e:
                             logger.warning(f"Failed to auto-remove container: {e}")
                 except NotFound:
@@ -200,21 +238,29 @@ class ContainerManager:
                     "NEO4J_PASSWORD": os.environ.get("NEO4J_PASSWORD", ""),
                 },
                 volumes={
-                    "/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "ro"},
+                    "/var/run/docker.sock": {
+                        "bind": "/var/run/docker.sock",
+                        "mode": "ro",
+                    },
                     # Mount source code for development (no rebuild needed)
                     # Note: rw needed because output/data are subdirectories
                     f"{recon_path}": {"bind": "/app/recon", "mode": "rw"},
                     # Mount graph_db module
-                    f"{Path(recon_path).parent}/graph_db": {"bind": "/app/graph_db", "mode": "ro"},
+                    f"{Path(recon_path).parent}/graph_db": {
+                        "bind": "/app/graph_db",
+                        "mode": "ro",
+                    },
                     # Mount /tmp for Docker-in-Docker temp files (avoids spaces in paths)
-                    "/tmp/redamon": {"bind": "/tmp/redamon", "mode": "rw"},
+                    "/tmp/parallax": {"bind": "/tmp/parallax", "mode": "rw"},
                 },
                 command="python /app/recon/main.py",
             )
 
             state.container_id = container.id
             state.status = ReconStatus.RUNNING
-            logger.info(f"Started recon container {container.id} for project {project_id}")
+            logger.info(
+                f"Started recon container {container.id} for project {project_id}"
+            )
 
         except Exception as e:
             state.status = ReconStatus.ERROR
@@ -240,18 +286,23 @@ class ContainerManager:
 
                     for sub_image in SUB_CONTAINER_IMAGES:
                         # Match by image name or tags
-                        if (sub_image in image_name or
-                            any(sub_image in tag for tag in image_tags)):
+                        if sub_image in image_name or any(
+                            sub_image in tag for tag in image_tags
+                        ):
                             container_name = container.name
                             container_status = container.status
 
                             # Stop if running
                             if container_status == "running":
-                                logger.info(f"Stopping sub-container: {container_name} ({sub_image})")
+                                logger.info(
+                                    f"Stopping sub-container: {container_name} ({sub_image})"
+                                )
                                 container.stop(timeout=5)
 
                             # Remove container
-                            logger.info(f"Removing sub-container: {container_name} ({sub_image})")
+                            logger.info(
+                                f"Removing sub-container: {container_name} ({sub_image})"
+                            )
                             container.remove(force=True)
                             cleaned += 1
                             break
@@ -290,7 +341,9 @@ class ContainerManager:
         # Clean up any sub-containers (naabu, httpx, nuclei, etc.)
         cleaned = self._cleanup_sub_containers()
         if cleaned > 0:
-            logger.info(f"Cleaned up {cleaned} sub-container(s) for project {project_id}")
+            logger.info(
+                f"Cleaned up {cleaned} sub-container(s) for project {project_id}"
+            )
 
         # Clean up state
         if project_id in self.running_states:
@@ -298,7 +351,13 @@ class ContainerManager:
 
         return state
 
-    def _parse_log_line(self, line: str, current_phase: Optional[str], current_phase_num: Optional[int], timestamp: Optional[datetime] = None) -> ReconLogEvent:
+    def _parse_log_line(
+        self,
+        line: str,
+        current_phase: Optional[str],
+        current_phase_num: Optional[int],
+        timestamp: Optional[datetime] = None,
+    ) -> ReconLogEvent:
         """Parse a log line and detect phase changes"""
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -308,7 +367,7 @@ class ContainerManager:
         level = "info"
 
         # Strip ANSI escape codes (terminal colors) from log line
-        line = ANSI_ESCAPE.sub('', line)
+        line = ANSI_ESCAPE.sub("", line)
 
         # Detect log level based on prefix symbols only
         # [!] = error (red), [+]/[✓] = success (green), [*] = action (blue), no symbol = info (gray)
@@ -364,10 +423,11 @@ class ContainerManager:
             def read_logs():
                 """Synchronous function to read logs and put them in the queue"""
                 try:
-                    for line in container.logs(stream=True, follow=True, timestamps=True):
+                    for line in container.logs(
+                        stream=True, follow=True, timestamps=True
+                    ):
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(line),
-                            loop
+                            log_queue.put(line), loop
                         ).result(timeout=5)
                         # Check if container is still running
                         try:
@@ -382,8 +442,7 @@ class ContainerManager:
                     # Signal end of logs
                     try:
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(None),
-                            loop
+                            log_queue.put(None), loop
                         ).result(timeout=5)
                     except Exception:
                         pass
@@ -404,25 +463,44 @@ class ContainerManager:
                         docker_ts = None
                         log_text = decoded_line
                         # Docker timestamps look like: 2024-01-15T10:30:00.123456789Z <log line>
-                        if len(decoded_line) > 30 and decoded_line[4] == '-' and decoded_line[10] == 'T':
-                            space_idx = decoded_line.find(' ')
+                        if (
+                            len(decoded_line) > 30
+                            and decoded_line[4] == "-"
+                            and decoded_line[10] == "T"
+                        ):
+                            space_idx = decoded_line.find(" ")
                             if space_idx > 0:
                                 ts_str = decoded_line[:space_idx]
                                 try:
                                     # Truncate nanoseconds to microseconds for stdlib compatibility
                                     # Docker: 2024-01-15T10:30:00.123456789Z -> 2024-01-15T10:30:00.123456+00:00
-                                    ts_clean = ts_str.replace('Z', '+00:00')
-                                    dot_idx = ts_clean.find('.')
-                                    plus_idx = ts_clean.find('+', dot_idx) if dot_idx > 0 else -1
+                                    ts_clean = ts_str.replace("Z", "+00:00")
+                                    dot_idx = ts_clean.find(".")
+                                    plus_idx = (
+                                        ts_clean.find("+", dot_idx)
+                                        if dot_idx > 0
+                                        else -1
+                                    )
                                     if dot_idx > 0 and plus_idx > 0:
-                                        frac = ts_clean[dot_idx + 1:plus_idx][:6]  # max 6 digits
-                                        ts_clean = ts_clean[:dot_idx + 1] + frac + ts_clean[plus_idx:]
+                                        frac = ts_clean[dot_idx + 1 : plus_idx][
+                                            :6
+                                        ]  # max 6 digits
+                                        ts_clean = (
+                                            ts_clean[: dot_idx + 1]
+                                            + frac
+                                            + ts_clean[plus_idx:]
+                                        )
                                     docker_ts = datetime.fromisoformat(ts_clean)
-                                    log_text = decoded_line[space_idx + 1:]
+                                    log_text = decoded_line[space_idx + 1 :]
                                 except (ValueError, OverflowError):
                                     pass
 
-                        event = self._parse_log_line(log_text, current_phase, current_phase_num, timestamp=docker_ts)
+                        event = self._parse_log_line(
+                            log_text,
+                            current_phase,
+                            current_phase_num,
+                            timestamp=docker_ts,
+                        )
 
                         # Update current phase tracking
                         if event.is_phase_start:
@@ -431,8 +509,12 @@ class ContainerManager:
 
                             # Update state
                             if project_id in self.running_states:
-                                self.running_states[project_id].current_phase = current_phase
-                                self.running_states[project_id].phase_number = current_phase_num
+                                self.running_states[project_id].current_phase = (
+                                    current_phase
+                                )
+                                self.running_states[project_id].phase_number = (
+                                    current_phase_num
+                                )
 
                         yield event
 
@@ -460,7 +542,9 @@ class ContainerManager:
 
     def get_running_count(self) -> int:
         """Get count of running recon processes"""
-        return sum(1 for s in self.running_states.values() if s.status == ReconStatus.RUNNING)
+        return sum(
+            1 for s in self.running_states.values() if s.status == ReconStatus.RUNNING
+        )
 
     async def cleanup(self):
         """Cleanup all running containers on shutdown"""
@@ -486,8 +570,8 @@ class ContainerManager:
 
     def _get_gvm_container_name(self, project_id: str) -> str:
         """Generate container name for a GVM scan"""
-        safe_id = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_id)
-        return f"redamon-gvm-{safe_id}"
+        safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", project_id)
+        return f"parallax-gvm-{safe_id}"
 
     async def get_gvm_status(self, project_id: str) -> GvmState:
         """Get current status of a GVM scan process"""
@@ -509,7 +593,9 @@ class ContainerManager:
 
                         try:
                             container.remove()
-                            logger.info(f"Auto-removed finished GVM container for project {project_id}")
+                            logger.info(
+                                f"Auto-removed finished GVM container for project {project_id}"
+                            )
                         except Exception as e:
                             logger.warning(f"Failed to auto-remove GVM container: {e}")
                 except NotFound:
@@ -598,19 +684,27 @@ class ContainerManager:
                     "NEO4J_USER": os.environ.get("NEO4J_USER", "neo4j"),
                     "NEO4J_PASSWORD": os.environ.get("NEO4J_PASSWORD", ""),
                     # GVM connection settings
-                    "GVM_SOCKET_PATH": os.environ.get("GVM_SOCKET_PATH", "/run/gvmd/gvmd.sock"),
+                    "GVM_SOCKET_PATH": os.environ.get(
+                        "GVM_SOCKET_PATH", "/run/gvmd/gvmd.sock"
+                    ),
                     "GVM_USERNAME": os.environ.get("GVM_USERNAME", "admin"),
                     "GVM_PASSWORD": os.environ.get("GVM_PASSWORD", "admin"),
                 },
                 volumes={
                     # GVM socket for communicating with gvmd
-                    "redamon_gvmd_socket": {"bind": "/run/gvmd", "mode": "ro"},
+                    "parallax_gvmd_socket": {"bind": "/run/gvmd", "mode": "ro"},
                     # Recon output (read-only, for extracting targets)
                     f"{recon_path}/output": {"bind": "/app/recon/output", "mode": "ro"},
                     # GVM scan output (read-write, for saving results)
-                    f"{gvm_scan_path}/output": {"bind": "/app/gvm_scan/output", "mode": "rw"},
+                    f"{gvm_scan_path}/output": {
+                        "bind": "/app/gvm_scan/output",
+                        "mode": "rw",
+                    },
                     # Mount graph_db module for Neo4j updates
-                    f"{Path(recon_path).parent}/graph_db": {"bind": "/app/graph_db", "mode": "ro"},
+                    f"{Path(recon_path).parent}/graph_db": {
+                        "bind": "/app/graph_db",
+                        "mode": "ro",
+                    },
                     # Mount gvm_scan source for development (no rebuild needed)
                     f"{gvm_scan_path}": {"bind": "/app/gvm_scan", "mode": "rw"},
                 },
@@ -619,7 +713,9 @@ class ContainerManager:
 
             state.container_id = container.id
             state.status = GvmStatus.RUNNING
-            logger.info(f"Started GVM scanner container {container.id} for project {project_id}")
+            logger.info(
+                f"Started GVM scanner container {container.id} for project {project_id}"
+            )
 
         except Exception as e:
             state.status = GvmStatus.ERROR
@@ -656,7 +752,13 @@ class ContainerManager:
 
         return state
 
-    def _parse_gvm_log_line(self, line: str, current_phase: Optional[str], current_phase_num: Optional[int], timestamp: Optional[datetime] = None) -> GvmLogEvent:
+    def _parse_gvm_log_line(
+        self,
+        line: str,
+        current_phase: Optional[str],
+        current_phase_num: Optional[int],
+        timestamp: Optional[datetime] = None,
+    ) -> GvmLogEvent:
         """Parse a GVM log line and detect phase changes"""
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -666,7 +768,7 @@ class ContainerManager:
         level = "info"
 
         # Strip ANSI escape codes
-        line = ANSI_ESCAPE.sub('', line)
+        line = ANSI_ESCAPE.sub("", line)
 
         # Detect log level
         if "[!]" in line:
@@ -694,7 +796,9 @@ class ContainerManager:
             level=level,
         )
 
-    async def stream_gvm_logs(self, project_id: str) -> AsyncGenerator[GvmLogEvent, None]:
+    async def stream_gvm_logs(
+        self, project_id: str
+    ) -> AsyncGenerator[GvmLogEvent, None]:
         """Stream logs from a GVM scanner container"""
         state = await self.get_gvm_status(project_id)
 
@@ -717,10 +821,11 @@ class ContainerManager:
 
             def read_logs():
                 try:
-                    for line in container.logs(stream=True, follow=True, timestamps=True):
+                    for line in container.logs(
+                        stream=True, follow=True, timestamps=True
+                    ):
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(line),
-                            loop
+                            log_queue.put(line), loop
                         ).result(timeout=5)
                         try:
                             container.reload()
@@ -733,8 +838,7 @@ class ContainerManager:
                 finally:
                     try:
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(None),
-                            loop
+                            log_queue.put(None), loop
                         ).result(timeout=5)
                     except Exception:
                         pass
@@ -752,31 +856,52 @@ class ContainerManager:
                         # Parse Docker timestamp prefix
                         docker_ts = None
                         log_text = decoded_line
-                        if len(decoded_line) > 30 and decoded_line[4] == '-' and decoded_line[10] == 'T':
-                            space_idx = decoded_line.find(' ')
+                        if (
+                            len(decoded_line) > 30
+                            and decoded_line[4] == "-"
+                            and decoded_line[10] == "T"
+                        ):
+                            space_idx = decoded_line.find(" ")
                             if space_idx > 0:
                                 ts_str = decoded_line[:space_idx]
                                 try:
-                                    ts_clean = ts_str.replace('Z', '+00:00')
-                                    dot_idx = ts_clean.find('.')
-                                    plus_idx = ts_clean.find('+', dot_idx) if dot_idx > 0 else -1
+                                    ts_clean = ts_str.replace("Z", "+00:00")
+                                    dot_idx = ts_clean.find(".")
+                                    plus_idx = (
+                                        ts_clean.find("+", dot_idx)
+                                        if dot_idx > 0
+                                        else -1
+                                    )
                                     if dot_idx > 0 and plus_idx > 0:
-                                        frac = ts_clean[dot_idx + 1:plus_idx][:6]
-                                        ts_clean = ts_clean[:dot_idx + 1] + frac + ts_clean[plus_idx:]
+                                        frac = ts_clean[dot_idx + 1 : plus_idx][:6]
+                                        ts_clean = (
+                                            ts_clean[: dot_idx + 1]
+                                            + frac
+                                            + ts_clean[plus_idx:]
+                                        )
                                     docker_ts = datetime.fromisoformat(ts_clean)
-                                    log_text = decoded_line[space_idx + 1:]
+                                    log_text = decoded_line[space_idx + 1 :]
                                 except (ValueError, OverflowError):
                                     pass
 
-                        event = self._parse_gvm_log_line(log_text, current_phase, current_phase_num, timestamp=docker_ts)
+                        event = self._parse_gvm_log_line(
+                            log_text,
+                            current_phase,
+                            current_phase_num,
+                            timestamp=docker_ts,
+                        )
 
                         if event.is_phase_start:
                             current_phase = event.phase
                             current_phase_num = event.phase_number
 
                             if project_id in self.gvm_states:
-                                self.gvm_states[project_id].current_phase = current_phase
-                                self.gvm_states[project_id].phase_number = current_phase_num
+                                self.gvm_states[project_id].current_phase = (
+                                    current_phase
+                                )
+                                self.gvm_states[project_id].phase_number = (
+                                    current_phase_num
+                                )
 
                         yield event
 
@@ -811,8 +936,8 @@ class ContainerManager:
 
     def _get_github_hunt_container_name(self, project_id: str) -> str:
         """Generate container name for a GitHub hunt"""
-        safe_id = re.sub(r'[^a-zA-Z0-9_.-]', '_', project_id)
-        return f"redamon-github-hunt-{safe_id}"
+        safe_id = re.sub(r"[^a-zA-Z0-9_.-]", "_", project_id)
+        return f"parallax-github-hunt-{safe_id}"
 
     async def get_github_hunt_status(self, project_id: str) -> GithubHuntState:
         """Get current status of a GitHub hunt process"""
@@ -834,11 +959,18 @@ class ContainerManager:
 
                         try:
                             container.remove()
-                            logger.info(f"Auto-removed finished GitHub hunt container for project {project_id}")
+                            logger.info(
+                                f"Auto-removed finished GitHub hunt container for project {project_id}"
+                            )
                         except Exception as e:
-                            logger.warning(f"Failed to auto-remove GitHub hunt container: {e}")
+                            logger.warning(
+                                f"Failed to auto-remove GitHub hunt container: {e}"
+                            )
                 except NotFound:
-                    if state.status not in (GithubHuntStatus.COMPLETED, GithubHuntStatus.ERROR):
+                    if state.status not in (
+                        GithubHuntStatus.COMPLETED,
+                        GithubHuntStatus.ERROR,
+                    ):
                         state.status = GithubHuntStatus.ERROR
                         state.error = "Container not found"
 
@@ -924,18 +1056,29 @@ class ContainerManager:
                 },
                 volumes={
                     # GitHub hunt output (read-write, for saving results)
-                    f"{github_hunt_path}/output": {"bind": "/app/github_secret_hunt/output", "mode": "rw"},
+                    f"{github_hunt_path}/output": {
+                        "bind": "/app/github_secret_hunt/output",
+                        "mode": "rw",
+                    },
                     # Mount github_secret_hunt source for development (no rebuild needed)
-                    f"{github_hunt_path}": {"bind": "/app/github_secret_hunt", "mode": "rw"},
+                    f"{github_hunt_path}": {
+                        "bind": "/app/github_secret_hunt",
+                        "mode": "rw",
+                    },
                     # Mount graph_db module for Neo4j integration
-                    f"{Path(github_hunt_path).parent}/graph_db": {"bind": "/app/graph_db", "mode": "ro"},
+                    f"{Path(github_hunt_path).parent}/graph_db": {
+                        "bind": "/app/graph_db",
+                        "mode": "ro",
+                    },
                 },
                 command="python github_secret_hunt/main.py",
             )
 
             state.container_id = container.id
             state.status = GithubHuntStatus.RUNNING
-            logger.info(f"Started GitHub hunt container {container.id} for project {project_id}")
+            logger.info(
+                f"Started GitHub hunt container {container.id} for project {project_id}"
+            )
 
         except Exception as e:
             state.status = GithubHuntStatus.ERROR
@@ -944,7 +1087,9 @@ class ContainerManager:
 
         return state
 
-    async def stop_github_hunt(self, project_id: str, timeout: int = 10) -> GithubHuntState:
+    async def stop_github_hunt(
+        self, project_id: str, timeout: int = 10
+    ) -> GithubHuntState:
         """Stop a running GitHub hunt process"""
         state = await self.get_github_hunt_status(project_id)
 
@@ -972,7 +1117,13 @@ class ContainerManager:
 
         return state
 
-    def _parse_github_hunt_log_line(self, line: str, current_phase: Optional[str], current_phase_num: Optional[int], timestamp: Optional[datetime] = None) -> GithubHuntLogEvent:
+    def _parse_github_hunt_log_line(
+        self,
+        line: str,
+        current_phase: Optional[str],
+        current_phase_num: Optional[int],
+        timestamp: Optional[datetime] = None,
+    ) -> GithubHuntLogEvent:
         """Parse a GitHub hunt log line and detect phase changes"""
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -982,7 +1133,7 @@ class ContainerManager:
         level = "info"
 
         # Strip ANSI escape codes
-        line = ANSI_ESCAPE.sub('', line)
+        line = ANSI_ESCAPE.sub("", line)
 
         # Detect log level
         if "[!]" in line or "[!!!]" in line:
@@ -1012,7 +1163,9 @@ class ContainerManager:
             level=level,
         )
 
-    async def stream_github_hunt_logs(self, project_id: str) -> AsyncGenerator[GithubHuntLogEvent, None]:
+    async def stream_github_hunt_logs(
+        self, project_id: str
+    ) -> AsyncGenerator[GithubHuntLogEvent, None]:
         """Stream logs from a GitHub hunt container"""
         state = await self.get_github_hunt_status(project_id)
 
@@ -1035,10 +1188,11 @@ class ContainerManager:
 
             def read_logs():
                 try:
-                    for line in container.logs(stream=True, follow=True, timestamps=True):
+                    for line in container.logs(
+                        stream=True, follow=True, timestamps=True
+                    ):
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(line),
-                            loop
+                            log_queue.put(line), loop
                         ).result(timeout=5)
                         try:
                             container.reload()
@@ -1051,8 +1205,7 @@ class ContainerManager:
                 finally:
                     try:
                         asyncio.run_coroutine_threadsafe(
-                            log_queue.put(None),
-                            loop
+                            log_queue.put(None), loop
                         ).result(timeout=5)
                     except Exception:
                         pass
@@ -1070,31 +1223,52 @@ class ContainerManager:
                         # Parse Docker timestamp prefix
                         docker_ts = None
                         log_text = decoded_line
-                        if len(decoded_line) > 30 and decoded_line[4] == '-' and decoded_line[10] == 'T':
-                            space_idx = decoded_line.find(' ')
+                        if (
+                            len(decoded_line) > 30
+                            and decoded_line[4] == "-"
+                            and decoded_line[10] == "T"
+                        ):
+                            space_idx = decoded_line.find(" ")
                             if space_idx > 0:
                                 ts_str = decoded_line[:space_idx]
                                 try:
-                                    ts_clean = ts_str.replace('Z', '+00:00')
-                                    dot_idx = ts_clean.find('.')
-                                    plus_idx = ts_clean.find('+', dot_idx) if dot_idx > 0 else -1
+                                    ts_clean = ts_str.replace("Z", "+00:00")
+                                    dot_idx = ts_clean.find(".")
+                                    plus_idx = (
+                                        ts_clean.find("+", dot_idx)
+                                        if dot_idx > 0
+                                        else -1
+                                    )
                                     if dot_idx > 0 and plus_idx > 0:
-                                        frac = ts_clean[dot_idx + 1:plus_idx][:6]
-                                        ts_clean = ts_clean[:dot_idx + 1] + frac + ts_clean[plus_idx:]
+                                        frac = ts_clean[dot_idx + 1 : plus_idx][:6]
+                                        ts_clean = (
+                                            ts_clean[: dot_idx + 1]
+                                            + frac
+                                            + ts_clean[plus_idx:]
+                                        )
                                     docker_ts = datetime.fromisoformat(ts_clean)
-                                    log_text = decoded_line[space_idx + 1:]
+                                    log_text = decoded_line[space_idx + 1 :]
                                 except (ValueError, OverflowError):
                                     pass
 
-                        event = self._parse_github_hunt_log_line(log_text, current_phase, current_phase_num, timestamp=docker_ts)
+                        event = self._parse_github_hunt_log_line(
+                            log_text,
+                            current_phase,
+                            current_phase_num,
+                            timestamp=docker_ts,
+                        )
 
                         if event.is_phase_start:
                             current_phase = event.phase
                             current_phase_num = event.phase_number
 
                             if project_id in self.github_hunt_states:
-                                self.github_hunt_states[project_id].current_phase = current_phase
-                                self.github_hunt_states[project_id].phase_number = current_phase_num
+                                self.github_hunt_states[project_id].current_phase = (
+                                    current_phase
+                                )
+                                self.github_hunt_states[project_id].phase_number = (
+                                    current_phase_num
+                                )
 
                         yield event
 
@@ -1121,4 +1295,8 @@ class ContainerManager:
 
     def get_github_hunt_running_count(self) -> int:
         """Get count of running GitHub hunt processes"""
-        return sum(1 for s in self.github_hunt_states.values() if s.status == GithubHuntStatus.RUNNING)
+        return sum(
+            1
+            for s in self.github_hunt_states.values()
+            if s.status == GithubHuntStatus.RUNNING
+        )

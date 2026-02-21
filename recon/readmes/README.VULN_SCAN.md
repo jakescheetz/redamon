@@ -1,10 +1,10 @@
-# RedAmon - Nuclei Vulnerability Scanner
+# parallax - Nuclei Vulnerability Scanner
 
 ## Complete Technical Documentation
 
-> **Module:** `recon/nuclei_scan.py`  
-> **Purpose:** Template-based web application vulnerability scanning using ProjectDiscovery's Nuclei  
-> **Author:** RedAmon Security Suite
+> **Module:** `recon/nuclei_scan.py`
+> **Purpose:** Template-based web application vulnerability scanning using ProjectDiscovery's Nuclei
+> **Author:** parallax Security Suite
 
 ---
 
@@ -28,7 +28,7 @@
 
 ## Overview
 
-The `nuclei_scan.py` module integrates ProjectDiscovery's Nuclei scanner into RedAmon's reconnaissance pipeline. Nuclei is a fast, template-based vulnerability scanner that excels at web application security testing.
+The `nuclei_scan.py` module integrates ProjectDiscovery's Nuclei scanner into parallax's reconnaissance pipeline. Nuclei is a fast, template-based vulnerability scanner that excels at web application security testing.
 
 **⚠️ Important:** Nuclei runs exclusively via Docker. No native installation is supported.
 
@@ -873,7 +873,7 @@ info:
 
 ### Automatic Template Updates
 
-RedAmon automatically updates templates when `NUCLEI_AUTO_UPDATE_TEMPLATES = True` (default):
+parallax automatically updates templates when `NUCLEI_AUTO_UPDATE_TEMPLATES = True` (default):
 
 ```python
 # In project settings
@@ -1132,7 +1132,7 @@ technologies/
       "total_hostnames": 5,
       "total_ips": 2
     },
-    
+
     "discovered_urls": {
       "base_urls": [
         "http://example.com",
@@ -1152,7 +1152,7 @@ technologies/
         "..."
       ]
     },
-    
+
     "by_target": {
       "https://example.com": {
         "findings": [
@@ -1188,7 +1188,7 @@ technologies/
         }
       }
     },
-    
+
     "summary": {
       "total_findings": 50,
       "critical": 1,
@@ -1198,7 +1198,7 @@ technologies/
       "info": 19,
       "unknown": 0
     },
-    
+
     "vulnerabilities": {
       "total": 31,
       "critical": [
@@ -1218,7 +1218,7 @@ technologies/
       "info": [...],
       "unknown": []
     },
-    
+
     "all_cves": [
       {
         "id": "CVE-2021-44228",
@@ -1231,7 +1231,7 @@ technologies/
         "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-45046"
       }
     ],
-    
+
     "by_category": {
       "cve": [...],
       "xss": [...],
@@ -1239,7 +1239,7 @@ technologies/
       "misconfiguration": [...],
       "exposure": [...]
     },
-    
+
     "by_template": {
       "CVE-2021-44228": {
         "name": "Apache Log4j RCE",
@@ -1589,7 +1589,7 @@ NUCLEI_EXCLUDE_TEMPLATES = ["fuzzing"]
 
 ## Custom Security Checks
 
-In addition to Nuclei templates, RedAmon includes custom Python-based security checks that detect vulnerabilities **not covered by Nuclei**.
+In addition to Nuclei templates, parallax includes custom Python-based security checks that detect vulnerabilities **not covered by Nuclei**.
 
 ### Why Custom Checks?
 
@@ -1690,4 +1690,4 @@ Custom security check findings are stored in `security_checks`:
 
 ---
 
-*Documentation generated for RedAmon v1.0 - Nuclei Scanner Module with Katana DAST Integration*
+*Documentation generated for parallax v1.0 - Nuclei Scanner Module with Katana DAST Integration*

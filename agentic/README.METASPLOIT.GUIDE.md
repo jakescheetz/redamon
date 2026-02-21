@@ -1,11 +1,11 @@
 # Metasploit Framework - Complete Beginner's Guide
 
-This guide covers everything you need to know about using Metasploit Framework through the terminal. It's written for beginners who want to understand exploitation testing as part of the RedAmon security assessment workflow.
+This guide covers everything you need to know about using Metasploit Framework through the terminal. It's written for beginners who want to understand exploitation testing as part of the parallax security assessment workflow.
 
 ## Table of Contents
 
 1. [What is Metasploit?](#what-is-metasploit)
-2. [When to Use Metasploit (in RedAmon Workflow)](#when-to-use-metasploit-in-redamon-workflow)
+2. [When to Use Metasploit (in parallax Workflow)](#when-to-use-metasploit-in-parallax-workflow)
 3. [Getting Started](#getting-started)
 4. [Understanding Modules](#understanding-modules)
 5. [Metasploit Operations Reference](#metasploit-operations-reference)
@@ -43,9 +43,9 @@ Metasploit Framework is the world's most widely used penetration testing tool. T
 
 ---
 
-## When to Use Metasploit (in RedAmon Workflow)
+## When to Use Metasploit (in parallax Workflow)
 
-In the RedAmon security assessment pipeline, Metasploit comes **AFTER** reconnaissance:
+In the parallax security assessment pipeline, Metasploit comes **AFTER** reconnaissance:
 
 ```
 RECON PHASE (what you've already done):
@@ -86,14 +86,14 @@ msfconsole -q
 msfconsole -q -x "search apache; exit"
 ```
 
-### In Docker (RedAmon Setup)
+### In Docker (parallax Setup)
 
 ```bash
 # Enter interactive Metasploit console
-docker exec -it redamon-kali msfconsole
+docker exec -it parallax-kali msfconsole
 
 # Run a single command
-docker exec redamon-kali msfconsole -q -x "search type:exploit apache; exit"
+docker exec parallax-kali msfconsole -q -x "search type:exploit apache; exit"
 ```
 
 ### Basic Navigation
@@ -800,7 +800,7 @@ exit
 
 ### Workflow 4: Brute Force (THC Hydra — preferred)
 
-> **Note:** RedAmon now uses THC Hydra (`execute_hydra`) for brute force attacks instead of Metasploit auxiliary modules. Hydra is faster, stateless, and supports 50+ protocols.
+> **Note:** parallax now uses THC Hydra (`execute_hydra`) for brute force attacks instead of Metasploit auxiliary modules. Hydra is faster, stateless, and supports 50+ protocols.
 
 ```bash
 # SSH brute force with Hydra (via execute_hydra MCP tool)
@@ -883,7 +883,7 @@ run -j
 4. **Know Your Exit** - Have a plan to clean up after testing
 5. **Don't Cause Damage** - Avoid DoS, data destruction, or production impact
 
-### In RedAmon Context
+### In parallax Context
 
 - Use `--dry-run` options when available
 - Prefer `check` before `exploit`
@@ -994,4 +994,4 @@ sessions -k 1  # Kill
 
 ---
 
-This guide covers the fundamentals of Metasploit for the RedAmon exploitation workflow. Remember: with great power comes great responsibility. Always test ethically and legally!
+This guide covers the fundamentals of Metasploit for the parallax exploitation workflow. Remember: with great power comes great responsibility. Always test ethically and legally!

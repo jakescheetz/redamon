@@ -1,4 +1,4 @@
-# Neo4j Graph Database for RedAmon
+# Neo4j Graph Database for parallax
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ docker compose ps
 docker compose restart
 
 # Enter container shell
-docker exec -it redamon-neo4j bash
+docker exec -it parallax-neo4j bash
 ```
 
 ## Cypher Queries
@@ -129,7 +129,7 @@ Use `update_graph_from_json.py` to run graph updates independently from the main
 
 ```bash
 # Run from project root
-cd "/home/samuele/Progetti didattici/RedAmon"
+cd "/home/samuele/Progetti didattici/parallax"
 python -m graph_db.update_graph_from_json
 
 # Or run directly

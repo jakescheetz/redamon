@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Kali Linux sandbox with all penetration testing tools and MCP servers
@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: kali-sandbox/Dockerfile
       network: host
-    container_name: redamon-kali
+    container_name: parallax-kali
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -23,12 +23,12 @@ services:
     security_opt:
       - seccomp:unconfined
     ports:
-      - "8000:8000"  # network_recon MCP server (curl + naabu)
-      - "8002:8002"  # nuclei MCP server
-      - "8003:8003"  # metasploit MCP server
-      - "8004:8004"  # nmap MCP server
-      - "8013:8013"  # metasploit progress HTTP endpoint
-      - "4444:4444"  # Metasploit reverse shell listener
+      - "8000:8000" # network_recon MCP server (curl + naabu)
+      - "8002:8002" # nuclei MCP server
+      - "8003:8003" # metasploit MCP server
+      - "8004:8004" # nmap MCP server
+      - "8013:8013" # metasploit progress HTTP endpoint
+      - "4444:4444" # Metasploit reverse shell listener
     volumes:
       # Mount servers directory for development (hot reload)
       - ./servers:/opt/mcp_servers
@@ -53,7 +53,13 @@ services:
     restart: unless-stopped
     # Health check
     healthcheck:
-      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8000)); s.close()"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import socket; s=socket.socket(); s.connect(('localhost', 8000)); s.close()",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

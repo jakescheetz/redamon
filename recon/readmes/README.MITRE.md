@@ -1,10 +1,10 @@
-# RedAmon - MITRE CWE/CAPEC Enrichment Module
+# parallax - MITRE CWE/CAPEC Enrichment Module
 
 ## Complete Technical Documentation
 
 > **Module:** `recon/add_mitre.py` (automatically called by `vuln_scan`)
 > **Purpose:** Enrich CVE data with CWE weaknesses and CAPEC attack patterns
-> **Author:** RedAmon Security Suite
+> **Author:** parallax Security Suite
 
 **Note:** MITRE CWE/CAPEC enrichment is automatically integrated into the `vuln_scan` module.
 When you run `vuln_scan`, all discovered CVEs are automatically enriched with CWE weaknesses and CAPEC attack patterns.
@@ -253,7 +253,7 @@ Each CVE in the output receives a `mitre_attack` field with a hierarchical CWE s
     "enriched": true,
     "enrichment_timestamp": "2026-01-01T23:04:14",
     "source": "CVE2CAPEC",
-    
+
     "cwe_hierarchy": {
       "id": "CWE-284",
       "url": "https://cwe.mitre.org/data/definitions/284.html",

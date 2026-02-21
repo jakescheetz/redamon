@@ -1,5 +1,5 @@
 """
-RedAmon - Vulnerability Scan Helper Functions
+parallax - Vulnerability Scan Helper Functions
 =============================================
 Security check functions for detecting misconfigurations and vulnerabilities.
 These are custom checks that complement Nuclei template scanning.
@@ -18,6 +18,7 @@ import concurrent.futures
 
 # Suppress SSL warnings for security testing
 import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
@@ -25,20 +26,22 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Direct IP Access Security Checks
 # =============================================================================
 
+
 def _is_ip_address(host: str) -> bool:
     """Check if a string is an IP address (v4 or v6)."""
     import re
+
     # IPv4 pattern
-    ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
     # IPv6 pattern (simplified)
-    ipv6_pattern = r'^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$'
+    ipv6_pattern = r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$"
     return bool(re.match(ipv4_pattern, host) or re.match(ipv6_pattern, host))
 
 
 def _analyze_redirect_chain(ip: str, scheme: str, timeout: int = 10) -> Dict:
     """
     Analyze redirect behavior when accessing IP directly.
-    
+
     Returns:
         Dict with redirect analysis:
         - redirects: bool - whether it redirects
@@ -56,7 +59,7 @@ def _analyze_redirect_chain(ip: str, scheme: str, timeout: int = 10) -> Dict:
         "redirect_count": 0,
         "initial_status_code": None,
     }
-    
+
     try:
         # First, check initial response without following redirects
         initial_response = requests.get(
@@ -64,14 +67,16 @@ def _analyze_redirect_chain(ip: str, scheme: str, timeout: int = 10) -> Dict:
             timeout=timeout,
             allow_redirects=False,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
         result["initial_status_code"] = initial_response.status_code
-        
+
         # Check if it's a redirect
         if initial_response.status_code in [301, 302, 303, 307, 308]:
             result["redirects"] = True
-            
+
             # Now follow redirects to see where it goes
             try:
                 final_response = requests.get(
@@ -79,27 +84,30 @@ def _analyze_redirect_chain(ip: str, scheme: str, timeout: int = 10) -> Dict:
                     timeout=timeout,
                     allow_redirects=True,
                     verify=False,
-                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+                    },
                 )
                 result["final_url"] = final_response.url
                 result["redirect_count"] = len(final_response.history)
-                
+
                 # Extract host from final URL
                 from urllib.parse import urlparse
+
                 parsed = urlparse(final_response.url)
-                final_host = parsed.netloc.split(':')[0]  # Remove port if present
+                final_host = parsed.netloc.split(":")[0]  # Remove port if present
                 result["final_host"] = final_host
-                
+
                 # Check if final destination is a hostname (not an IP)
                 result["redirects_to_hostname"] = not _is_ip_address(final_host)
-                
+
             except requests.exceptions.RequestException:
                 # If following redirects fails, we still know it redirects
                 pass
-    
+
     except requests.exceptions.RequestException:
         pass
-    
+
     return result
 
 
@@ -107,7 +115,7 @@ def check_direct_ip_http(ip: str, timeout: int = 10) -> Optional[Dict]:
     """
     Check if HTTP is accessible directly via IP without TLS.
     This can indicate WAF bypass opportunities or exposed services.
-    
+
     Intelligently handles redirects:
     - If IP redirects to a hostname: Low/Info severity (mitigated)
     - If IP serves content or redirects to same IP: Medium severity
@@ -125,13 +133,15 @@ def check_direct_ip_http(ip: str, timeout: int = 10) -> Optional[Dict]:
             url,
             timeout=timeout,
             allow_redirects=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         if response.status_code < 500:
             # Analyze redirect behavior
             redirect_info = _analyze_redirect_chain(ip, "http", timeout)
-            
+
             # Determine severity based on redirect behavior
             if redirect_info["redirects"] and redirect_info["redirects_to_hostname"]:
                 # Redirects to a hostname - mitigated, lower severity
@@ -162,8 +172,10 @@ def check_direct_ip_http(ip: str, timeout: int = 10) -> Optional[Dict]:
                     "Server serves content directly on IP without redirecting to hostname. "
                     "This may allow attackers to bypass WAF/CDN protections or intercept traffic."
                 )
-                evidence = f"HTTP {response.status_code} response - content served directly"
-            
+                evidence = (
+                    f"HTTP {response.status_code} response - content served directly"
+                )
+
             return {
                 "type": "direct_ip_http",
                 "severity": severity,
@@ -176,7 +188,9 @@ def check_direct_ip_http(ip: str, timeout: int = 10) -> Optional[Dict]:
                 "evidence": evidence,
                 "redirects": redirect_info["redirects"],
                 "redirects_to_hostname": redirect_info["redirects_to_hostname"],
-                "final_url": redirect_info["final_url"] if redirect_info["redirects"] else None,
+                "final_url": (
+                    redirect_info["final_url"] if redirect_info["redirects"] else None
+                ),
             }
     except requests.exceptions.RequestException:
         pass
@@ -188,7 +202,7 @@ def check_direct_ip_https(ip: str, timeout: int = 10) -> Optional[Dict]:
     """
     Check if HTTPS is accessible directly via IP.
     Less severe than HTTP but still indicates direct IP exposure.
-    
+
     Intelligently handles redirects:
     - If IP redirects to a hostname: Info severity (mitigated)
     - If IP serves content or redirects to same IP: Low severity
@@ -207,13 +221,15 @@ def check_direct_ip_https(ip: str, timeout: int = 10) -> Optional[Dict]:
             timeout=timeout,
             allow_redirects=False,
             verify=False,  # Ignore cert errors for IP-based access
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         if response.status_code < 500:
             # Analyze redirect behavior
             redirect_info = _analyze_redirect_chain(ip, "https", timeout)
-            
+
             # Determine severity based on redirect behavior
             if redirect_info["redirects"] and redirect_info["redirects_to_hostname"]:
                 # Redirects to a hostname - mitigated, info only
@@ -244,8 +260,10 @@ def check_direct_ip_https(ip: str, timeout: int = 10) -> Optional[Dict]:
                     "Server serves content directly on IP without redirecting to hostname. "
                     "While encrypted, this may allow bypassing CDN/WAF protections."
                 )
-                evidence = f"HTTPS {response.status_code} response - content served directly"
-            
+                evidence = (
+                    f"HTTPS {response.status_code} response - content served directly"
+                )
+
             return {
                 "type": "direct_ip_https",
                 "severity": severity,
@@ -258,7 +276,9 @@ def check_direct_ip_https(ip: str, timeout: int = 10) -> Optional[Dict]:
                 "evidence": evidence,
                 "redirects": redirect_info["redirects"],
                 "redirects_to_hostname": redirect_info["redirects_to_hostname"],
-                "final_url": redirect_info["final_url"] if redirect_info["redirects"] else None,
+                "final_url": (
+                    redirect_info["final_url"] if redirect_info["redirects"] else None
+                ),
             }
     except requests.exceptions.RequestException:
         pass
@@ -298,7 +318,7 @@ def check_ip_api_exposed(ip: str, timeout: int = 10) -> Optional[Dict]:
                 headers={
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
                     "Accept": "application/json",
-                }
+                },
             )
 
             # Look for API-like responses (JSON or specific status codes)
@@ -306,13 +326,15 @@ def check_ip_api_exposed(ip: str, timeout: int = 10) -> Optional[Dict]:
             is_json = "application/json" in content_type or "text/json" in content_type
 
             # 200 OK with JSON or 401/403 (auth required) indicates API presence
-            if response.status_code in [200, 401, 403] and (is_json or response.status_code in [401, 403]):
+            if response.status_code in [200, 401, 403] and (
+                is_json or response.status_code in [401, 403]
+            ):
                 return {
                     "type": "ip_api_exposed",
                     "severity": "high",
                     "name": "API Endpoint Exposed on IP",
                     "description": f"API endpoint {path} is accessible via direct IP {ip} without TLS. "
-                                  "This exposes the API to interception and WAF bypass attacks.",
+                    "This exposes the API to interception and WAF bypass attacks.",
                     "url": url,
                     "matched_ip": ip,
                     "path": path,
@@ -326,11 +348,7 @@ def check_ip_api_exposed(ip: str, timeout: int = 10) -> Optional[Dict]:
     return None
 
 
-def check_waf_bypass(
-    subdomain: str,
-    ip: str,
-    timeout: int = 10
-) -> Optional[Dict]:
+def check_waf_bypass(subdomain: str, ip: str, timeout: int = 10) -> Optional[Dict]:
     """
     Check if WAF can be bypassed by accessing the origin server directly via IP.
     Compares responses from subdomain vs direct IP access.
@@ -351,7 +369,9 @@ def check_waf_bypass(
             timeout=timeout,
             allow_redirects=False,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         # Try accessing via direct IP with Host header
@@ -364,7 +384,7 @@ def check_waf_bypass(
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0",
                 "Host": subdomain,  # Set Host header to bypass virtual hosting
-            }
+            },
         )
 
         # Check if both return similar content (WAF bypass)
@@ -372,7 +392,14 @@ def check_waf_bypass(
         ip_server = ip_response.headers.get("Server", "").lower()
 
         # Detect if subdomain is behind WAF/CDN
-        waf_indicators = ["cloudflare", "akamai", "cloudfront", "fastly", "imperva", "sucuri"]
+        waf_indicators = [
+            "cloudflare",
+            "akamai",
+            "cloudfront",
+            "fastly",
+            "imperva",
+            "sucuri",
+        ]
         subdomain_has_waf = any(waf in subdomain_server for waf in waf_indicators)
         ip_has_waf = any(waf in ip_server for waf in waf_indicators)
 
@@ -383,8 +410,8 @@ def check_waf_bypass(
                 "severity": "high",
                 "name": "WAF Bypass via Direct IP Access",
                 "description": f"The subdomain {subdomain} is protected by WAF ({subdomain_server}), "
-                              f"but the origin server at {ip} is directly accessible. "
-                              "This allows bypassing WAF protections.",
+                f"but the origin server at {ip} is directly accessible. "
+                "This allows bypassing WAF protections.",
                 "url": ip_url,
                 "matched_ip": ip,
                 "subdomain": subdomain,
@@ -402,7 +429,7 @@ def check_waf_bypass(
                     "severity": "medium",
                     "name": "Origin Server Directly Accessible",
                     "description": f"The origin server for {subdomain} is directly accessible at {ip}. "
-                                  "Consider restricting access to only allow traffic from CDN/WAF.",
+                    "Consider restricting access to only allow traffic from CDN/WAF.",
                     "url": ip_url,
                     "matched_ip": ip,
                     "subdomain": subdomain,
@@ -419,7 +446,7 @@ def run_direct_ip_checks(
     subdomains_to_ips: Dict[str, List[str]],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run all enabled direct IP access security checks.
@@ -481,7 +508,10 @@ def run_direct_ip_checks(
 # TLS/SSL Security Checks
 # =============================================================================
 
-def get_ssl_certificate(hostname: str, port: int = 443, timeout: int = 10) -> Optional[Dict]:
+
+def get_ssl_certificate(
+    hostname: str, port: int = 443, timeout: int = 10
+) -> Optional[Dict]:
     """
     Retrieve SSL certificate information for a host.
 
@@ -529,10 +559,7 @@ def parse_cert_date(date_str: str) -> Optional[datetime]:
 
 
 def check_tls_expiring_soon(
-    hostname: str,
-    port: int = 443,
-    days_threshold: int = 30,
-    timeout: int = 10
+    hostname: str, port: int = 443, days_threshold: int = 30, timeout: int = 10
 ) -> Optional[Dict]:
     """
     Check if TLS certificate is expiring soon.
@@ -565,7 +592,7 @@ def check_tls_expiring_soon(
                     "severity": "low",
                     "name": "TLS Certificate Expiring Soon",
                     "description": f"The TLS certificate for {hostname} will expire in {days_until_expiry} days ({not_after}). "
-                                  "Consider renewing the certificate to avoid service disruption.",
+                    "Consider renewing the certificate to avoid service disruption.",
                     "url": f"https://{hostname}:{port}",
                     "hostname": hostname,
                     "port": port,
@@ -582,7 +609,7 @@ def run_tls_checks(
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
     expiry_days_threshold: int = 30,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run TLS expiring soon check (other TLS checks are covered by Nuclei).
@@ -603,7 +630,9 @@ def run_tls_checks(
         host_findings = []
 
         if enabled_checks.get("tls_expiring_soon", True):
-            result = check_tls_expiring_soon(hostname, days_threshold=expiry_days_threshold, timeout=timeout)
+            result = check_tls_expiring_soon(
+                hostname, days_threshold=expiry_days_threshold, timeout=timeout
+            )
             if result:
                 host_findings.append(result)
 
@@ -634,7 +663,7 @@ SECURITY_HEADERS = {
         "severity": "low",
         "name": "Referrer-Policy Header Missing",
         "description": "The Referrer-Policy header is not set. "
-                      "This may leak sensitive URL information to third-party sites.",
+        "This may leak sensitive URL information to third-party sites.",
         "recommendation": "Set Referrer-Policy to 'strict-origin-when-cross-origin' or 'no-referrer'.",
     },
     "Permissions-Policy": {
@@ -642,7 +671,7 @@ SECURITY_HEADERS = {
         "severity": "low",
         "name": "Permissions-Policy Header Missing",
         "description": "The Permissions-Policy (formerly Feature-Policy) header is not set. "
-                      "This header controls which browser features can be used.",
+        "This header controls which browser features can be used.",
         "recommendation": "Implement Permissions-Policy to restrict access to sensitive browser APIs.",
     },
     "Cross-Origin-Opener-Policy": {
@@ -650,7 +679,7 @@ SECURITY_HEADERS = {
         "severity": "info",
         "name": "Cross-Origin-Opener-Policy Header Missing",
         "description": "The Cross-Origin-Opener-Policy header is not set. "
-                      "This header helps prevent cross-origin attacks like Spectre.",
+        "This header helps prevent cross-origin attacks like Spectre.",
         "recommendation": "Set Cross-Origin-Opener-Policy to 'same-origin' for enhanced isolation.",
     },
     "Cross-Origin-Resource-Policy": {
@@ -658,7 +687,7 @@ SECURITY_HEADERS = {
         "severity": "info",
         "name": "Cross-Origin-Resource-Policy Header Missing",
         "description": "The Cross-Origin-Resource-Policy header is not set. "
-                      "This header prevents other origins from loading your resources.",
+        "This header prevents other origins from loading your resources.",
         "recommendation": "Set Cross-Origin-Resource-Policy to 'same-origin' or 'same-site'.",
     },
     "Cross-Origin-Embedder-Policy": {
@@ -666,7 +695,7 @@ SECURITY_HEADERS = {
         "severity": "info",
         "name": "Cross-Origin-Embedder-Policy Header Missing",
         "description": "The Cross-Origin-Embedder-Policy header is not set. "
-                      "Required for SharedArrayBuffer and high-resolution timers.",
+        "Required for SharedArrayBuffer and high-resolution timers.",
         "recommendation": "Set Cross-Origin-Embedder-Policy to 'require-corp' if using advanced features.",
     },
 }
@@ -676,7 +705,7 @@ def check_security_headers(
     hostname: str,
     port: int = 443,
     timeout: int = 10,
-    enabled_headers: Dict[str, bool] = None
+    enabled_headers: Dict[str, bool] = None,
 ) -> List[Dict]:
     """
     Check for missing security headers on a web application.
@@ -694,7 +723,11 @@ def check_security_headers(
 
     # Determine protocol based on port
     protocol = "https" if port == 443 else "http"
-    url = f"{protocol}://{hostname}" if port in [80, 443] else f"{protocol}://{hostname}:{port}"
+    url = (
+        f"{protocol}://{hostname}"
+        if port in [80, 443]
+        else f"{protocol}://{hostname}:{port}"
+    )
 
     try:
         response = requests.get(
@@ -702,7 +735,9 @@ def check_security_headers(
             timeout=timeout,
             allow_redirects=True,
             verify=False,  # Allow self-signed for testing
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         # Only check successful responses
@@ -721,18 +756,20 @@ def check_security_headers(
             header_lower = header_name.lower()
 
             if header_lower not in response_headers:
-                findings.append({
-                    "type": check_name,
-                    "severity": header_info["severity"],
-                    "name": header_info["name"],
-                    "description": header_info["description"],
-                    "url": url,
-                    "hostname": hostname,
-                    "port": port,
-                    "missing_header": header_name,
-                    "recommendation": header_info["recommendation"],
-                    "evidence": f"Header '{header_name}' not present in response",
-                })
+                findings.append(
+                    {
+                        "type": check_name,
+                        "severity": header_info["severity"],
+                        "name": header_info["name"],
+                        "description": header_info["description"],
+                        "url": url,
+                        "hostname": hostname,
+                        "port": port,
+                        "missing_header": header_name,
+                        "recommendation": header_info["recommendation"],
+                        "evidence": f"Header '{header_name}' not present in response",
+                    }
+                )
 
     except requests.exceptions.RequestException:
         pass
@@ -740,7 +777,9 @@ def check_security_headers(
     return findings
 
 
-def check_cache_control_missing(hostname: str, port: int = 443, timeout: int = 10) -> Optional[Dict]:
+def check_cache_control_missing(
+    hostname: str, port: int = 443, timeout: int = 10
+) -> Optional[Dict]:
     """
     Check for missing or weak Cache-Control headers on sensitive pages.
 
@@ -753,7 +792,11 @@ def check_cache_control_missing(hostname: str, port: int = 443, timeout: int = 1
         Vulnerability dict if cache control is missing/weak, None otherwise
     """
     protocol = "https" if port == 443 else "http"
-    url = f"{protocol}://{hostname}" if port in [80, 443] else f"{protocol}://{hostname}:{port}"
+    url = (
+        f"{protocol}://{hostname}"
+        if port in [80, 443]
+        else f"{protocol}://{hostname}:{port}"
+    )
 
     try:
         response = requests.get(
@@ -761,7 +804,9 @@ def check_cache_control_missing(hostname: str, port: int = 443, timeout: int = 1
             timeout=timeout,
             allow_redirects=True,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         if response.status_code != 200:
@@ -782,7 +827,7 @@ def check_cache_control_missing(hostname: str, port: int = 443, timeout: int = 1
                 "severity": "info",
                 "name": "Cache-Control Header Missing or Weak",
                 "description": f"The server at {hostname} does not set proper Cache-Control headers. "
-                              "Sensitive pages may be cached by proxies or browsers.",
+                "Sensitive pages may be cached by proxies or browsers.",
                 "url": url,
                 "hostname": hostname,
                 "port": port,
@@ -802,6 +847,7 @@ def check_cache_control_missing(hostname: str, port: int = 443, timeout: int = 1
 # Authentication Security Checks
 # =============================================================================
 
+
 def check_login_no_https(hostname: str, timeout: int = 10) -> List[Dict]:
     """
     Check if login forms are served over HTTP (insecure).
@@ -817,9 +863,18 @@ def check_login_no_https(hostname: str, timeout: int = 10) -> List[Dict]:
 
     # Common login paths to check
     login_paths = [
-        "/login", "/signin", "/sign-in", "/auth", "/authenticate",
-        "/admin", "/admin/login", "/wp-login.php", "/user/login",
-        "/account/login", "/members/login", "/portal/login",
+        "/login",
+        "/signin",
+        "/sign-in",
+        "/auth",
+        "/authenticate",
+        "/admin",
+        "/admin/login",
+        "/wp-login.php",
+        "/user/login",
+        "/account/login",
+        "/members/login",
+        "/portal/login",
     ]
 
     # Check HTTP (insecure)
@@ -830,33 +885,39 @@ def check_login_no_https(hostname: str, timeout: int = 10) -> List[Dict]:
                 url,
                 timeout=timeout,
                 allow_redirects=False,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+                },
             )
 
             # Check if response contains login form indicators
             if response.status_code == 200:
                 content = response.text.lower()
-                has_login_form = any([
-                    'type="password"' in content,
-                    "type='password'" in content,
-                    'name="password"' in content,
-                    'id="password"' in content,
-                    '<form' in content and 'login' in content,
-                ])
+                has_login_form = any(
+                    [
+                        'type="password"' in content,
+                        "type='password'" in content,
+                        'name="password"' in content,
+                        'id="password"' in content,
+                        "<form" in content and "login" in content,
+                    ]
+                )
 
                 if has_login_form:
-                    findings.append({
-                        "type": "login_no_https",
-                        "severity": "high",
-                        "name": "Login Form Served Over HTTP",
-                        "description": f"A login form at {url} is served over unencrypted HTTP. "
-                                      "User credentials can be intercepted by attackers.",
-                        "url": url,
-                        "hostname": hostname,
-                        "path": path,
-                        "evidence": "Login form with password field found on HTTP",
-                        "recommendation": "Serve all login pages exclusively over HTTPS and redirect HTTP to HTTPS.",
-                    })
+                    findings.append(
+                        {
+                            "type": "login_no_https",
+                            "severity": "high",
+                            "name": "Login Form Served Over HTTP",
+                            "description": f"A login form at {url} is served over unencrypted HTTP. "
+                            "User credentials can be intercepted by attackers.",
+                            "url": url,
+                            "hostname": hostname,
+                            "path": path,
+                            "evidence": "Login form with password field found on HTTP",
+                            "recommendation": "Serve all login pages exclusively over HTTPS and redirect HTTP to HTTPS.",
+                        }
+                    )
                     break  # Found one, no need to check more paths
 
         except requests.exceptions.RequestException:
@@ -885,55 +946,79 @@ def check_session_cookies(hostname: str, timeout: int = 10) -> List[Dict]:
             timeout=timeout,
             allow_redirects=True,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         # Check Set-Cookie headers
-        set_cookies = response.headers.get_all('Set-Cookie') if hasattr(response.headers, 'get_all') else []
+        set_cookies = (
+            response.headers.get_all("Set-Cookie")
+            if hasattr(response.headers, "get_all")
+            else []
+        )
         if not set_cookies:
             # Try alternative method
-            set_cookies = [v for k, v in response.headers.items() if k.lower() == 'set-cookie']
+            set_cookies = [
+                v for k, v in response.headers.items() if k.lower() == "set-cookie"
+            ]
 
         # Also check response.cookies
         for cookie in response.cookies:
             cookie_str = f"{cookie.name}={cookie.value}"
 
             # Session-like cookie names
-            session_indicators = ['session', 'sess', 'sid', 'token', 'auth', 'jwt', 'phpsessid', 'jsessionid', 'asp.net_sessionid']
-            is_session_cookie = any(ind in cookie.name.lower() for ind in session_indicators)
+            session_indicators = [
+                "session",
+                "sess",
+                "sid",
+                "token",
+                "auth",
+                "jwt",
+                "phpsessid",
+                "jsessionid",
+                "asp.net_sessionid",
+            ]
+            is_session_cookie = any(
+                ind in cookie.name.lower() for ind in session_indicators
+            )
 
             if is_session_cookie:
                 # Check Secure flag
                 if not cookie.secure:
-                    findings.append({
-                        "type": "session_no_secure",
-                        "severity": "medium",
-                        "name": "Session Cookie Missing Secure Flag",
-                        "description": f"The session cookie '{cookie.name}' does not have the Secure flag. "
-                                      "It can be transmitted over unencrypted HTTP connections.",
-                        "url": url,
-                        "hostname": hostname,
-                        "cookie_name": cookie.name,
-                        "evidence": f"Cookie '{cookie.name}' missing Secure attribute",
-                        "recommendation": "Add the Secure flag to all session cookies.",
-                    })
+                    findings.append(
+                        {
+                            "type": "session_no_secure",
+                            "severity": "medium",
+                            "name": "Session Cookie Missing Secure Flag",
+                            "description": f"The session cookie '{cookie.name}' does not have the Secure flag. "
+                            "It can be transmitted over unencrypted HTTP connections.",
+                            "url": url,
+                            "hostname": hostname,
+                            "cookie_name": cookie.name,
+                            "evidence": f"Cookie '{cookie.name}' missing Secure attribute",
+                            "recommendation": "Add the Secure flag to all session cookies.",
+                        }
+                    )
 
                 # Check HttpOnly flag
                 # Note: requests library doesn't expose HttpOnly directly, check raw header
-                raw_cookie = response.headers.get('Set-Cookie', '')
-                if cookie.name in raw_cookie and 'httponly' not in raw_cookie.lower():
-                    findings.append({
-                        "type": "session_no_httponly",
-                        "severity": "medium",
-                        "name": "Session Cookie Missing HttpOnly Flag",
-                        "description": f"The session cookie '{cookie.name}' does not have the HttpOnly flag. "
-                                      "It can be accessed by JavaScript, enabling XSS-based session theft.",
-                        "url": url,
-                        "hostname": hostname,
-                        "cookie_name": cookie.name,
-                        "evidence": f"Cookie '{cookie.name}' missing HttpOnly attribute",
-                        "recommendation": "Add the HttpOnly flag to all session cookies.",
-                    })
+                raw_cookie = response.headers.get("Set-Cookie", "")
+                if cookie.name in raw_cookie and "httponly" not in raw_cookie.lower():
+                    findings.append(
+                        {
+                            "type": "session_no_httponly",
+                            "severity": "medium",
+                            "name": "Session Cookie Missing HttpOnly Flag",
+                            "description": f"The session cookie '{cookie.name}' does not have the HttpOnly flag. "
+                            "It can be accessed by JavaScript, enabling XSS-based session theft.",
+                            "url": url,
+                            "hostname": hostname,
+                            "cookie_name": cookie.name,
+                            "evidence": f"Cookie '{cookie.name}' missing HttpOnly attribute",
+                            "recommendation": "Add the HttpOnly flag to all session cookies.",
+                        }
+                    )
 
     except requests.exceptions.RequestException:
         pass
@@ -959,18 +1044,20 @@ def check_basic_auth_no_tls(hostname: str, timeout: int = 10) -> Optional[Dict]:
             url,
             timeout=timeout,
             allow_redirects=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         # Check for WWW-Authenticate header with Basic auth
-        www_auth = response.headers.get('WWW-Authenticate', '')
-        if 'basic' in www_auth.lower():
+        www_auth = response.headers.get("WWW-Authenticate", "")
+        if "basic" in www_auth.lower():
             return {
                 "type": "basic_auth_no_tls",
                 "severity": "high",
                 "name": "Basic Authentication Over HTTP",
                 "description": f"The server at {hostname} uses Basic Authentication over unencrypted HTTP. "
-                              "Credentials are sent in base64 encoding which can be easily decoded.",
+                "Credentials are sent in base64 encoding which can be easily decoded.",
                 "url": url,
                 "hostname": hostname,
                 "www_authenticate": www_auth,
@@ -988,7 +1075,7 @@ def run_auth_checks(
     hostnames: List[str],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run all enabled authentication security checks.
@@ -1011,13 +1098,19 @@ def run_auth_checks(
             results = check_login_no_https(hostname, timeout=timeout)
             host_findings.extend(results)
 
-        if enabled_checks.get("session_no_secure", True) or enabled_checks.get("session_no_httponly", True):
+        if enabled_checks.get("session_no_secure", True) or enabled_checks.get(
+            "session_no_httponly", True
+        ):
             results = check_session_cookies(hostname, timeout=timeout)
             # Filter based on which checks are enabled
             for finding in results:
-                if finding["type"] == "session_no_secure" and enabled_checks.get("session_no_secure", True):
+                if finding["type"] == "session_no_secure" and enabled_checks.get(
+                    "session_no_secure", True
+                ):
                     host_findings.append(finding)
-                elif finding["type"] == "session_no_httponly" and enabled_checks.get("session_no_httponly", True):
+                elif finding["type"] == "session_no_httponly" and enabled_checks.get(
+                    "session_no_httponly", True
+                ):
                     host_findings.append(finding)
 
         if enabled_checks.get("basic_auth_no_tls", True):
@@ -1059,10 +1152,10 @@ def check_spf_missing(domain: str) -> Optional[Dict]:
         Vulnerability dict if SPF is missing, None otherwise
     """
     try:
-        answers = dns.resolver.resolve(domain, 'TXT')
+        answers = dns.resolver.resolve(domain, "TXT")
         for rdata in answers:
             txt_record = str(rdata).strip('"')
-            if txt_record.startswith('v=spf1'):
+            if txt_record.startswith("v=spf1"):
                 return None  # SPF exists
 
         # No SPF record found
@@ -1071,7 +1164,7 @@ def check_spf_missing(domain: str) -> Optional[Dict]:
             "severity": "medium",
             "name": "SPF Record Missing",
             "description": f"The domain {domain} does not have an SPF record. "
-                          "This allows attackers to send spoofed emails appearing to come from this domain.",
+            "This allows attackers to send spoofed emails appearing to come from this domain.",
             "domain": domain,
             "evidence": "No TXT record starting with 'v=spf1' found",
             "recommendation": "Add an SPF record to specify which mail servers can send email for your domain.",
@@ -1106,10 +1199,10 @@ def check_dmarc_missing(domain: str) -> Optional[Dict]:
     dmarc_domain = f"_dmarc.{domain}"
 
     try:
-        answers = dns.resolver.resolve(dmarc_domain, 'TXT')
+        answers = dns.resolver.resolve(dmarc_domain, "TXT")
         for rdata in answers:
             txt_record = str(rdata).strip('"')
-            if txt_record.startswith('v=DMARC1'):
+            if txt_record.startswith("v=DMARC1"):
                 return None  # DMARC exists
 
         return {
@@ -1117,7 +1210,7 @@ def check_dmarc_missing(domain: str) -> Optional[Dict]:
             "severity": "medium",
             "name": "DMARC Record Missing",
             "description": f"The domain {domain} does not have a DMARC record. "
-                          "Without DMARC, receiving mail servers cannot verify email authenticity.",
+            "Without DMARC, receiving mail servers cannot verify email authenticity.",
             "domain": domain,
             "evidence": f"No TXT record at _dmarc.{domain} starting with 'v=DMARC1'",
             "recommendation": "Add a DMARC record to define your email authentication policy.",
@@ -1159,7 +1252,7 @@ def check_dnssec_missing(domain: str) -> Optional[Dict]:
     """
     try:
         # Try to get DNSKEY records - their presence indicates DNSSEC
-        answers = dns.resolver.resolve(domain, 'DNSKEY')
+        answers = dns.resolver.resolve(domain, "DNSKEY")
         if answers:
             return None  # DNSSEC is enabled
 
@@ -1169,7 +1262,7 @@ def check_dnssec_missing(domain: str) -> Optional[Dict]:
             "severity": "low",
             "name": "DNSSEC Not Enabled",
             "description": f"The domain {domain} does not have DNSSEC enabled. "
-                          "DNS responses are not cryptographically signed, allowing DNS spoofing attacks.",
+            "DNS responses are not cryptographically signed, allowing DNS spoofing attacks.",
             "domain": domain,
             "evidence": "No DNSKEY records found",
             "recommendation": "Enable DNSSEC to cryptographically sign DNS records.",
@@ -1195,10 +1288,10 @@ def check_zone_transfer(domain: str, timeout: int = 10) -> Optional[Dict]:
     """
     try:
         # Get nameservers for the domain
-        ns_answers = dns.resolver.resolve(domain, 'NS')
+        ns_answers = dns.resolver.resolve(domain, "NS")
 
         for ns in ns_answers:
-            ns_host = str(ns.target).rstrip('.')
+            ns_host = str(ns.target).rstrip(".")
             try:
                 # Try zone transfer
                 zone = dns.zone.from_xfr(
@@ -1213,7 +1306,7 @@ def check_zone_transfer(domain: str, timeout: int = 10) -> Optional[Dict]:
                         "severity": "high",
                         "name": "DNS Zone Transfer Enabled",
                         "description": f"The nameserver {ns_host} allows zone transfers for {domain}. "
-                                      f"An attacker can download all DNS records ({record_count} records found).",
+                        f"An attacker can download all DNS records ({record_count} records found).",
                         "domain": domain,
                         "nameserver": ns_host,
                         "record_count": record_count,
@@ -1231,9 +1324,7 @@ def check_zone_transfer(domain: str, timeout: int = 10) -> Optional[Dict]:
 
 
 def run_dns_checks(
-    domain: str,
-    enabled_checks: Dict[str, bool],
-    timeout: int = 10
+    domain: str, enabled_checks: Dict[str, bool], timeout: int = 10
 ) -> List[Dict]:
     """
     Run all enabled DNS security checks.
@@ -1297,7 +1388,9 @@ DATABASE_PORTS = {
 }
 
 
-def check_admin_ports_exposed(ip: str, open_ports: List[int], timeout: int = 5) -> List[Dict]:
+def check_admin_ports_exposed(
+    ip: str, open_ports: List[int], timeout: int = 5
+) -> List[Dict]:
     """
     Check if administrative ports are exposed publicly.
 
@@ -1314,23 +1407,27 @@ def check_admin_ports_exposed(ip: str, open_ports: List[int], timeout: int = 5) 
     for port in open_ports:
         if port in ADMIN_PORTS:
             service_name, description = ADMIN_PORTS[port]
-            findings.append({
-                "type": "admin_port_exposed",
-                "severity": "medium",
-                "name": f"{service_name} Port Exposed",
-                "description": f"{description} port {port} is publicly accessible on {ip}. "
-                              "Administrative services should not be directly exposed to the internet.",
-                "ip": ip,
-                "port": port,
-                "service": service_name,
-                "evidence": f"Port {port} ({service_name}) is open",
-                "recommendation": f"Restrict access to {service_name} using firewall rules or VPN.",
-            })
+            findings.append(
+                {
+                    "type": "admin_port_exposed",
+                    "severity": "medium",
+                    "name": f"{service_name} Port Exposed",
+                    "description": f"{description} port {port} is publicly accessible on {ip}. "
+                    "Administrative services should not be directly exposed to the internet.",
+                    "ip": ip,
+                    "port": port,
+                    "service": service_name,
+                    "evidence": f"Port {port} ({service_name}) is open",
+                    "recommendation": f"Restrict access to {service_name} using firewall rules or VPN.",
+                }
+            )
 
     return findings
 
 
-def check_database_ports_exposed(ip: str, open_ports: List[int], timeout: int = 5) -> List[Dict]:
+def check_database_ports_exposed(
+    ip: str, open_ports: List[int], timeout: int = 5
+) -> List[Dict]:
     """
     Check if database ports are exposed publicly.
 
@@ -1348,18 +1445,20 @@ def check_database_ports_exposed(ip: str, open_ports: List[int], timeout: int = 
         if port in DATABASE_PORTS:
             service_name, description = DATABASE_PORTS[port]
             severity = "high" if port != 6379 else "medium"  # Redis handled separately
-            findings.append({
-                "type": "database_exposed",
-                "severity": severity,
-                "name": f"{service_name} Port Exposed",
-                "description": f"{description} port {port} is publicly accessible on {ip}. "
-                              "Database services should never be directly exposed to the internet.",
-                "ip": ip,
-                "port": port,
-                "service": service_name,
-                "evidence": f"Port {port} ({service_name}) is open",
-                "recommendation": f"Move {service_name} behind a firewall. Only allow access from application servers.",
-            })
+            findings.append(
+                {
+                    "type": "database_exposed",
+                    "severity": severity,
+                    "name": f"{service_name} Port Exposed",
+                    "description": f"{description} port {port} is publicly accessible on {ip}. "
+                    "Database services should never be directly exposed to the internet.",
+                    "ip": ip,
+                    "port": port,
+                    "service": service_name,
+                    "evidence": f"Port {port} ({service_name}) is open",
+                    "recommendation": f"Move {service_name} behind a firewall. Only allow access from application servers.",
+                }
+            )
 
     return findings
 
@@ -1383,7 +1482,7 @@ def check_redis_no_auth(ip: str, port: int = 6379, timeout: int = 5) -> Optional
 
         # Send PING command
         sock.send(b"PING\r\n")
-        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        response = sock.recv(1024).decode("utf-8", errors="ignore")
         sock.close()
 
         if "+PONG" in response:
@@ -1392,7 +1491,7 @@ def check_redis_no_auth(ip: str, port: int = 6379, timeout: int = 5) -> Optional
                 "severity": "critical",
                 "name": "Redis Without Authentication",
                 "description": f"Redis at {ip}:{port} responds to commands without authentication. "
-                              "An attacker can read/write data, execute Lua scripts, or potentially get shell access.",
+                "An attacker can read/write data, execute Lua scripts, or potentially get shell access.",
                 "ip": ip,
                 "port": port,
                 "evidence": "PING command returned PONG without authentication",
@@ -1425,20 +1524,24 @@ def check_kubernetes_api_exposed(ip: str, timeout: int = 10) -> Optional[Dict]:
                 url,
                 timeout=timeout,
                 verify=False,
-                headers={"User-Agent": "Mozilla/5.0"}
+                headers={"User-Agent": "Mozilla/5.0"},
             )
 
             # Check for Kubernetes API response
             if response.status_code in [200, 401, 403]:
                 content = response.text.lower()
-                if 'kind' in content or 'kubernetes' in content or 'apiversion' in content:
+                if (
+                    "kind" in content
+                    or "kubernetes" in content
+                    or "apiversion" in content
+                ):
                     severity = "critical" if response.status_code == 200 else "high"
                     return {
                         "type": "kubernetes_api_exposed",
                         "severity": severity,
                         "name": "Kubernetes API Exposed",
                         "description": f"Kubernetes API is accessible at {ip}:{port}. "
-                                      "This could allow attackers to control the entire cluster.",
+                        "This could allow attackers to control the entire cluster.",
                         "ip": ip,
                         "port": port,
                         "url": url,
@@ -1471,25 +1574,25 @@ def check_smtp_open_relay(ip: str, port: int = 25, timeout: int = 10) -> Optiona
         sock.connect((ip, port))
 
         # Read banner
-        banner = sock.recv(1024).decode('utf-8', errors='ignore')
-        if '220' not in banner:
+        banner = sock.recv(1024).decode("utf-8", errors="ignore")
+        if "220" not in banner:
             sock.close()
             return None
 
         # Send HELO
         sock.send(b"HELO test.example.com\r\n")
-        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        response = sock.recv(1024).decode("utf-8", errors="ignore")
 
         # Try to send from external domain
         sock.send(b"MAIL FROM:<test@external-domain.com>\r\n")
-        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        response = sock.recv(1024).decode("utf-8", errors="ignore")
 
-        if '250' in response:
+        if "250" in response:
             # Try recipient at another external domain
             sock.send(b"RCPT TO:<test@another-external-domain.com>\r\n")
-            response = sock.recv(1024).decode('utf-8', errors='ignore')
+            response = sock.recv(1024).decode("utf-8", errors="ignore")
 
-            if '250' in response or '251' in response:
+            if "250" in response or "251" in response:
                 sock.send(b"QUIT\r\n")
                 sock.close()
                 return {
@@ -1497,7 +1600,7 @@ def check_smtp_open_relay(ip: str, port: int = 25, timeout: int = 10) -> Optiona
                     "severity": "high",
                     "name": "SMTP Open Relay",
                     "description": f"SMTP server at {ip}:{port} accepts mail relay from external sources. "
-                                  "This can be abused for spam campaigns and email spoofing.",
+                    "This can be abused for spam campaigns and email spoofing.",
                     "ip": ip,
                     "port": port,
                     "evidence": "Server accepted RCPT TO for external domain",
@@ -1517,7 +1620,7 @@ def run_port_service_checks(
     recon_data: Dict[str, Any],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run all enabled port/service security checks.
@@ -1580,7 +1683,10 @@ def run_port_service_checks(
             ips_to_check.append((ip, ports_data))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_ip = {executor.submit(check_single_ip, ip, ports): ip for ip, ports in ips_to_check}
+        future_to_ip = {
+            executor.submit(check_single_ip, ip, ports): ip
+            for ip, ports in ips_to_check
+        }
         for future in concurrent.futures.as_completed(future_to_ip):
             try:
                 ip_findings = future.result()
@@ -1594,6 +1700,7 @@ def run_port_service_checks(
 # =============================================================================
 # Application Security Checks
 # =============================================================================
+
 
 def check_csp_unsafe_inline(hostname: str, timeout: int = 10) -> Optional[Dict]:
     """
@@ -1614,25 +1721,29 @@ def check_csp_unsafe_inline(hostname: str, timeout: int = 10) -> Optional[Dict]:
             timeout=timeout,
             allow_redirects=True,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
-        csp = response.headers.get('Content-Security-Policy', '')
+        csp = response.headers.get("Content-Security-Policy", "")
 
         if csp and "'unsafe-inline'" in csp.lower():
             # Check which directives have unsafe-inline
             unsafe_directives = []
-            for directive in csp.split(';'):
+            for directive in csp.split(";"):
                 directive = directive.strip()
                 if "'unsafe-inline'" in directive.lower():
-                    unsafe_directives.append(directive.split()[0] if directive.split() else directive)
+                    unsafe_directives.append(
+                        directive.split()[0] if directive.split() else directive
+                    )
 
             return {
                 "type": "csp_unsafe_inline",
                 "severity": "medium",
                 "name": "CSP Allows Unsafe Inline",
                 "description": f"The Content-Security-Policy for {hostname} allows 'unsafe-inline'. "
-                              "This weakens XSS protection by allowing inline scripts/styles.",
+                "This weakens XSS protection by allowing inline scripts/styles.",
                 "url": url,
                 "hostname": hostname,
                 "csp_header": csp[:500],  # Truncate if very long
@@ -1659,6 +1770,7 @@ def check_insecure_form_action(hostname: str, timeout: int = 10) -> List[Dict]:
         List of vulnerability findings
     """
     import re
+
     findings = []
     url = f"https://{hostname}/"
 
@@ -1668,7 +1780,9 @@ def check_insecure_form_action(hostname: str, timeout: int = 10) -> List[Dict]:
             timeout=timeout,
             allow_redirects=True,
             verify=False,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            },
         )
 
         if response.status_code == 200:
@@ -1679,18 +1793,20 @@ def check_insecure_form_action(hostname: str, timeout: int = 10) -> List[Dict]:
             matches = re.findall(form_pattern, content, re.IGNORECASE)
 
             for http_action in matches:
-                findings.append({
-                    "type": "insecure_form_action",
-                    "severity": "high",
-                    "name": "HTTPS Form Posts to HTTP",
-                    "description": f"A form on {url} posts data to an unencrypted HTTP endpoint: {http_action}. "
-                                  "Form data including credentials may be intercepted.",
-                    "url": url,
-                    "hostname": hostname,
-                    "insecure_action": http_action,
-                    "evidence": f"Form action points to {http_action}",
-                    "recommendation": "Ensure all form actions use HTTPS endpoints.",
-                })
+                findings.append(
+                    {
+                        "type": "insecure_form_action",
+                        "severity": "high",
+                        "name": "HTTPS Form Posts to HTTP",
+                        "description": f"A form on {url} posts data to an unencrypted HTTP endpoint: {http_action}. "
+                        "Form data including credentials may be intercepted.",
+                        "url": url,
+                        "hostname": hostname,
+                        "insecure_action": http_action,
+                        "evidence": f"Form action points to {http_action}",
+                        "recommendation": "Ensure all form actions use HTTPS endpoints.",
+                    }
+                )
 
     except requests.exceptions.RequestException:
         pass
@@ -1702,7 +1818,7 @@ def run_app_security_checks(
     hostnames: List[str],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run all enabled application security checks.
@@ -1748,7 +1864,10 @@ def run_app_security_checks(
 # Rate Limiting Checks
 # =============================================================================
 
-def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> List[Dict]:
+
+def check_no_rate_limiting(
+    urls: List[str], hostname: str, timeout: int = 5
+) -> List[Dict]:
     """
     Check if rate limiting is missing on login/auth endpoints.
 
@@ -1764,10 +1883,28 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
 
     # Keywords that indicate authentication endpoints
     auth_keywords = [
-        'login', 'signin', 'sign-in', 'auth', 'authenticate', 'session',
-        'token', 'oauth', 'sso', 'password', 'credential', 'account/login',
-        'user/login', 'admin/login', 'api/login', 'api/auth', 'wp-login',
-        'register', 'signup', 'sign-up', 'forgot', 'reset-password'
+        "login",
+        "signin",
+        "sign-in",
+        "auth",
+        "authenticate",
+        "session",
+        "token",
+        "oauth",
+        "sso",
+        "password",
+        "credential",
+        "account/login",
+        "user/login",
+        "admin/login",
+        "api/login",
+        "api/auth",
+        "wp-login",
+        "register",
+        "signup",
+        "sign-up",
+        "forgot",
+        "reset-password",
     ]
 
     # Filter URLs that belong to this hostname and contain auth keywords
@@ -1775,9 +1912,10 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
     for url in urls:
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(url)
             # Check if URL belongs to this hostname
-            if parsed.netloc == hostname or parsed.netloc.endswith(f'.{hostname}'):
+            if parsed.netloc == hostname or parsed.netloc.endswith(f".{hostname}"):
                 url_lower = url.lower()
                 if any(keyword in url_lower for keyword in auth_keywords):
                     # Normalize to base URL without query params for rate limit test
@@ -1789,9 +1927,18 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
     # Fallback: also check common endpoints if no auth URLs found from recon
     if not auth_urls:
         fallback_endpoints = [
-            "/login", "/signin", "/sign-in", "/auth", "/authenticate",
-            "/admin/login", "/wp-login.php", "/user/login", "/api/login",
-            "/api/auth", "/api/v1/login", "/oauth/token"
+            "/login",
+            "/signin",
+            "/sign-in",
+            "/auth",
+            "/authenticate",
+            "/admin/login",
+            "/wp-login.php",
+            "/user/login",
+            "/api/login",
+            "/api/auth",
+            "/api/v1/login",
+            "/oauth/token",
         ]
         for endpoint in fallback_endpoints:
             auth_urls.add(f"https://{hostname}{endpoint}")
@@ -1806,6 +1953,7 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
 
         try:
             from urllib.parse import urlparse
+
             parsed = urlparse(url)
             endpoint = parsed.path
 
@@ -1815,7 +1963,9 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
                 timeout=timeout,
                 verify=False,
                 allow_redirects=True,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+                },
             )
 
             # Skip if endpoint doesn't exist
@@ -1833,20 +1983,22 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
                         timeout=timeout,
                         verify=False,
                         data={"username": f"test{i}", "password": "test"},
-                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"}
+                        headers={
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+                        },
                     )
 
                     # Check for rate limiting indicators
                     if resp.status_code == 429:  # Too Many Requests
                         rate_limit_detected = True
                         break
-                    if 'rate' in resp.text.lower() and 'limit' in resp.text.lower():
+                    if "rate" in resp.text.lower() and "limit" in resp.text.lower():
                         rate_limit_detected = True
                         break
-                    if resp.headers.get('Retry-After'):
+                    if resp.headers.get("Retry-After"):
                         rate_limit_detected = True
                         break
-                    if resp.headers.get('X-RateLimit-Remaining', '999') == '0':
+                    if resp.headers.get("X-RateLimit-Remaining", "999") == "0":
                         rate_limit_detected = True
                         break
 
@@ -1856,19 +2008,21 @@ def check_no_rate_limiting(urls: List[str], hostname: str, timeout: int = 5) -> 
                     break
 
             if success_count >= 10 and not rate_limit_detected:
-                findings.append({
-                    "type": "no_rate_limiting",
-                    "severity": "medium",
-                    "name": "No Rate Limiting on Login",
-                    "description": f"The login endpoint {url} does not appear to have rate limiting. "
-                                  "This allows brute force attacks against user accounts.",
-                    "url": url,
-                    "hostname": hostname,
-                    "endpoint": endpoint,
-                    "requests_sent": success_count,
-                    "evidence": f"Sent {success_count} requests without triggering rate limit",
-                    "recommendation": "Implement rate limiting on authentication endpoints (e.g., 5 attempts per minute).",
-                })
+                findings.append(
+                    {
+                        "type": "no_rate_limiting",
+                        "severity": "medium",
+                        "name": "No Rate Limiting on Login",
+                        "description": f"The login endpoint {url} does not appear to have rate limiting. "
+                        "This allows brute force attacks against user accounts.",
+                        "url": url,
+                        "hostname": hostname,
+                        "endpoint": endpoint,
+                        "requests_sent": success_count,
+                        "evidence": f"Sent {success_count} requests without triggering rate limit",
+                        "recommendation": "Implement rate limiting on authentication endpoints (e.g., 5 attempts per minute).",
+                    }
+                )
 
         except requests.exceptions.RequestException:
             continue
@@ -1881,7 +2035,7 @@ def run_rate_limit_checks(
     recon_data: Dict[str, Any],
     enabled_checks: Dict[str, bool],
     timeout: int = 5,
-    max_workers: int = 5  # Lower concurrency to avoid false positives
+    max_workers: int = 5,  # Lower concurrency to avoid false positives
 ) -> List[Dict]:
     """
     Run all enabled rate limiting checks.
@@ -1929,9 +2083,7 @@ def run_rate_limit_checks(
 
     def check_single_host(hostname: str) -> List[Dict]:
         host_findings = check_no_rate_limiting(
-            urls=discovered_urls,
-            hostname=hostname,
-            timeout=timeout
+            urls=discovered_urls, hostname=hostname, timeout=timeout
         )
         return host_findings
 
@@ -1951,7 +2103,7 @@ def run_security_headers_checks(
     hostnames: List[str],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> List[Dict]:
     """
     Run all enabled security headers checks.
@@ -1981,7 +2133,7 @@ def run_security_headers_checks(
                 hostname=hostname,
                 port=443,
                 timeout=timeout,
-                enabled_headers=enabled_checks
+                enabled_headers=enabled_checks,
             )
             host_findings.extend(header_findings)
 
@@ -2010,12 +2162,13 @@ def run_security_headers_checks(
 # Main Entry Point
 # =============================================================================
 
+
 def run_security_checks(
     recon_data: Dict[str, Any],
     enabled_checks: Dict[str, bool],
     timeout: int = 10,
     tls_expiry_days: int = 30,
-    max_workers: int = 10
+    max_workers: int = 10,
 ) -> Dict[str, Any]:
     """
     Run all enabled security checks on recon data.
@@ -2031,7 +2184,7 @@ def run_security_checks(
         Dictionary with security check findings
     """
     print("\n" + "=" * 70)
-    print("         RedAmon - Custom Security Checks")
+    print("         parallax - Custom Security Checks")
     print("=" * 70)
 
     # Extract IPs and hostnames from recon data
@@ -2042,7 +2195,9 @@ def run_security_checks(
     dns_data = recon_data.get("dns", {})
 
     # From root domain
-    domain = recon_data.get("domain", "") or recon_data.get("metadata", {}).get("target", "")
+    domain = recon_data.get("domain", "") or recon_data.get("metadata", {}).get(
+        "target", ""
+    )
     domain_dns = dns_data.get("domain", {})
     if domain_dns:
         domain_ips = domain_dns.get("ips", {})
@@ -2078,13 +2233,27 @@ def run_security_checks(
     ip_checks = ["direct_ip_http", "direct_ip_https", "ip_api_exposed", "waf_bypass"]
     tls_checks = ["tls_expiring_soon"]
     header_checks = [
-        "missing_referrer_policy", "missing_permissions_policy",
-        "missing_coop", "missing_corp", "missing_coep",
-        "cache_control_missing"
+        "missing_referrer_policy",
+        "missing_permissions_policy",
+        "missing_coop",
+        "missing_corp",
+        "missing_coep",
+        "cache_control_missing",
     ]
-    auth_checks = ["login_no_https", "session_no_secure", "session_no_httponly", "basic_auth_no_tls"]
+    auth_checks = [
+        "login_no_https",
+        "session_no_secure",
+        "session_no_httponly",
+        "basic_auth_no_tls",
+    ]
     dns_checks = ["spf_missing", "dmarc_missing", "dnssec_missing", "zone_transfer"]
-    port_checks = ["admin_port_exposed", "database_exposed", "redis_no_auth", "kubernetes_api_exposed", "smtp_open_relay"]
+    port_checks = [
+        "admin_port_exposed",
+        "database_exposed",
+        "redis_no_auth",
+        "kubernetes_api_exposed",
+        "smtp_open_relay",
+    ]
     app_checks = ["csp_unsafe_inline", "insecure_form_action"]
     rate_checks = ["no_rate_limiting"]
 
@@ -2098,8 +2267,12 @@ def run_security_checks(
     enabled_rate = sum(1 for c in rate_checks if enabled_checks.get(c, False))
 
     print(f"  Enabled checks:")
-    print(f"    - Direct IP: {enabled_ip}, TLS: {enabled_tls}, Headers: {enabled_headers}")
-    print(f"    - Auth: {enabled_auth}, DNS: {enabled_dns}, Port/Service: {enabled_port}")
+    print(
+        f"    - Direct IP: {enabled_ip}, TLS: {enabled_tls}, Headers: {enabled_headers}"
+    )
+    print(
+        f"    - Auth: {enabled_auth}, DNS: {enabled_dns}, Port/Service: {enabled_port}"
+    )
     print(f"    - App Security: {enabled_app}, Rate Limit: {enabled_rate}")
     print("=" * 70 + "\n")
 
@@ -2113,7 +2286,7 @@ def run_security_checks(
             subdomains_to_ips=subdomains_to_ips,
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(ip_findings)
         print(f"    [+] Found {len(ip_findings)} issues")
@@ -2126,7 +2299,7 @@ def run_security_checks(
             enabled_checks=enabled_checks,
             timeout=timeout,
             expiry_days_threshold=tls_expiry_days,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(tls_findings)
         print(f"    [+] Found {len(tls_findings)} issues")
@@ -2138,7 +2311,7 @@ def run_security_checks(
             hostnames=list(hostnames),
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(headers_findings)
         print(f"    [+] Found {len(headers_findings)} issues")
@@ -2150,7 +2323,7 @@ def run_security_checks(
             hostnames=list(hostnames),
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(auth_findings)
         print(f"    [+] Found {len(auth_findings)} issues")
@@ -2162,9 +2335,7 @@ def run_security_checks(
         if domain:
             print(f"[*] Running DNS Security checks on {domain}...")
             dns_findings = run_dns_checks(
-                domain=domain,
-                enabled_checks=enabled_checks,
-                timeout=timeout
+                domain=domain, enabled_checks=enabled_checks, timeout=timeout
             )
             all_findings.extend(dns_findings)
             print(f"    [+] Found {len(dns_findings)} issues")
@@ -2176,19 +2347,21 @@ def run_security_checks(
             recon_data=recon_data,
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(port_findings)
         print(f"    [+] Found {len(port_findings)} issues")
 
     # Run Application Security checks
     if enabled_app > 0 and hostnames:
-        print(f"[*] Running Application Security checks on {len(hostnames)} hostnames...")
+        print(
+            f"[*] Running Application Security checks on {len(hostnames)} hostnames..."
+        )
         app_findings = run_app_security_checks(
             hostnames=list(hostnames),
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=max_workers
+            max_workers=max_workers,
         )
         all_findings.extend(app_findings)
         print(f"    [+] Found {len(app_findings)} issues")
@@ -2201,7 +2374,7 @@ def run_security_checks(
             recon_data=recon_data,
             enabled_checks=enabled_checks,
             timeout=timeout,
-            max_workers=min(max_workers, 5)  # Lower concurrency for rate limit checks
+            max_workers=min(max_workers, 5),  # Lower concurrency for rate limit checks
         )
         all_findings.extend(rate_findings)
         print(f"    [+] Found {len(rate_findings)} issues")
@@ -2235,7 +2408,7 @@ def run_security_checks(
             "summary": {
                 "total_findings": len(all_findings),
                 **severity_counts,
-            }
+            },
         }
     }
 
@@ -2246,18 +2419,20 @@ def run_security_checks(
 
     if any(severity_counts[s] > 0 for s in ["critical", "high", "medium", "low"]):
         print(f"\n[+] SEVERITY SUMMARY:")
-        if severity_counts['critical'] > 0:
+        if severity_counts["critical"] > 0:
             print(f"    CRITICAL: {severity_counts['critical']}")
-        if severity_counts['high'] > 0:
+        if severity_counts["high"] > 0:
             print(f"    HIGH: {severity_counts['high']}")
-        if severity_counts['medium'] > 0:
+        if severity_counts["medium"] > 0:
             print(f"    MEDIUM: {severity_counts['medium']}")
-        if severity_counts['low'] > 0:
+        if severity_counts["low"] > 0:
             print(f"    LOW: {severity_counts['low']}")
 
     if by_type:
         print(f"\n[+] FINDINGS BY TYPE:")
-        for finding_type, findings_list in sorted(by_type.items(), key=lambda x: len(x[1]), reverse=True):
+        for finding_type, findings_list in sorted(
+            by_type.items(), key=lambda x: len(x[1]), reverse=True
+        ):
             print(f"    {finding_type}: {len(findings_list)}")
 
     print(f"{'=' * 70}")

@@ -1,4 +1,4 @@
-# RedAmon Reconnaissance Module - Python Dependencies
+# parallax Reconnaissance Module - Python Dependencies
 # ====================================================
 # Install with: pip install -r requirements.txt
 

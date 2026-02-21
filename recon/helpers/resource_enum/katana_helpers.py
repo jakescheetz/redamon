@@ -1,5 +1,5 @@
 """
-RedAmon - Katana Crawler Helpers for Resource Enumeration
+parallax - Katana Crawler Helpers for Resource Enumeration
 =========================================================
 Active URL discovery using Katana web crawler.
 """
@@ -27,7 +27,7 @@ def run_katana_crawler(
     allowed_hosts: set,
     custom_headers: List[str],
     exclude_patterns: List[str],
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> Tuple[List[str], Dict[str, str]]:
     """
     Run Katana crawler to discover all endpoints.
@@ -67,13 +67,15 @@ def run_katana_crawler(
     print(f"    Rate limit: {rate_limit} req/s")
     print(f"    Crawl duration: {crawl_duration}")
     print(f"    Params only: {params_only}")
-    print(f"    Allowed hosts: {len(allowed_hosts)} ({', '.join(sorted(allowed_hosts)[:5])}{'...' if len(allowed_hosts) > 5 else ''})")
+    print(
+        f"    Allowed hosts: {len(allowed_hosts)} ({', '.join(sorted(allowed_hosts)[:5])}{'...' if len(allowed_hosts) > 5 else ''})"
+    )
 
     discovered_urls = set()
     filtered_out_of_scope = 0
 
     for base_url in target_urls:
-        if not base_url.startswith(('http://', 'https://')):
+        if not base_url.startswith(("http://", "https://")):
             continue
 
         # Build Katana command
@@ -84,20 +86,28 @@ def run_katana_crawler(
 
         cmd.extend(["-v", "/tmp:/tmp"])
 
-        cmd.extend([
-            docker_image,
-            "-u", base_url,
-            "-d", str(depth),
-            "-silent",
-            "-nc",
-            "-rl", str(rate_limit),
-            "-timeout", "30",
-            "-crawl-duration", crawl_duration,
-            # Use FQDN scope: restricts crawl to exact hostname of seed URL
-            # This prevents crawling parent domains (e.g. sub.example.com won't
-            # crawl example.com). Post-hoc filtering provides additional safety.
-            "-fs", "fqdn",
-        ])
+        cmd.extend(
+            [
+                docker_image,
+                "-u",
+                base_url,
+                "-d",
+                str(depth),
+                "-silent",
+                "-nc",
+                "-rl",
+                str(rate_limit),
+                "-timeout",
+                "30",
+                "-crawl-duration",
+                crawl_duration,
+                # Use FQDN scope: restricts crawl to exact hostname of seed URL
+                # This prevents crawling parent domains (e.g. sub.example.com won't
+                # crawl example.com). Post-hoc filtering provides additional safety.
+                "-fs",
+                "fqdn",
+            ]
+        )
 
         # JavaScript crawling
         if js_crawl:
@@ -137,7 +147,9 @@ def run_katana_crawler(
 
                     # Check idle timeout (no output for too long)
                     if time.time() - last_output_time > idle_timeout:
-                        print(f"    [!] Katana idle timeout ({idle_timeout}s with no output) for {base_url}")
+                        print(
+                            f"    [!] Katana idle timeout ({idle_timeout}s with no output) for {base_url}"
+                        )
                         process.kill()
                         break
 
@@ -161,7 +173,7 @@ def run_katana_crawler(
                     # Post-hoc scope filter: only keep URLs whose host is in allowed_hosts
                     try:
                         parsed = urlparse(url)
-                        host = parsed.hostname or ''
+                        host = parsed.hostname or ""
                         if host and allowed_hosts and host not in allowed_hosts:
                             filtered_out_of_scope += 1
                             continue
@@ -170,12 +182,14 @@ def run_katana_crawler(
 
                     # Skip URLs matching exclude patterns
                     url_lower = url.lower()
-                    if any(pattern.lower() in url_lower for pattern in exclude_patterns):
+                    if any(
+                        pattern.lower() in url_lower for pattern in exclude_patterns
+                    ):
                         continue
 
                     # Apply params_only filter
                     if params_only:
-                        if '?' in url and '=' in url:
+                        if "?" in url and "=" in url:
                             discovered_urls.add(url)
                         else:
                             continue
@@ -184,7 +198,9 @@ def run_katana_crawler(
 
                     # Enforce max_urls: kill process early
                     if len(discovered_urls) >= max_urls:
-                        print(f"    [+] Reached max URL limit ({max_urls}), stopping Katana")
+                        print(
+                            f"    [+] Reached max URL limit ({max_urls}), stopping Katana"
+                        )
                         process.kill()
                         break
 
@@ -209,9 +225,7 @@ def run_katana_crawler(
 
 
 def fetch_forms_from_urls(
-    urls: List[str],
-    use_proxy: bool = False,
-    max_urls: int = 50
+    urls: List[str], use_proxy: bool = False, max_urls: int = 50
 ) -> List[Dict]:
     """
     Fetch HTML from URLs and extract forms.
@@ -227,13 +241,32 @@ def fetch_forms_from_urls(
     all_forms = []
 
     # Filter to likely HTML pages (exclude static files)
-    static_extensions = ['.css', '.js', '.jpg', '.jpeg', '.png', '.gif', '.svg',
-                         '.ico', '.woff', '.woff2', '.ttf', '.eot', '.pdf', '.zip',
-                         '.mp3', '.mp4', '.webp', '.xml', '.json', '.txt']
+    static_extensions = [
+        ".css",
+        ".js",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".svg",
+        ".ico",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".eot",
+        ".pdf",
+        ".zip",
+        ".mp3",
+        ".mp4",
+        ".webp",
+        ".xml",
+        ".json",
+        ".txt",
+    ]
 
     html_urls = []
     for url in urls:
-        url_lower = url.lower().split('?')[0]  # Remove query params for extension check
+        url_lower = url.lower().split("?")[0]  # Remove query params for extension check
         if not any(url_lower.endswith(ext) for ext in static_extensions):
             html_urls.append(url)
 
@@ -252,29 +285,32 @@ def fetch_forms_from_urls(
 
     # Setup proxy if needed
     if use_proxy:
-        proxy_handler = urllib.request.ProxyHandler({
-            'http': 'socks5://127.0.0.1:9050',
-            'https': 'socks5://127.0.0.1:9050'
-        })
-        opener = urllib.request.build_opener(proxy_handler, urllib.request.HTTPSHandler(context=ssl_context))
+        proxy_handler = urllib.request.ProxyHandler(
+            {"http": "socks5://127.0.0.1:9050", "https": "socks5://127.0.0.1:9050"}
+        )
+        opener = urllib.request.build_opener(
+            proxy_handler, urllib.request.HTTPSHandler(context=ssl_context)
+        )
     else:
-        opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl_context))
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPSHandler(context=ssl_context)
+        )
 
     for url in html_urls:
         try:
             request = urllib.request.Request(
                 url,
                 headers={
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-                }
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                },
             )
             response = opener.open(request, timeout=10)
-            content_type = response.headers.get('Content-Type', '')
+            content_type = response.headers.get("Content-Type", "")
 
             # Only process HTML responses
-            if 'text/html' in content_type:
-                html_content = response.read().decode('utf-8', errors='ignore')
+            if "text/html" in content_type:
+                html_content = response.read().decode("utf-8", errors="ignore")
                 forms = parse_forms_from_html(html_content, url)
                 all_forms.extend(forms)
 
@@ -288,10 +324,10 @@ def fetch_forms_from_urls(
 def pull_katana_docker_image(docker_image: str) -> bool:
     """
     Pull the Katana Docker image if not present.
-    
+
     Args:
         docker_image: Docker image name to pull
-        
+
     Returns:
         True if successful, False otherwise
     """
@@ -301,9 +337,8 @@ def pull_katana_docker_image(docker_image: str) -> bool:
             ["docker", "pull", docker_image],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
         )
         return result.returncode == 0
     except Exception:
         return False
-

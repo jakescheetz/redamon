@@ -1,5 +1,5 @@
 """
-RedAmon - MITRE CWE/CAPEC Enrichment Module
+parallax - MITRE CWE/CAPEC Enrichment Module
 ===========================================
 Enriches CVE data with CWE weaknesses and CAPEC attack patterns.
 
@@ -27,13 +27,13 @@ import requests
 
 # Default settings for MITRE enrichment (used when no settings provided)
 DEFAULT_MITRE_SETTINGS = {
-    'MITRE_AUTO_UPDATE_DB': True,
-    'MITRE_ENRICH_RECON': True,
-    'MITRE_ENRICH_GVM': True,
-    'MITRE_DATABASE_PATH': os.path.join(os.path.dirname(__file__), "data", "mitre_db"),
-    'MITRE_CACHE_TTL_HOURS': 24,
-    'MITRE_INCLUDE_CWE': True,
-    'MITRE_INCLUDE_CAPEC': True,
+    "MITRE_AUTO_UPDATE_DB": True,
+    "MITRE_ENRICH_RECON": True,
+    "MITRE_ENRICH_GVM": True,
+    "MITRE_DATABASE_PATH": os.path.join(os.path.dirname(__file__), "data", "mitre_db"),
+    "MITRE_CACHE_TTL_HOURS": 24,
+    "MITRE_INCLUDE_CWE": True,
+    "MITRE_INCLUDE_CAPEC": True,
 }
 
 # =============================================================================
@@ -52,8 +52,8 @@ CAPEC_XML_URL = "https://capec.mitre.org/data/xml/capec_latest.xml"
 # Resource files needed from CVE2CAPEC
 # Only CWE and CAPEC data - ATT&CK techniques and D3FEND are NOT used
 RESOURCE_FILES = [
-    "resources/capec_db.json",           # CAPEC patterns with names
-    "resources/cwe_db.json",             # CWE hierarchy and direct CAPEC mappings
+    "resources/capec_db.json",  # CAPEC patterns with names
+    "resources/cwe_db.json",  # CWE hierarchy and direct CAPEC mappings
 ]
 
 # Database files (by year) - we'll download only needed years
@@ -64,10 +64,15 @@ DATABASE_YEARS = list(range(1999, datetime.now().year + 1))
 # Database Management
 # =============================================================================
 
+
 def ensure_database_directory(settings: Optional[Dict] = None) -> Path:
     """Ensure the MITRE database directory exists."""
     settings = settings or DEFAULT_MITRE_SETTINGS
-    db_path = Path(settings.get('MITRE_DATABASE_PATH', DEFAULT_MITRE_SETTINGS['MITRE_DATABASE_PATH']))
+    db_path = Path(
+        settings.get(
+            "MITRE_DATABASE_PATH", DEFAULT_MITRE_SETTINGS["MITRE_DATABASE_PATH"]
+        )
+    )
     db_path.mkdir(parents=True, exist_ok=True)
     (db_path / "resources").mkdir(parents=True, exist_ok=True)
     (db_path / "database").mkdir(parents=True, exist_ok=True)
@@ -77,8 +82,14 @@ def ensure_database_directory(settings: Optional[Dict] = None) -> Path:
 def is_database_fresh(settings: Optional[Dict] = None) -> bool:
     """Check if database was updated recently (within TTL)."""
     settings = settings or DEFAULT_MITRE_SETTINGS
-    db_path = Path(settings.get('MITRE_DATABASE_PATH', DEFAULT_MITRE_SETTINGS['MITRE_DATABASE_PATH']))
-    cache_ttl = settings.get('MITRE_CACHE_TTL_HOURS', DEFAULT_MITRE_SETTINGS['MITRE_CACHE_TTL_HOURS'])
+    db_path = Path(
+        settings.get(
+            "MITRE_DATABASE_PATH", DEFAULT_MITRE_SETTINGS["MITRE_DATABASE_PATH"]
+        )
+    )
+    cache_ttl = settings.get(
+        "MITRE_CACHE_TTL_HOURS", DEFAULT_MITRE_SETTINGS["MITRE_CACHE_TTL_HOURS"]
+    )
     marker_file = db_path / ".last_update"
 
     if not marker_file.exists():
@@ -95,7 +106,11 @@ def is_database_fresh(settings: Optional[Dict] = None) -> bool:
 def mark_database_updated(settings: Optional[Dict] = None):
     """Mark database as freshly updated."""
     settings = settings or DEFAULT_MITRE_SETTINGS
-    db_path = Path(settings.get('MITRE_DATABASE_PATH', DEFAULT_MITRE_SETTINGS['MITRE_DATABASE_PATH']))
+    db_path = Path(
+        settings.get(
+            "MITRE_DATABASE_PATH", DEFAULT_MITRE_SETTINGS["MITRE_DATABASE_PATH"]
+        )
+    )
     marker_file = db_path / ".last_update"
     marker_file.write_text(datetime.now().isoformat())
 
@@ -140,7 +155,9 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
     import xml.etree.ElementTree as ET
 
     settings = settings or DEFAULT_MITRE_SETTINGS
-    cache_ttl = settings.get('MITRE_CACHE_TTL_HOURS', DEFAULT_MITRE_SETTINGS['MITRE_CACHE_TTL_HOURS'])
+    cache_ttl = settings.get(
+        "MITRE_CACHE_TTL_HOURS", DEFAULT_MITRE_SETTINGS["MITRE_CACHE_TTL_HOURS"]
+    )
 
     dest_file = db_path / "resources" / "cwe_metadata.json"
 
@@ -163,7 +180,7 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
 
         # Extract XML from ZIP
         with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
-            xml_files = [f for f in zf.namelist() if f.endswith('.xml')]
+            xml_files = [f for f in zf.namelist() if f.endswith(".xml")]
             if not xml_files:
                 print("FAILED (no XML in ZIP)")
                 return False
@@ -171,7 +188,7 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
 
         # Parse XML
         root = ET.fromstring(xml_content)
-        ns = {'cwe': 'http://cwe.mitre.org/cwe-7'}
+        ns = {"cwe": "http://cwe.mitre.org/cwe-7"}
 
         def get_text(element, path):
             """Helper to get text from XML path."""
@@ -191,37 +208,37 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
         cwe_metadata = {}
 
         # Find all Weakness elements
-        for weakness in root.findall('.//cwe:Weakness', ns):
-            cwe_id = weakness.get('ID')
+        for weakness in root.findall(".//cwe:Weakness", ns):
+            cwe_id = weakness.get("ID")
             if not cwe_id:
                 continue
 
             # Basic attributes (always included)
             entry = {
-                "name": weakness.get('Name', ''),
-                "abstraction": weakness.get('Abstraction', ''),
+                "name": weakness.get("Name", ""),
+                "abstraction": weakness.get("Abstraction", ""),
             }
 
             # Get mapping status
-            mapping = 'ALLOWED'  # Default
-            mapping_notes = weakness.find('.//cwe:Mapping_Notes/cwe:Usage', ns)
+            mapping = "ALLOWED"  # Default
+            mapping_notes = weakness.find(".//cwe:Mapping_Notes/cwe:Usage", ns)
             if mapping_notes is not None and mapping_notes.text:
                 mapping = mapping_notes.text.upper()
             entry["mapping"] = mapping
 
             # Additional fields (for detailed info on ALLOWED CWEs)
             # Structure attribute
-            structure = weakness.get('Structure', '')
+            structure = weakness.get("Structure", "")
             if structure:
                 entry["structure"] = structure
 
             # Description
-            desc = get_text(weakness, './/cwe:Description')
+            desc = get_text(weakness, ".//cwe:Description")
             if desc:
                 entry["description"] = desc
 
             # Extended Description
-            ext_desc = get_text(weakness, './/cwe:Extended_Description')
+            ext_desc = get_text(weakness, ".//cwe:Extended_Description")
             if ext_desc:
                 # Truncate if too long
                 if len(ext_desc) > 500:
@@ -229,15 +246,17 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
                 entry["extended_description"] = ext_desc
 
             # Likelihood of Exploit
-            likelihood = get_text(weakness, './/cwe:Likelihood_Of_Exploit')
+            likelihood = get_text(weakness, ".//cwe:Likelihood_Of_Exploit")
             if likelihood:
                 entry["likelihood_of_exploit"] = likelihood
 
             # Common Consequences (CIA impact)
             consequences = []
-            for conseq in weakness.findall('.//cwe:Common_Consequences/cwe:Consequence', ns):
-                scope = get_all_text(conseq, './/cwe:Scope')
-                impact = get_all_text(conseq, './/cwe:Impact')
+            for conseq in weakness.findall(
+                ".//cwe:Common_Consequences/cwe:Consequence", ns
+            ):
+                scope = get_all_text(conseq, ".//cwe:Scope")
+                impact = get_all_text(conseq, ".//cwe:Impact")
                 if scope or impact:
                     conseq_entry = {}
                     if scope:
@@ -250,11 +269,15 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
 
             # Potential Mitigations
             mitigations = []
-            for mitigation in weakness.findall('.//cwe:Potential_Mitigations/cwe:Mitigation', ns):
-                phase = get_all_text(mitigation, './/cwe:Phase')
-                desc = get_text(mitigation, './/cwe:Description')
+            for mitigation in weakness.findall(
+                ".//cwe:Potential_Mitigations/cwe:Mitigation", ns
+            ):
+                phase = get_all_text(mitigation, ".//cwe:Phase")
+                desc = get_text(mitigation, ".//cwe:Description")
                 if desc:
-                    mit_entry = {"description": desc[:300] + "..." if len(desc) > 300 else desc}
+                    mit_entry = {
+                        "description": desc[:300] + "..." if len(desc) > 300 else desc
+                    }
                     if phase:
                         mit_entry["phase"] = phase
                     mitigations.append(mit_entry)
@@ -263,40 +286,52 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
 
             # Detection Methods
             detections = []
-            for detection in weakness.findall('.//cwe:Detection_Methods/cwe:Detection_Method', ns):
-                method = get_text(detection, './/cwe:Method')
-                desc = get_text(detection, './/cwe:Description')
+            for detection in weakness.findall(
+                ".//cwe:Detection_Methods/cwe:Detection_Method", ns
+            ):
+                method = get_text(detection, ".//cwe:Method")
+                desc = get_text(detection, ".//cwe:Description")
                 if method:
                     det_entry = {"method": method}
                     if desc:
-                        det_entry["description"] = desc[:200] + "..." if len(desc) > 200 else desc
+                        det_entry["description"] = (
+                            desc[:200] + "..." if len(desc) > 200 else desc
+                        )
                     detections.append(det_entry)
             if detections:
                 entry["detection_methods"] = detections[:3]  # Limit to top 3
 
             # Observed Examples (real CVEs)
             examples = []
-            for example in weakness.findall('.//cwe:Observed_Examples/cwe:Observed_Example', ns):
-                ref = get_text(example, './/cwe:Reference')
-                desc = get_text(example, './/cwe:Description')
+            for example in weakness.findall(
+                ".//cwe:Observed_Examples/cwe:Observed_Example", ns
+            ):
+                ref = get_text(example, ".//cwe:Reference")
+                desc = get_text(example, ".//cwe:Description")
                 if ref:
                     ex_entry = {"cve": ref}
                     if desc:
-                        ex_entry["description"] = desc[:150] + "..." if len(desc) > 150 else desc
+                        ex_entry["description"] = (
+                            desc[:150] + "..." if len(desc) > 150 else desc
+                        )
                     examples.append(ex_entry)
             if examples:
                 entry["observed_examples"] = examples[:5]  # Limit to top 5
 
             # Applicable Platforms
             platforms = {}
-            for lang in weakness.findall('.//cwe:Applicable_Platforms/cwe:Language', ns):
-                lang_name = lang.get('Name') or lang.get('Class')
+            for lang in weakness.findall(
+                ".//cwe:Applicable_Platforms/cwe:Language", ns
+            ):
+                lang_name = lang.get("Name") or lang.get("Class")
                 if lang_name:
                     if "languages" not in platforms:
                         platforms["languages"] = []
                     platforms["languages"].append(lang_name)
-            for tech in weakness.findall('.//cwe:Applicable_Platforms/cwe:Technology', ns):
-                tech_name = tech.get('Name') or tech.get('Class')
+            for tech in weakness.findall(
+                ".//cwe:Applicable_Platforms/cwe:Technology", ns
+            ):
+                tech_name = tech.get("Name") or tech.get("Class")
                 if tech_name:
                     if "technologies" not in platforms:
                         platforms["technologies"] = []
@@ -308,7 +343,7 @@ def download_cwe_metadata(db_path: Path, settings: Optional[Dict] = None) -> boo
 
         # Save parsed data
         dest_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(dest_file, 'w') as f:
+        with open(dest_file, "w") as f:
             json.dump(cwe_metadata, f)
 
         print(f"OK ({len(cwe_metadata)} CWEs)")
@@ -327,7 +362,9 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
     import xml.etree.ElementTree as ET
 
     settings = settings or DEFAULT_MITRE_SETTINGS
-    cache_ttl = settings.get('MITRE_CACHE_TTL_HOURS', DEFAULT_MITRE_SETTINGS['MITRE_CACHE_TTL_HOURS'])
+    cache_ttl = settings.get(
+        "MITRE_CACHE_TTL_HOURS", DEFAULT_MITRE_SETTINGS["MITRE_CACHE_TTL_HOURS"]
+    )
 
     dest_file = db_path / "resources" / "capec_metadata.json"
 
@@ -350,7 +387,7 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
 
         # Parse XML
         root = ET.fromstring(response.content)
-        ns = {'capec': 'http://capec.mitre.org/capec-3'}
+        ns = {"capec": "http://capec.mitre.org/capec-3"}
 
         def get_text(element, path):
             """Helper to get text from XML path."""
@@ -362,19 +399,19 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
         capec_metadata = {}
 
         # Find all Attack_Pattern elements
-        for ap in root.findall('.//capec:Attack_Pattern', ns):
-            capec_id = ap.get('ID')
+        for ap in root.findall(".//capec:Attack_Pattern", ns):
+            capec_id = ap.get("ID")
             if not capec_id:
                 continue
 
             entry = {
-                "name": ap.get('Name', ''),
-                "abstraction": ap.get('Abstraction', ''),
-                "status": ap.get('Status', ''),
+                "name": ap.get("Name", ""),
+                "abstraction": ap.get("Abstraction", ""),
+                "status": ap.get("Status", ""),
             }
 
             # Description
-            desc = get_text(ap, 'capec:Description')
+            desc = get_text(ap, "capec:Description")
             if desc:
                 # Truncate if too long
                 if len(desc) > 500:
@@ -382,18 +419,18 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
                 entry["description"] = desc
 
             # Likelihood of Attack
-            likelihood = get_text(ap, 'capec:Likelihood_Of_Attack')
+            likelihood = get_text(ap, "capec:Likelihood_Of_Attack")
             if likelihood:
                 entry["likelihood"] = likelihood
 
             # Typical Severity
-            severity = get_text(ap, 'capec:Typical_Severity')
+            severity = get_text(ap, "capec:Typical_Severity")
             if severity:
                 entry["severity"] = severity
 
             # Prerequisites
             prerequisites = []
-            for prereq in ap.findall('.//capec:Prerequisite', ns):
+            for prereq in ap.findall(".//capec:Prerequisite", ns):
                 if prereq.text and prereq.text.strip():
                     prereq_text = prereq.text.strip()
                     if len(prereq_text) > 200:
@@ -404,10 +441,10 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
 
             # Execution Flow (Attack Steps)
             execution_flow = []
-            for step in ap.findall('.//capec:Attack_Step', ns):
-                step_num = get_text(step, 'capec:Step')
-                phase = get_text(step, 'capec:Phase')
-                step_desc = get_text(step, 'capec:Description')
+            for step in ap.findall(".//capec:Attack_Step", ns):
+                step_num = get_text(step, "capec:Step")
+                phase = get_text(step, "capec:Phase")
+                step_desc = get_text(step, "capec:Description")
                 if step_num or phase or step_desc:
                     step_entry = {}
                     if step_num:
@@ -424,7 +461,7 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
 
             # Example Instances
             examples = []
-            for example in ap.findall('.//capec:Example', ns):
+            for example in ap.findall(".//capec:Example", ns):
                 if example.text and example.text.strip():
                     ex_text = example.text.strip()
                     if len(ex_text) > 300:
@@ -435,8 +472,8 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
 
             # Related Weaknesses (CWEs)
             related_cwes = []
-            for cwe in ap.findall('.//capec:Related_Weakness', ns):
-                cwe_id = cwe.get('CWE_ID')
+            for cwe in ap.findall(".//capec:Related_Weakness", ns):
+                cwe_id = cwe.get("CWE_ID")
                 if cwe_id:
                     related_cwes.append(f"CWE-{cwe_id}")
             if related_cwes:
@@ -446,7 +483,7 @@ def download_capec_metadata(db_path: Path, settings: Optional[Dict] = None) -> b
 
         # Save parsed data
         dest_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(dest_file, 'w') as f:
+        with open(dest_file, "w") as f:
             json.dump(capec_metadata, f)
 
         print(f"OK ({len(capec_metadata)} CAPECs)")
@@ -481,7 +518,9 @@ def get_needed_years(cve_ids: List[str]) -> set:
     return years
 
 
-def update_database(cve_ids: List[str] = None, force: bool = False, settings: Optional[Dict] = None) -> bool:
+def update_database(
+    cve_ids: List[str] = None, force: bool = False, settings: Optional[Dict] = None
+) -> bool:
     """
     Update the CVE2CAPEC database.
 
@@ -546,18 +585,21 @@ def update_database(cve_ids: List[str] = None, force: bool = False, settings: Op
 # Database Loading
 # =============================================================================
 
+
 class MITREDatabase:
     """Handles loading and querying the CVE2CAPEC database for CWE/CAPEC enrichment."""
 
     def __init__(self, db_path: Path = None, settings: Optional[Dict] = None):
         settings = settings or DEFAULT_MITRE_SETTINGS
-        default_path = settings.get('MITRE_DATABASE_PATH', DEFAULT_MITRE_SETTINGS['MITRE_DATABASE_PATH'])
+        default_path = settings.get(
+            "MITRE_DATABASE_PATH", DEFAULT_MITRE_SETTINGS["MITRE_DATABASE_PATH"]
+        )
         self.db_path = Path(db_path or default_path)
-        self.capec_db: Dict = {}             # capec_id -> {name, techniques, ...}
-        self.cwe_db: Dict = {}               # cwe_id -> {parent CWEs, related CAPECs}
-        self.cwe_metadata: Dict = {}         # cwe_id -> {name, abstraction, mapping}
-        self.capec_metadata: Dict = {}       # capec_id -> {description, severity, etc.}
-        self.cve_cache: Dict = {}            # year -> {cve_id -> data}
+        self.capec_db: Dict = {}  # capec_id -> {name, techniques, ...}
+        self.cwe_db: Dict = {}  # cwe_id -> {parent CWEs, related CAPECs}
+        self.cwe_metadata: Dict = {}  # cwe_id -> {name, abstraction, mapping}
+        self.capec_metadata: Dict = {}  # capec_id -> {description, severity, etc.}
+        self.cve_cache: Dict = {}  # year -> {cve_id -> data}
         self._loaded = False
 
     def load_resources(self) -> bool:
@@ -606,7 +648,7 @@ class MITREDatabase:
 
         year_data = {}
         try:
-            with open(cve_file, 'r') as f:
+            with open(cve_file, "r") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -648,8 +690,13 @@ class MITREDatabase:
 # CVE Enrichment
 # =============================================================================
 
-def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
-               include_cwe: bool = True, include_capec: bool = True) -> Dict:
+
+def enrich_cve(
+    cve_data: Dict,
+    mitre_db: MITREDatabase,
+    include_cwe: bool = True,
+    include_capec: bool = True,
+) -> Dict:
     """
     Enrich a single CVE entry with MITRE CWE and CAPEC data.
 
@@ -661,7 +708,7 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
 
     Returns:
         Enriched CVE dictionary with mitre_attack field added
-    
+
     Note:
         ATT&CK techniques and D3FEND defenses are NOT included because
         CVE2CAPEC's mappings are inherited from generic parent CWEs (inaccurate).
@@ -724,7 +771,9 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
                             if capec_meta:
                                 # Description
                                 if capec_meta.get("description"):
-                                    capec_entry["description"] = capec_meta["description"]
+                                    capec_entry["description"] = capec_meta[
+                                        "description"
+                                    ]
                                 # Likelihood of Attack
                                 if capec_meta.get("likelihood"):
                                     capec_entry["likelihood"] = capec_meta["likelihood"]
@@ -733,16 +782,22 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
                                     capec_entry["severity"] = capec_meta["severity"]
                                 # Prerequisites
                                 if capec_meta.get("prerequisites"):
-                                    capec_entry["prerequisites"] = capec_meta["prerequisites"]
+                                    capec_entry["prerequisites"] = capec_meta[
+                                        "prerequisites"
+                                    ]
                                 # Execution Flow
                                 if capec_meta.get("execution_flow"):
-                                    capec_entry["execution_flow"] = capec_meta["execution_flow"]
+                                    capec_entry["execution_flow"] = capec_meta[
+                                        "execution_flow"
+                                    ]
                                 # Example Instances
                                 if capec_meta.get("examples"):
                                     capec_entry["examples"] = capec_meta["examples"]
                                 # Related CWEs
                                 if capec_meta.get("related_cwes"):
-                                    capec_entry["related_cwes"] = capec_meta["related_cwes"]
+                                    capec_entry["related_cwes"] = capec_meta[
+                                        "related_cwes"
+                                    ]
 
                             capec_list.append(capec_entry)
                 return capec_list
@@ -780,7 +835,9 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
 
                     # Add likelihood of exploit
                     if metadata.get("likelihood_of_exploit"):
-                        node["likelihood_of_exploit"] = metadata["likelihood_of_exploit"]
+                        node["likelihood_of_exploit"] = metadata[
+                            "likelihood_of_exploit"
+                        ]
 
                     # Add consequences (CIA impact)
                     if metadata.get("consequences"):
@@ -810,7 +867,7 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
                 chain = []
                 current = leaf_num
                 visited = set()
-                
+
                 while current and current not in visited:
                     visited.add(current)
                     chain.append(current)
@@ -827,27 +884,27 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
                         current = next_parent
                     else:
                         break
-                
+
                 # Reverse to get root -> leaf order
                 chain.reverse()
-                
+
                 # Build nested hierarchy object
                 if not chain:
                     return None
-                
+
                 # Start from root (first in chain)
                 root_num = chain[0]
                 is_only_one = len(chain) == 1
                 hierarchy = build_cwe_node(root_num, is_leaf=is_only_one)
-                
+
                 # Build nested structure
                 current_node = hierarchy
                 for i, cwe_num in enumerate(chain[1:], 1):
-                    is_leaf = (i == len(chain) - 1)
+                    is_leaf = i == len(chain) - 1
                     child_node = build_cwe_node(cwe_num, is_leaf=is_leaf)
                     current_node["child"] = child_node
                     current_node = child_node
-                
+
                 return hierarchy
 
             # Build hierarchy for primary leaf CWE
@@ -864,7 +921,9 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
                         if extra_hierarchy:
                             additional_hierarchies.append(extra_hierarchy)
                     if additional_hierarchies:
-                        mitre_enrichment["additional_cwe_hierarchies"] = additional_hierarchies
+                        mitre_enrichment["additional_cwe_hierarchies"] = (
+                            additional_hierarchies
+                        )
 
         # NOTE: ATT&CK techniques and D3FEND defenses are NOT included because:
         # - CVE2CAPEC's technique mappings are inherited from generic parent CWEs (inaccurate)
@@ -878,8 +937,12 @@ def enrich_cve(cve_data: Dict, mitre_db: MITREDatabase,
     return enriched_cve
 
 
-def enrich_cve_list(cve_list: List[Dict], mitre_db: MITREDatabase,
-                    include_cwe: bool = True, include_capec: bool = True) -> List[Dict]:
+def enrich_cve_list(
+    cve_list: List[Dict],
+    mitre_db: MITREDatabase,
+    include_cwe: bool = True,
+    include_capec: bool = True,
+) -> List[Dict]:
     """
     Enrich a list of CVEs with MITRE CWE and CAPEC data.
 
@@ -909,7 +972,10 @@ def enrich_cve_list(cve_list: List[Dict], mitre_db: MITREDatabase,
 # Main Enrichment Functions
 # =============================================================================
 
-def enrich_recon_data(recon_data: Dict, mitre_db: MITREDatabase, settings: Optional[Dict] = None) -> Dict:
+
+def enrich_recon_data(
+    recon_data: Dict, mitre_db: MITREDatabase, settings: Optional[Dict] = None
+) -> Dict:
     """
     Enrich reconnaissance data with MITRE ATT&CK information.
 
@@ -926,8 +992,12 @@ def enrich_recon_data(recon_data: Dict, mitre_db: MITREDatabase, settings: Optio
         Enriched recon data
     """
     settings = settings or DEFAULT_MITRE_SETTINGS
-    include_cwe = settings.get('MITRE_INCLUDE_CWE', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CWE'])
-    include_capec = settings.get('MITRE_INCLUDE_CAPEC', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CAPEC'])
+    include_cwe = settings.get(
+        "MITRE_INCLUDE_CWE", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CWE"]
+    )
+    include_capec = settings.get(
+        "MITRE_INCLUDE_CAPEC", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CAPEC"]
+    )
 
     total_enriched = 0
     total_cves = 0
@@ -940,7 +1010,8 @@ def enrich_recon_data(recon_data: Dict, mitre_db: MITREDatabase, settings: Optio
         print(f"    Enriching vuln_scan.all_cves ({len(all_cves)} CVEs)...")
 
         enriched_cves, count = enrich_cve_list(
-            all_cves, mitre_db,
+            all_cves,
+            mitre_db,
             include_cwe=include_cwe,
             include_capec=include_capec,
         )
@@ -960,18 +1031,25 @@ def enrich_recon_data(recon_data: Dict, mitre_db: MITREDatabase, settings: Optio
             if cves:
                 tech_cve_count += len(cves)
                 enriched_cves, count = enrich_cve_list(
-                    cves, mitre_db,
+                    cves,
+                    mitre_db,
                     include_cwe=include_cwe,
                     include_capec=include_capec,
                 )
-                recon_data["technology_cves"]["by_technology"][tech_name]["cves"] = enriched_cves
+                recon_data["technology_cves"]["by_technology"][tech_name][
+                    "cves"
+                ] = enriched_cves
                 tech_enriched_count += count
 
         if tech_cve_count > 0:
             total_cves += tech_cve_count
             total_enriched += tech_enriched_count
-            print(f"    Enriching technology_cves.by_technology ({tech_cve_count} CVEs across {len(by_technology)} technologies)...")
-            print(f"    -> Enriched {tech_enriched_count}/{tech_cve_count} CVEs with CWE/CAPEC data")
+            print(
+                f"    Enriching technology_cves.by_technology ({tech_cve_count} CVEs across {len(by_technology)} technologies)..."
+            )
+            print(
+                f"    -> Enriched {tech_enriched_count}/{tech_cve_count} CVEs with CWE/CAPEC data"
+            )
 
     # Add enrichment metadata
     if "metadata" not in recon_data:
@@ -989,7 +1067,9 @@ def enrich_recon_data(recon_data: Dict, mitre_db: MITREDatabase, settings: Optio
     return recon_data
 
 
-def enrich_gvm_data(gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[Dict] = None) -> Dict:
+def enrich_gvm_data(
+    gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[Dict] = None
+) -> Dict:
     """
     Enrich GVM scan data with MITRE ATT&CK information.
 
@@ -1005,8 +1085,12 @@ def enrich_gvm_data(gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[
         Enriched GVM data
     """
     settings = settings or DEFAULT_MITRE_SETTINGS
-    include_cwe = settings.get('MITRE_INCLUDE_CWE', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CWE'])
-    include_capec = settings.get('MITRE_INCLUDE_CAPEC', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CAPEC'])
+    include_cwe = settings.get(
+        "MITRE_INCLUDE_CWE", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CWE"]
+    )
+    include_capec = settings.get(
+        "MITRE_INCLUDE_CAPEC", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CAPEC"]
+    )
 
     total_enriched = 0
     total_cves = 0
@@ -1027,7 +1111,8 @@ def enrich_gvm_data(gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[
                     cve_dicts.append(cve_id)
 
             enriched_cves, count = enrich_cve_list(
-                cve_dicts, mitre_db,
+                cve_dicts,
+                mitre_db,
                 include_cwe=include_cwe,
                 include_capec=include_capec,
             )
@@ -1035,7 +1120,9 @@ def enrich_gvm_data(gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[
             # Update the scan data
             gvm_data["scans"][i]["unique_cves_enriched"] = enriched_cves
             total_enriched += count
-            print(f"    -> Enriched {count}/{len(unique_cves)} CVEs with CWE/CAPEC data")
+            print(
+                f"    -> Enriched {count}/{len(unique_cves)} CVEs with CWE/CAPEC data"
+            )
 
     # Add enrichment metadata
     if "metadata" not in gvm_data:
@@ -1053,7 +1140,9 @@ def enrich_gvm_data(gvm_data: Dict, mitre_db: MITREDatabase, settings: Optional[
     return gvm_data
 
 
-def run_mitre_enrichment(recon_data: Dict = None, output_file: Path = None, settings: Optional[Dict] = None) -> Dict:
+def run_mitre_enrichment(
+    recon_data: Dict = None, output_file: Path = None, settings: Optional[Dict] = None
+) -> Dict:
     """
     Run MITRE CWE/CAPEC enrichment on recon data.
 
@@ -1068,14 +1157,24 @@ def run_mitre_enrichment(recon_data: Dict = None, output_file: Path = None, sett
         Enriched recon data
     """
     settings = settings or DEFAULT_MITRE_SETTINGS
-    include_cwe = settings.get('MITRE_INCLUDE_CWE', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CWE'])
-    include_capec = settings.get('MITRE_INCLUDE_CAPEC', DEFAULT_MITRE_SETTINGS['MITRE_INCLUDE_CAPEC'])
-    enrich_recon = settings.get('MITRE_ENRICH_RECON', DEFAULT_MITRE_SETTINGS['MITRE_ENRICH_RECON'])
-    enrich_gvm = settings.get('MITRE_ENRICH_GVM', DEFAULT_MITRE_SETTINGS['MITRE_ENRICH_GVM'])
-    auto_update = settings.get('MITRE_AUTO_UPDATE_DB', DEFAULT_MITRE_SETTINGS['MITRE_AUTO_UPDATE_DB'])
+    include_cwe = settings.get(
+        "MITRE_INCLUDE_CWE", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CWE"]
+    )
+    include_capec = settings.get(
+        "MITRE_INCLUDE_CAPEC", DEFAULT_MITRE_SETTINGS["MITRE_INCLUDE_CAPEC"]
+    )
+    enrich_recon = settings.get(
+        "MITRE_ENRICH_RECON", DEFAULT_MITRE_SETTINGS["MITRE_ENRICH_RECON"]
+    )
+    enrich_gvm = settings.get(
+        "MITRE_ENRICH_GVM", DEFAULT_MITRE_SETTINGS["MITRE_ENRICH_GVM"]
+    )
+    auto_update = settings.get(
+        "MITRE_AUTO_UPDATE_DB", DEFAULT_MITRE_SETTINGS["MITRE_AUTO_UPDATE_DB"]
+    )
 
     print("\n" + "=" * 60)
-    print("         RedAmon - MITRE CWE/CAPEC Enrichment")
+    print("         parallax - MITRE CWE/CAPEC Enrichment")
     print("=" * 60)
     print(f"    Include CWE: {include_cwe}")
     print(f"    Include CAPEC: {include_capec}")
@@ -1123,7 +1222,7 @@ def run_mitre_enrichment(recon_data: Dict = None, output_file: Path = None, sett
 
         # Save if output file provided
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(recon_data, f, indent=2)
             print(f"\n[+] Saved enriched data to: {output_file}")
 
@@ -1150,8 +1249,12 @@ def enrich_gvm_file(gvm_file: Path, settings: Optional[Dict] = None) -> Dict:
         Enriched GVM data
     """
     settings = settings or DEFAULT_MITRE_SETTINGS
-    enrich_gvm = settings.get('MITRE_ENRICH_GVM', DEFAULT_MITRE_SETTINGS['MITRE_ENRICH_GVM'])
-    auto_update = settings.get('MITRE_AUTO_UPDATE_DB', DEFAULT_MITRE_SETTINGS['MITRE_AUTO_UPDATE_DB'])
+    enrich_gvm = settings.get(
+        "MITRE_ENRICH_GVM", DEFAULT_MITRE_SETTINGS["MITRE_ENRICH_GVM"]
+    )
+    auto_update = settings.get(
+        "MITRE_AUTO_UPDATE_DB", DEFAULT_MITRE_SETTINGS["MITRE_AUTO_UPDATE_DB"]
+    )
 
     if not enrich_gvm:
         print("[*] GVM MITRE enrichment disabled in settings")
@@ -1162,13 +1265,13 @@ def enrich_gvm_file(gvm_file: Path, settings: Optional[Dict] = None) -> Dict:
         return None
 
     print("\n" + "=" * 60)
-    print("         RedAmon - MITRE CWE/CAPEC Enrichment (GVM)")
+    print("         parallax - MITRE CWE/CAPEC Enrichment (GVM)")
     print("=" * 60)
     print(f"    File: {gvm_file}")
     print(f"    Auto Update DB: {auto_update}")
 
     # Load GVM data
-    with open(gvm_file, 'r') as f:
+    with open(gvm_file, "r") as f:
         gvm_data = json.load(f)
 
     # Collect all CVE IDs
@@ -1203,7 +1306,7 @@ def enrich_gvm_file(gvm_file: Path, settings: Optional[Dict] = None) -> Dict:
     gvm_data = enrich_gvm_data(gvm_data, mitre_db, settings)
 
     # Save enriched data
-    with open(gvm_file, 'w') as f:
+    with open(gvm_file, "w") as f:
         json.dump(gvm_data, f, indent=2)
     print(f"\n[+] Saved enriched data to: {gvm_file}")
 

@@ -1,5 +1,5 @@
 """
-RedAmon Agent Orchestrator
+parallax Agent Orchestrator
 
 ReAct-style agent orchestrator with iterative Thought-Tool-Output pattern.
 Supports phase tracking, LLM-managed todo lists, and checkpoint-based approval.
@@ -40,7 +40,11 @@ from state import (
     summarize_trace_for_response,
     utc_now,
 )
-from project_settings import get_setting, load_project_settings, get_allowed_tools_for_phase
+from project_settings import (
+    get_setting,
+    load_project_settings,
+    get_allowed_tools_for_phase,
+)
 from tools import (
     MCPToolsManager,
     Neo4jToolManager,
@@ -136,7 +140,9 @@ class AgentOrchestrator:
         self._build_graph()
         self._initialized = True
 
-        logger.info("AgentOrchestrator initialized (LLM deferred until project settings loaded)")
+        logger.info(
+            "AgentOrchestrator initialized (LLM deferred until project settings loaded)"
+        )
 
     # =========================================================================
     # METASPLOIT PREWARM
@@ -185,7 +191,7 @@ class AgentOrchestrator:
     def _apply_project_settings(self, project_id: str) -> None:
         """Load project settings from webapp API and reconfigure LLM if model changed."""
         settings = load_project_settings(project_id)
-        new_model = settings.get('OPENAI_MODEL', 'claude-opus-4-6')
+        new_model = settings.get("OPENAI_MODEL", "claude-opus-4-6")
 
         if new_model != self.model_name:
             logger.info(f"Model changed: {self.model_name} -> {new_model}")
@@ -209,11 +215,11 @@ class AgentOrchestrator:
           - anything else         → ("openai", "<model>")
         """
         if model_name.startswith("openai_compat/"):
-            return ("openai_compat", model_name[len("openai_compat/"):])
+            return ("openai_compat", model_name[len("openai_compat/") :])
         elif model_name.startswith("openrouter/"):
-            return ("openrouter", model_name[len("openrouter/"):])
+            return ("openrouter", model_name[len("openrouter/") :])
         elif model_name.startswith("bedrock/"):
-            return ("bedrock", model_name[len("bedrock/"):])
+            return ("bedrock", model_name[len("bedrock/") :])
         elif model_name.startswith("claude-"):
             return ("anthropic", model_name)
         else:
@@ -248,7 +254,7 @@ class AgentOrchestrator:
                 base_url="https://openrouter.ai/api/v1",
                 temperature=0,
                 default_headers={
-                    "HTTP-Referer": "https://redamon.dev",
+                    "HTTP-Referer": "https://parallax.dev",
                     "X-Title": "Parallax Agent",
                 },
             )
@@ -259,6 +265,7 @@ class AgentOrchestrator:
                     f"AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required for model '{self.model_name}'"
                 )
             from langchain_aws import ChatBedrockConverse
+
             self.llm = ChatBedrockConverse(
                 model=api_model,
                 region_name=self.aws_region,
@@ -302,7 +309,7 @@ class AgentOrchestrator:
             uri=self.neo4j_uri,
             user=self.neo4j_user,
             password=self.neo4j_password,
-            llm=self.llm
+            llm=self.llm,
         )
         graph_tool = self.neo4j_manager.get_tool()
 
@@ -311,10 +318,14 @@ class AgentOrchestrator:
         web_search_tool = web_search_manager.get_tool()
 
         # Create phase-aware tool executor
-        self.tool_executor = PhaseAwareToolExecutor(mcp_manager, graph_tool, web_search_tool)
+        self.tool_executor = PhaseAwareToolExecutor(
+            mcp_manager, graph_tool, web_search_tool
+        )
         self.tool_executor.register_mcp_tools(mcp_tools)
 
-        logger.info(f"Tools initialized: {len(self.tool_executor.get_all_tools())} available")
+        logger.info(
+            f"Tools initialized: {len(self.tool_executor.get_all_tools())} available"
+        )
 
     def _build_graph(self) -> None:
         """Build the ReAct LangGraph with phase tracking."""
@@ -343,7 +354,7 @@ class AgentOrchestrator:
                 "process_approval": "process_approval",
                 "process_answer": "process_answer",
                 "think": "think",
-            }
+            },
         )
 
         # Main routing from think node
@@ -356,7 +367,7 @@ class AgentOrchestrator:
                 "await_question": "await_question",
                 "generate_response": "generate_response",
                 "think": "think",
-            }
+            },
         )
 
         # Tool execution flow — goes directly back to think (analysis merged into think node)
@@ -372,7 +383,7 @@ class AgentOrchestrator:
             {
                 "think": "think",
                 "generate_response": "generate_response",
-            }
+            },
         )
 
         # Q&A flow - pause for user input
@@ -385,7 +396,7 @@ class AgentOrchestrator:
             {
                 "think": "think",
                 "generate_response": "generate_response",
-            }
+            },
         )
 
         # Final response always ends
@@ -398,7 +409,7 @@ class AgentOrchestrator:
     # LANGGRAPH NODES
     # =========================================================================
 
-    async def _initialize_node(self, state: AgentState, config = None) -> dict:
+    async def _initialize_node(self, state: AgentState, config=None) -> dict:
         """
         Initialize state for new conversation or update for continuation.
 
@@ -413,8 +424,12 @@ class AgentOrchestrator:
         state = migrate_legacy_objective(state)
 
         # If resuming after approval/answer, preserve state for routing
-        if state.get("user_approval_response") and state.get("phase_transition_pending"):
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with approval response: {state.get('user_approval_response')}")
+        if state.get("user_approval_response") and state.get(
+            "phase_transition_pending"
+        ):
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Resuming with approval response: {state.get('user_approval_response')}"
+            )
             return {
                 "user_id": user_id,
                 "project_id": project_id,
@@ -422,7 +437,9 @@ class AgentOrchestrator:
             }
 
         if state.get("user_question_answer") and state.get("pending_question"):
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with question answer")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Resuming with question answer"
+            )
             return {
                 "user_id": user_id,
                 "project_id": project_id,
@@ -443,8 +460,7 @@ class AgentOrchestrator:
 
         # Check if this is a NEW message (not approval/answer)
         is_new_message = not (
-            state.get("user_approval_response") or
-            state.get("user_question_answer")
+            state.get("user_approval_response") or state.get("user_question_answer")
         )
 
         # If new message AND previous objective was completed, add as new objective
@@ -458,13 +474,23 @@ class AgentOrchestrator:
                 current_objective_content = objectives[current_idx].get("content", "")
 
             # New objective if: task was completed, OR index out of bounds, OR message differs from current objective
-            is_different_message = latest_message.strip() != current_objective_content.strip()
+            is_different_message = (
+                latest_message.strip() != current_objective_content.strip()
+            )
 
-            logger.debug(f"[{user_id}/{project_id}/{session_id}] New objective check: task_complete={task_was_complete}, "
-                        f"idx={current_idx}, len={len(objectives)}, is_different={is_different_message}")
+            logger.debug(
+                f"[{user_id}/{project_id}/{session_id}] New objective check: task_complete={task_was_complete}, "
+                f"idx={current_idx}, len={len(objectives)}, is_different={is_different_message}"
+            )
 
-            if task_was_complete or current_idx >= len(objectives) or is_different_message:
-                logger.info(f"[{user_id}/{project_id}/{session_id}] Detected new objective after task completion")
+            if (
+                task_was_complete
+                or current_idx >= len(objectives)
+                or is_different_message
+            ):
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] Detected new objective after task completion"
+                )
 
                 # Archive completed objective
                 if task_was_complete and current_idx < len(objectives):
@@ -473,32 +499,43 @@ class AgentOrchestrator:
                         objective=completed_obj.model_copy(
                             update={
                                 "completed_at": utc_now(),
-                                "completion_reason": state.get("completion_reason")
+                                "completion_reason": state.get("completion_reason"),
                             }
                         ),
-                        execution_steps=[s["step_id"] for s in state.get("execution_trace", [])],
+                        execution_steps=[
+                            s["step_id"] for s in state.get("execution_trace", [])
+                        ],
                         findings=state.get("target_info", {}),
-                        success=True
+                        success=True,
                     )
-                    objective_history = state.get("objective_history", []) + [outcome.model_dump()]
-                    logger.info(f"[{user_id}/{project_id}/{session_id}] Archived objective: {completed_obj.content[:10000]}")
+                    objective_history = state.get("objective_history", []) + [
+                        outcome.model_dump()
+                    ]
+                    logger.info(
+                        f"[{user_id}/{project_id}/{session_id}] Archived objective: {completed_obj.content[:10000]}"
+                    )
                 else:
                     objective_history = state.get("objective_history", [])
 
                 # Classify attack path and required phase using LLM
-                attack_path, required_phase = await classify_attack_path(self.llm, latest_message)
-                logger.info(f"[{user_id}/{project_id}/{session_id}] Attack path classified: {attack_path}, required_phase: {required_phase}")
+                attack_path, required_phase = await classify_attack_path(
+                    self.llm, latest_message
+                )
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] Attack path classified: {attack_path}, required_phase: {required_phase}"
+                )
 
                 # Create new objective from latest message
                 new_objective = ConversationObjective(
-                    content=latest_message,
-                    required_phase=required_phase
+                    content=latest_message, required_phase=required_phase
                 ).model_dump()
 
                 objectives = objectives + [new_objective]
                 current_idx = len(objectives) - 1
 
-                logger.info(f"[{user_id}/{project_id}/{session_id}] New objective #{current_idx + 1}: {latest_message[:10000]}")
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] New objective #{current_idx + 1}: {latest_message[:10000]}"
+                )
 
                 # CRITICAL: Reset task_complete for new objective
                 task_complete = False
@@ -529,26 +566,34 @@ class AgentOrchestrator:
                     "awaiting_user_approval": False,
                     "phase_transition_pending": None,
                     "_abort_transition": False,
-                    "original_objective": state.get("original_objective", latest_message),  # Backward compat
+                    "original_objective": state.get(
+                        "original_objective", latest_message
+                    ),  # Backward compat
                 }
 
         # Otherwise, continue with current objective
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Continuing with current objective")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Continuing with current objective"
+        )
         return {
             "current_iteration": state.get("current_iteration", 0),
-            "max_iterations": state.get("max_iterations", get_setting('MAX_ITERATIONS', 100)),
+            "max_iterations": state.get(
+                "max_iterations", get_setting("MAX_ITERATIONS", 100)
+            ),
             "task_complete": False,
             "current_phase": state.get("current_phase", "informational"),
             "attack_path_type": state.get("attack_path_type", "cve_exploit"),
-            "phase_history": state.get("phase_history", [
-                PhaseHistoryEntry(phase="informational").model_dump()
-            ]),
+            "phase_history": state.get(
+                "phase_history", [PhaseHistoryEntry(phase="informational").model_dump()]
+            ),
             "execution_trace": state.get("execution_trace", []),
             "todo_list": state.get("todo_list", []),
             "conversation_objectives": objectives,
             "current_objective_index": current_idx,
             "objective_history": state.get("objective_history", []),
-            "original_objective": state.get("original_objective", latest_message),  # Backward compat
+            "original_objective": state.get(
+                "original_objective", latest_message
+            ),  # Backward compat
             "target_info": state.get("target_info", TargetInfo().model_dump()),
             "user_id": user_id,
             "project_id": project_id,
@@ -558,7 +603,7 @@ class AgentOrchestrator:
             "_abort_transition": False,
         }
 
-    async def _think_node(self, state: AgentState, config = None) -> dict:
+    async def _think_node(self, state: AgentState, config=None) -> dict:
         """
         Core ReAct reasoning node.
 
@@ -572,9 +617,13 @@ class AgentOrchestrator:
         # Check if we just transitioned - log and clear the marker
         just_transitioned = state.get("_just_transitioned_to")
         if just_transitioned:
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Just transitioned to {just_transitioned}, now in phase: {phase}")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Just transitioned to {just_transitioned}, now in phase: {phase}"
+            )
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Think node - iteration {iteration}, phase: {phase}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Think node - iteration {iteration}, phase: {phase}"
+        )
 
         # Set context for tools
         set_tenant_context(user_id, project_id)
@@ -585,35 +634,43 @@ class AgentOrchestrator:
         current_idx = state.get("current_objective_index", 0)
 
         if current_idx < len(objectives):
-            current_objective = objectives[current_idx].get("content", "No objective specified")
+            current_objective = objectives[current_idx].get(
+                "content", "No objective specified"
+            )
         else:
             # Fallback to original_objective for backward compatibility
-            current_objective = state.get("original_objective", "No objective specified")
+            current_objective = state.get(
+                "original_objective", "No objective specified"
+            )
 
         # Build the prompt with current state
         execution_trace_formatted = format_execution_trace(
             state.get("execution_trace", []),
             objectives=state.get("conversation_objectives", []),
             objective_history=state.get("objective_history", []),
-            current_objective_index=state.get("current_objective_index", 0)
+            current_objective_index=state.get("current_objective_index", 0),
         )
         todo_list_formatted = format_todo_list(state.get("todo_list", []))
         target_info_formatted = json_dumps_safe(state.get("target_info", {}), indent=2)
         qa_history_formatted = format_qa_history(state.get("qa_history", []))
-        objective_history_formatted = format_objective_history(state.get("objective_history", []))
+        objective_history_formatted = format_objective_history(
+            state.get("objective_history", [])
+        )
 
         # Get phase tools with attack path type for dynamic routing
         attack_path_type = state.get("attack_path_type", "cve_exploit")
         available_tools = get_phase_tools(
             phase,
-            get_setting('ACTIVATE_POST_EXPL_PHASE', True),
-            get_setting('POST_EXPL_PHASE_TYPE', 'statefull'),
+            get_setting("ACTIVATE_POST_EXPL_PHASE", True),
+            get_setting("POST_EXPL_PHASE_TYPE", "statefull"),
             attack_path_type,
             execution_trace=state.get("execution_trace", []),
         )
 
         # Get allowed tools for the current phase (filtered, no internal tools)
-        allowed_tools = [t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS]
+        allowed_tools = [
+            t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS
+        ]
 
         system_prompt = REACT_SYSTEM_PROMPT.format(
             current_phase=phase,
@@ -624,7 +681,9 @@ class AgentOrchestrator:
             tool_args_section=build_tool_args_section(allowed_tools),
             dynamic_rules=build_dynamic_rules(allowed_tools),
             iteration=iteration,
-            max_iterations=state.get("max_iterations", get_setting('MAX_ITERATIONS', 100)),
+            max_iterations=state.get(
+                "max_iterations", get_setting("MAX_ITERATIONS", 100)
+            ),
             objective=current_objective,  # Now uses current objective, not original
             objective_history_summary=objective_history_formatted,  # Added
             execution_trace=execution_trace_formatted,
@@ -634,10 +693,13 @@ class AgentOrchestrator:
         )
 
         # Inject stealth mode rules if enabled (prepended for maximum priority)
-        if get_setting('STEALTH_MODE', False):
+        if get_setting("STEALTH_MODE", False):
             from prompts.stealth_rules import STEALTH_MODE_RULES
+
             system_prompt = STEALTH_MODE_RULES + "\n\n" + system_prompt
-            logger.info(f"[{user_id}/{project_id}/{session_id}] STEALTH MODE active — injected stealth rules into prompt")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] STEALTH MODE active — injected stealth rules into prompt"
+            )
 
         # Failure loop detection: if 3+ consecutive similar failures, inject warning
         exec_trace = state.get("execution_trace", [])
@@ -653,7 +715,9 @@ class AgentOrchestrator:
                     or "exploit completed, but no session" in output_lower
                 )
                 if is_failure:
-                    pattern = f"{step.get('tool_name')}:{str(step.get('tool_args', {}))[:80]}"
+                    pattern = (
+                        f"{step.get('tool_name')}:{str(step.get('tool_args', {}))[:80]}"
+                    )
                     if last_pattern is None or pattern == last_pattern:
                         consecutive_failures += 1
                         last_pattern = pattern
@@ -674,21 +738,29 @@ class AgentOrchestrator:
         # When execute_tool ran before this think node, _current_step has tool_output but no output_analysis yet
         pending_step = state.get("_current_step")
         has_pending_output = (
-            pending_step and
-            pending_step.get("tool_output") is not None and
-            not pending_step.get("output_analysis")  # Not yet analyzed
+            pending_step
+            and pending_step.get("tool_output") is not None
+            and not pending_step.get("output_analysis")  # Not yet analyzed
         )
 
         if has_pending_output:
-            tool_output_raw = pending_step.get("tool_output") or pending_step.get("error_message") or "No output"
+            tool_output_raw = (
+                pending_step.get("tool_output")
+                or pending_step.get("error_message")
+                or "No output"
+            )
             output_section = PENDING_OUTPUT_ANALYSIS_SECTION.format(
                 tool_name=pending_step.get("tool_name", "unknown"),
                 tool_args=json_dumps_safe(pending_step.get("tool_args") or {}),
                 success=pending_step.get("success", False),
-                tool_output=tool_output_raw[:get_setting('TOOL_OUTPUT_MAX_CHARS', 20000)],
+                tool_output=tool_output_raw[
+                    : get_setting("TOOL_OUTPUT_MAX_CHARS", 20000)
+                ],
             )
             system_prompt = system_prompt + "\n" + output_section
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Injected output analysis section for tool: {pending_step.get('tool_name')}")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Injected output analysis section for tool: {pending_step.get('tool_name')}"
+            )
 
         # Drain pending guidance messages from user
         guidance_messages = []
@@ -710,7 +782,9 @@ class AgentOrchestrator:
                 guidance_section += f"{i}. {msg}\n"
             guidance_section += "\nAcknowledge this guidance in your thought.\n"
             system_prompt += guidance_section
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Injected {len(guidance_messages)} guidance messages into prompt")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Injected {len(guidance_messages)} guidance messages into prompt"
+            )
 
         # Log the full prompt for debugging
         logger.info(f"\n{'#'*80}")
@@ -724,17 +798,19 @@ class AgentOrchestrator:
         # Log full prompt in chunks to avoid log line limits
         chunk_size = 4000
         for i in range(0, len(system_prompt), chunk_size):
-            chunk = system_prompt[i:i+chunk_size]
+            chunk = system_prompt[i : i + chunk_size]
             logger.info(f"PROMPT[{i}:{i+len(chunk)}]:\n{chunk}")
         logger.info(f"{'#'*80}\n")
 
         # Get LLM decision with retry on parse failures
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content="Based on the current state, what is your next action? Output EXACTLY ONE valid JSON object and nothing else. Do NOT simulate tool execution - you will receive actual tool output after submitting your decision. Do NOT output multiple JSON objects or continue the conversation - just ONE decision JSON.")
+            HumanMessage(
+                content="Based on the current state, what is your next action? Output EXACTLY ONE valid JSON object and nothing else. Do NOT simulate tool execution - you will receive actual tool output after submitting your decision. Do NOT output multiple JSON objects or continue the conversation - just ONE decision JSON."
+            ),
         ]
 
-        max_retries = get_setting('LLM_PARSE_MAX_RETRIES', 3)
+        max_retries = get_setting("LLM_PARSE_MAX_RETRIES", 3)
         decision = None
         last_error = None
         response_text = ""
@@ -742,19 +818,25 @@ class AgentOrchestrator:
         for attempt in range(max_retries):
             if attempt > 0:
                 # Append the failed response and error feedback for retry
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] Parse attempt {attempt}/{max_retries} failed: {last_error}")
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] Parse attempt {attempt}/{max_retries} failed: {last_error}"
+                )
                 messages.append(AIMessage(content=response_text))
-                messages.append(HumanMessage(
-                    content=f"Your previous JSON response failed validation:\n{last_error}\n\n"
-                            f"Fix the error and output EXACTLY ONE valid JSON object. No extra text."
-                ))
+                messages.append(
+                    HumanMessage(
+                        content=f"Your previous JSON response failed validation:\n{last_error}\n\n"
+                        f"Fix the error and output EXACTLY ONE valid JSON object. No extra text."
+                    )
+                )
 
             response = await self.llm.ainvoke(messages)
             response_text = normalize_content(response.content).strip()
 
             # Log the raw LLM response
             logger.info(f"\n{'='*60}")
-            logger.info(f"LLM RAW RESPONSE - Iteration {iteration} (attempt {attempt+1}/{max_retries})")
+            logger.info(
+                f"LLM RAW RESPONSE - Iteration {iteration} (attempt {attempt+1}/{max_retries})"
+            )
             logger.info(f"{'='*60}")
             logger.info(f"{response_text}")
             logger.info(f"{'='*60}\n")
@@ -765,7 +847,9 @@ class AgentOrchestrator:
 
         # If all retries failed, use the fallback
         if not decision:
-            logger.error(f"[{user_id}/{project_id}/{session_id}] All {max_retries} parse attempts failed: {last_error}")
+            logger.error(
+                f"[{user_id}/{project_id}/{session_id}] All {max_retries} parse attempts failed: {last_error}"
+            )
             decision = LLMDecision(
                 thought=response_text,
                 reasoning="Failed to parse structured response after retries",
@@ -774,7 +858,9 @@ class AgentOrchestrator:
                 updated_todo_list=[],
             )
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Decision: action={decision.action}, tool={decision.tool_name}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Decision: action={decision.action}, tool={decision.tool_name}"
+        )
 
         # Detailed logging for debugging
         logger.info(f"\n{'='*60}")
@@ -785,7 +871,9 @@ class AgentOrchestrator:
         logger.info(f"ACTION: {decision.action}")
         if decision.tool_name:
             logger.info(f"TOOL: {decision.tool_name}")
-            logger.info(f"TOOL_ARGS: {json_dumps_safe(decision.tool_args, indent=2) if decision.tool_args else 'None'}")
+            logger.info(
+                f"TOOL_ARGS: {json_dumps_safe(decision.tool_args, indent=2) if decision.tool_args else 'None'}"
+            )
         if decision.phase_transition:
             logger.info(f"PHASE_TRANSITION: {decision.phase_transition.to_phase}")
 
@@ -797,9 +885,11 @@ class AgentOrchestrator:
                     "pending": "[ ]",
                     "in_progress": "[~]",
                     "completed": "[x]",
-                    "blocked": "[!]"
+                    "blocked": "[!]",
                 }.get(todo.status, "[ ]")
-                priority_marker = {"high": "!!!", "medium": "!!", "low": "!"}.get(todo.priority, "!!")
+                priority_marker = {"high": "!!!", "medium": "!!", "low": "!"}.get(
+                    todo.priority, "!!"
+                )
                 logger.info(f"  {status_icon} {priority_marker} {todo.description}")
         else:
             logger.info(f"TODO LIST: (no updates)")
@@ -812,7 +902,9 @@ class AgentOrchestrator:
                 q = entry.get("question", {})
                 a = entry.get("answer", {})
                 logger.info(f"  Q{i}: {q.get('question', 'N/A')[:10000]}")
-                logger.info(f"      Answer: {a.get('answer', 'N/A')[:10000] if a else '(unanswered)'}")
+                logger.info(
+                    f"      Answer: {a.get('answer', 'N/A')[:10000] if a else '(unanswered)'}"
+                )
         else:
             logger.info(f"Q&A HISTORY: (none)")
 
@@ -838,7 +930,11 @@ class AgentOrchestrator:
         )
 
         # Convert todo list updates to dicts for state storage
-        todo_list = [item.model_dump() for item in decision.updated_todo_list] if decision.updated_todo_list else state.get("todo_list", [])
+        todo_list = (
+            [item.model_dump() for item in decision.updated_todo_list]
+            if decision.updated_todo_list
+            else state.get("todo_list", [])
+        )
 
         # Build state updates
         updates = {
@@ -858,18 +954,24 @@ class AgentOrchestrator:
                 # Update step with analysis data (merged from old _analyze_output_node)
                 pending_step["output_analysis"] = analysis.interpretation
                 pending_step["actionable_findings"] = analysis.actionable_findings or []
-                pending_step["recommended_next_steps"] = analysis.recommended_next_steps or []
+                pending_step["recommended_next_steps"] = (
+                    analysis.recommended_next_steps or []
+                )
 
                 # Log analysis results
                 logger.info(f"\n{'='*60}")
-                logger.info(f"OUTPUT ANALYSIS (inline) - Iteration {iteration} - Phase: {phase}")
+                logger.info(
+                    f"OUTPUT ANALYSIS (inline) - Iteration {iteration} - Phase: {phase}"
+                )
                 logger.info(f"{'='*60}")
                 logger.info(f"TOOL: {pending_step.get('tool_name')}")
                 logger.info(f"INTERPRETATION: {analysis.interpretation[:2000]}")
                 if analysis.actionable_findings:
                     logger.info(f"ACTIONABLE FINDINGS: {analysis.actionable_findings}")
                 if analysis.recommended_next_steps:
-                    logger.info(f"RECOMMENDED NEXT STEPS: {analysis.recommended_next_steps}")
+                    logger.info(
+                        f"RECOMMENDED NEXT STEPS: {analysis.recommended_next_steps}"
+                    )
                 if analysis.exploit_succeeded:
                     logger.info(f"EXPLOIT SUCCEEDED: {analysis.exploit_details}")
                 logger.info(f"{'='*60}\n")
@@ -889,38 +991,67 @@ class AgentOrchestrator:
                 merged_target = current_target.merge_from(new_target)
 
                 # Exploit success detection (moved from old _analyze_output_node)
-                if analysis.exploit_succeeded and analysis.exploit_details and phase == "exploitation":
+                if (
+                    analysis.exploit_succeeded
+                    and analysis.exploit_details
+                    and phase == "exploitation"
+                ):
                     details = analysis.exploit_details
                     try:
-                        from orchestrator_helpers.exploit_writer import create_exploit_node
+                        from orchestrator_helpers.exploit_writer import (
+                            create_exploit_node,
+                        )
+
                         create_exploit_node(
-                            self.neo4j_uri, self.neo4j_user, self.neo4j_password,
-                            user_id, project_id,
-                            attack_type=details.get("attack_type", state.get("attack_path_type", "cve_exploit")),
-                            target_ip=details.get("target_ip", merged_target.primary_target),
+                            self.neo4j_uri,
+                            self.neo4j_user,
+                            self.neo4j_password,
+                            user_id,
+                            project_id,
+                            attack_type=details.get(
+                                "attack_type",
+                                state.get("attack_path_type", "cve_exploit"),
+                            ),
+                            target_ip=details.get(
+                                "target_ip", merged_target.primary_target
+                            ),
                             target_port=details.get("target_port"),
-                            cve_ids=details.get("cve_ids", merged_target.vulnerabilities),
+                            cve_ids=details.get(
+                                "cve_ids", merged_target.vulnerabilities
+                            ),
                             session_id=details.get("session_id"),
                             username=details.get("username"),
                             password=details.get("password"),
                             evidence=details.get("evidence", ""),
                             execution_trace=state.get("execution_trace", []),
                         )
-                        logger.info(f"[{user_id}/{project_id}/{session_id}] Exploit success detected - node created")
+                        logger.info(
+                            f"[{user_id}/{project_id}/{session_id}] Exploit success detected - node created"
+                        )
                     except Exception as e:
-                        logger.error(f"[{user_id}/{project_id}/{session_id}] Failed to create Exploit node: {e}")
+                        logger.error(
+                            f"[{user_id}/{project_id}/{session_id}] Failed to create Exploit node: {e}"
+                        )
 
                 # Append completed step to execution trace
                 execution_trace = state.get("execution_trace", []) + [pending_step]
                 updates["execution_trace"] = execution_trace
                 updates["target_info"] = merged_target.model_dump()
                 updates["_completed_step"] = pending_step  # For streaming emission
-                updates["messages"] = [AIMessage(content=f"**Step {pending_step.get('iteration')}** [{phase}]\n\n{analysis.interpretation}")]
+                updates["messages"] = [
+                    AIMessage(
+                        content=f"**Step {pending_step.get('iteration')}** [{phase}]\n\n{analysis.interpretation}"
+                    )
+                ]
 
             else:
                 # LLM didn't return analysis — use raw output as fallback
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] No output_analysis in LLM response, using fallback")
-                pending_step["output_analysis"] = (pending_step.get("tool_output") or "")[:2000]
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] No output_analysis in LLM response, using fallback"
+                )
+                pending_step["output_analysis"] = (
+                    pending_step.get("tool_output") or ""
+                )[:2000]
                 pending_step["actionable_findings"] = []
                 pending_step["recommended_next_steps"] = []
                 execution_trace = state.get("execution_trace", []) + [pending_step]
@@ -930,50 +1061,73 @@ class AgentOrchestrator:
         # Handle different actions
         if decision.action == "complete":
             updates["task_complete"] = True
-            updates["completion_reason"] = decision.completion_reason or "Task completed"
+            updates["completion_reason"] = (
+                decision.completion_reason or "Task completed"
+            )
 
         elif decision.action == "transition_phase":
             phase_transition = decision.phase_transition
             to_phase = phase_transition.to_phase if phase_transition else "exploitation"
 
             # Block post-exploitation if ACTIVATE_POST_EXPL_PHASE=False
-            if to_phase == "post_exploitation" and not get_setting('ACTIVATE_POST_EXPL_PHASE', True):
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] Blocking post_exploitation transition: ACTIVATE_POST_EXPL_PHASE=False")
+            if to_phase == "post_exploitation" and not get_setting(
+                "ACTIVATE_POST_EXPL_PHASE", True
+            ):
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] Blocking post_exploitation transition: ACTIVATE_POST_EXPL_PHASE=False"
+                )
                 updates["task_complete"] = True
-                updates["completion_reason"] = "Exploitation completed. Post-exploitation phase is disabled."
+                updates["completion_reason"] = (
+                    "Exploitation completed. Post-exploitation phase is disabled."
+                )
                 updates["messages"] = [
-                    AIMessage(content="Exploitation completed successfully. "
-                                     "Post-exploitation phase is not available because ACTIVATE_POST_EXPL_PHASE=False. "
-                                     "If you need post-exploitation capabilities, enable it in the project settings.")
+                    AIMessage(
+                        content="Exploitation completed successfully. "
+                        "Post-exploitation phase is not available because ACTIVATE_POST_EXPL_PHASE=False. "
+                        "If you need post-exploitation capabilities, enable it in the project settings."
+                    )
                 ]
                 return updates
 
             # Ignore transition to same phase - just continue
             if to_phase == phase:
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] Ignoring transition to same phase: {phase}")
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] Ignoring transition to same phase: {phase}"
+                )
                 # If agent specified a tool, use it; otherwise loop back to think
                 if decision.tool_name:
                     updates["_decision"]["action"] = "use_tool"
                 else:
                     # Let the LLM figure out what to do next
-                    logger.info(f"[{user_id}/{project_id}/{session_id}] No tool specified, looping back to think")
+                    logger.info(
+                        f"[{user_id}/{project_id}/{session_id}] No tool specified, looping back to think"
+                    )
                 return updates
 
             # Also ignore if we JUST transitioned to this phase (prevents immediate re-request)
             if just_transitioned and to_phase == just_transitioned:
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] Ignoring re-request for recent transition to: {to_phase}")
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] Ignoring re-request for recent transition to: {to_phase}"
+                )
                 # If agent specified a tool, use it; otherwise loop back to think
                 if decision.tool_name:
                     updates["_decision"]["action"] = "use_tool"
                 else:
                     # Let the LLM figure out what to do next
-                    logger.info(f"[{user_id}/{project_id}/{session_id}] No tool specified, looping back to think")
+                    logger.info(
+                        f"[{user_id}/{project_id}/{session_id}] No tool specified, looping back to think"
+                    )
                 return updates
 
             # AUTO-APPROVE: Downgrade to informational (safe, no approval needed)
             # Per user preference: auto-downgrade when transitioning to informational from later phases
-            if to_phase == "informational" and phase in ["exploitation", "post_exploitation"]:
-                logger.info(f"[{user_id}/{project_id}/{session_id}] Auto-approving safe downgrade: {phase} → informational")
+            if to_phase == "informational" and phase in [
+                "exploitation",
+                "post_exploitation",
+            ]:
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] Auto-approving safe downgrade: {phase} → informational"
+                )
                 updates["current_phase"] = to_phase
                 updates["phase_history"] = state.get("phase_history", []) + [
                     PhaseHistoryEntry(phase=to_phase).model_dump()
@@ -982,7 +1136,9 @@ class AgentOrchestrator:
 
                 # Add system message to context
                 updates["messages"] = [
-                    AIMessage(content=f"Automatically transitioned from {phase} to informational phase for new objective.")
+                    AIMessage(
+                        content=f"Automatically transitioned from {phase} to informational phase for new objective."
+                    )
                 ]
 
                 # Continue to next iteration (will call think node again with new phase)
@@ -991,8 +1147,11 @@ class AgentOrchestrator:
 
             # Check if approval is required (for exploitation/post-exploitation upgrades)
             needs_approval = (
-                (to_phase == "exploitation" and get_setting('REQUIRE_APPROVAL_FOR_EXPLOITATION', True)) or
-                (to_phase == "post_exploitation" and get_setting('REQUIRE_APPROVAL_FOR_POST_EXPLOITATION', True))
+                to_phase == "exploitation"
+                and get_setting("REQUIRE_APPROVAL_FOR_EXPLOITATION", True)
+            ) or (
+                to_phase == "post_exploitation"
+                and get_setting("REQUIRE_APPROVAL_FOR_POST_EXPLOITATION", True)
             )
 
             if needs_approval:
@@ -1000,27 +1159,35 @@ class AgentOrchestrator:
                     from_phase=phase,
                     to_phase=to_phase,
                     reason=phase_transition.reason if phase_transition else "",
-                    planned_actions=phase_transition.planned_actions if phase_transition else [],
+                    planned_actions=(
+                        phase_transition.planned_actions if phase_transition else []
+                    ),
                     risks=phase_transition.risks if phase_transition else [],
                 ).model_dump()
                 updates["awaiting_user_approval"] = True
             else:
                 # Auto-approve if not required
-                logger.info(f"[{user_id}/{project_id}/{session_id}] Auto-approving phase transition (approval not required): {phase} → {to_phase}")
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] Auto-approving phase transition (approval not required): {phase} → {to_phase}"
+                )
                 updates["current_phase"] = to_phase
                 updates["phase_history"] = state.get("phase_history", []) + [
                     PhaseHistoryEntry(phase=to_phase).model_dump()
                 ]
                 updates["_just_transitioned_to"] = to_phase
                 updates["messages"] = [
-                    AIMessage(content=f"Phase transition from {phase} to {to_phase} auto-approved (approval not required in settings). Now operating in {to_phase} phase. Proceed with the objective.")
+                    AIMessage(
+                        content=f"Phase transition from {phase} to {to_phase} auto-approved (approval not required in settings). Now operating in {to_phase} phase. Proceed with the objective."
+                    )
                 ]
 
         elif decision.action == "ask_user":
             # Handle ask_user action - agent wants to ask user a question
             user_q = decision.user_question
             if user_q:
-                logger.info(f"[{user_id}/{project_id}/{session_id}] Asking user: {user_q.question[:10000]}")
+                logger.info(
+                    f"[{user_id}/{project_id}/{session_id}] Asking user: {user_q.question[:10000]}"
+                )
                 updates["pending_question"] = UserQuestionRequest(
                     question=user_q.question,
                     context=user_q.context,
@@ -1031,16 +1198,20 @@ class AgentOrchestrator:
                 ).model_dump()
                 updates["awaiting_user_question"] = True
             else:
-                logger.warning(f"[{user_id}/{project_id}/{session_id}] ask_user action but no user_question provided")
+                logger.warning(
+                    f"[{user_id}/{project_id}/{session_id}] ask_user action but no user_question provided"
+                )
 
         # Pre-exploitation validation: Force ask_user when session params are missing
         # This only applies to CVE exploits in statefull mode that need reverse/bind payloads
         # Brute force attacks don't need LHOST/LPORT - SSH creates direct shell via CreateSession=true
-        if (get_setting('POST_EXPL_PHASE_TYPE', 'statefull') == "statefull" and
-            state.get("attack_path_type") == "cve_exploit" and
-            decision.action == "use_tool" and
-            decision.tool_name == "metasploit_console" and
-            not updates.get("awaiting_user_question")):
+        if (
+            get_setting("POST_EXPL_PHASE_TYPE", "statefull") == "statefull"
+            and state.get("attack_path_type") == "cve_exploit"
+            and decision.action == "use_tool"
+            and decision.tool_name == "metasploit_console"
+            and not updates.get("awaiting_user_question")
+        ):
 
             config_complete, missing_params = is_session_config_complete()
 
@@ -1052,7 +1223,9 @@ class AgentOrchestrator:
                     answer = qa.get("answer", {})
                     answer_text = answer.get("answer", "") if answer else ""
                     question_obj = qa.get("question", {})
-                    question_text = question_obj.get("question", "") if question_obj else ""
+                    question_text = (
+                        question_obj.get("question", "") if question_obj else ""
+                    )
 
                     # Simple heuristic: if question mentions LHOST/LPORT and has an answer
                     if answer_text:
@@ -1068,14 +1241,16 @@ class AgentOrchestrator:
 
                 if still_missing:
                     # Force ask_user action instead of use_tool
-                    logger.info(f"[{user_id}/{project_id}/{session_id}] Forcing ask_user: missing session params {still_missing}")
+                    logger.info(
+                        f"[{user_id}/{project_id}/{session_id}] Forcing ask_user: missing session params {still_missing}"
+                    )
                     updates["_decision"]["action"] = "ask_user"
                     updates["pending_question"] = UserQuestionRequest(
                         question=f"Please provide the following required parameters for session-based exploitation: {', '.join(still_missing)}",
                         context="Session-based exploitation requires these parameters to be configured. "
-                                "LHOST is your attacker IP address where the target will connect back. "
-                                "LPORT is the port you will listen on. "
-                                "For bind payloads, BIND_PORT is the port the target will open.",
+                        "LHOST is your attacker IP address where the target will connect back. "
+                        "LPORT is the port you will listen on. "
+                        "For bind payloads, BIND_PORT is the port the target will open.",
                         format="text",
                         phase=phase,
                     ).model_dump()
@@ -1083,7 +1258,7 @@ class AgentOrchestrator:
 
         return updates
 
-    async def _execute_tool_node(self, state: AgentState, config = None) -> dict:
+    async def _execute_tool_node(self, state: AgentState, config=None) -> dict:
         """Execute the selected tool."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
@@ -1111,7 +1286,9 @@ class AgentOrchestrator:
 
         # Handle missing tool name
         if not tool_name:
-            logger.error(f"[{user_id}/{project_id}/{session_id}] No tool name in step_data")
+            logger.error(
+                f"[{user_id}/{project_id}/{session_id}] No tool name in step_data"
+            )
             step_data["tool_output"] = "Error: No tool specified"
             step_data["success"] = False
             step_data["error_message"] = "No tool name provided"
@@ -1137,7 +1314,9 @@ class AgentOrchestrator:
             # Wait for prewarm (full restart) if it's still running
             prewarm_task = self._prewarm_tasks.get(session_key)
             if prewarm_task and not prewarm_task.done():
-                logger.info(f"[{session_key}] Waiting for Metasploit prewarm to complete...")
+                logger.info(
+                    f"[{session_key}] Waiting for Metasploit prewarm to complete..."
+                )
                 try:
                     await prewarm_task
                 except Exception:
@@ -1145,7 +1324,9 @@ class AgentOrchestrator:
                 logger.info(f"[{session_key}] Metasploit prewarm finished")
 
             # Lightweight soft reset: clear module context and kill leftover sessions
-            logger.info(f"[{session_key}] Soft-resetting Metasploit state (first use in session)")
+            logger.info(
+                f"[{session_key}] Soft-resetting Metasploit state (first use in session)"
+            )
             await self.tool_executor.execute(
                 "metasploit_console", {"command": "back; sessions -K"}, phase
             )
@@ -1153,29 +1334,35 @@ class AgentOrchestrator:
             logger.info(f"[{session_key}] Metasploit soft reset complete")
 
         # Check if this is a long-running command that needs progress streaming
-        is_long_running_msf = (
-            tool_name == "metasploit_console" and
-            any(cmd in (tool_args.get("command", "") or "").lower() for cmd in ["run", "exploit"])
+        is_long_running_msf = tool_name == "metasploit_console" and any(
+            cmd in (tool_args.get("command", "") or "").lower()
+            for cmd in ["run", "exploit"]
         )
-        is_long_running_hydra = (tool_name == "execute_hydra")
+        is_long_running_hydra = tool_name == "execute_hydra"
 
         # Execute the tool (with progress streaming for long-running commands)
         if is_long_running_msf and self._streaming_callback:
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Using execute_with_progress for long-running MSF command")
-            result = await self.tool_executor.execute_with_progress(
-                tool_name,
-                tool_args,
-                phase,
-                progress_callback=self._streaming_callback.on_tool_output_chunk
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Using execute_with_progress for long-running MSF command"
             )
-        elif is_long_running_hydra and self._streaming_callback:
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Using execute_with_progress for Hydra brute force")
             result = await self.tool_executor.execute_with_progress(
                 tool_name,
                 tool_args,
                 phase,
                 progress_callback=self._streaming_callback.on_tool_output_chunk,
-                progress_url=os.environ.get('MCP_HYDRA_PROGRESS_URL', 'http://kali-sandbox:8014/progress')
+            )
+        elif is_long_running_hydra and self._streaming_callback:
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Using execute_with_progress for Hydra brute force"
+            )
+            result = await self.tool_executor.execute_with_progress(
+                tool_name,
+                tool_args,
+                phase,
+                progress_callback=self._streaming_callback.on_tool_output_chunk,
+                progress_url=os.environ.get(
+                    "MCP_HYDRA_PROGRESS_URL", "http://kali-sandbox:8014/progress"
+                ),
             )
         else:
             result = await self.tool_executor.execute(tool_name, tool_args, phase)
@@ -1202,7 +1389,7 @@ class AgentOrchestrator:
         logger.info(f"TOOL_OUTPUT ({len(tool_output)} chars):")
         if tool_output:
             output_preview = tool_output[:100000]
-            for line in output_preview.split('\n'):
+            for line in output_preview.split("\n"):
                 logger.info(f"  | {line}")
             if len(tool_output) > 100000:
                 logger.info(f"  | ... ({len(tool_output) - 100000} more chars)")
@@ -1218,16 +1405,20 @@ class AgentOrchestrator:
         updates.update(extra_updates)
         return updates
 
-    async def _await_approval_node(self, state: AgentState, config = None) -> dict:
+    async def _await_approval_node(self, state: AgentState, config=None) -> dict:
         """Pause and request user approval for phase transition."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
         transition = state.get("phase_transition_pending", {})
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Awaiting approval for {transition.get('from_phase')} -> {transition.get('to_phase')}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Awaiting approval for {transition.get('from_phase')} -> {transition.get('to_phase')}"
+        )
 
         # Format the approval message
-        planned_actions = "\n".join(f"- {a}" for a in transition.get("planned_actions", []))
+        planned_actions = "\n".join(
+            f"- {a}" for a in transition.get("planned_actions", [])
+        )
         risks = "\n".join(f"- {r}" for r in transition.get("risks", []))
 
         message = PHASE_TRANSITION_MESSAGE.format(
@@ -1243,7 +1434,7 @@ class AgentOrchestrator:
             "messages": [AIMessage(content=message)],
         }
 
-    async def _process_approval_node(self, state: AgentState, config = None) -> dict:
+    async def _process_approval_node(self, state: AgentState, config=None) -> dict:
         """Process user's approval response."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
@@ -1251,7 +1442,9 @@ class AgentOrchestrator:
         modification = state.get("user_modification")
         transition = state.get("phase_transition_pending", {})
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Processing approval: {approval}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Processing approval: {approval}"
+        )
 
         # Common fields to clear approval state - CRITICAL for frontend to close dialog
         # Also clear _emitted_approval_key so the same transition can be requested again later
@@ -1266,8 +1459,12 @@ class AgentOrchestrator:
         if approval == "approve":
             # Transition to new phase
             new_phase = transition.get("to_phase", "exploitation")
-            from_phase = transition.get("from_phase", state.get("current_phase", "informational"))
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Transitioning to phase: {new_phase}")
+            from_phase = transition.get(
+                "from_phase", state.get("current_phase", "informational")
+            )
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Transitioning to phase: {new_phase}"
+            )
 
             # Update objective's required_phase hint
             objectives = state.get("conversation_objectives", [])
@@ -1287,17 +1484,22 @@ class AgentOrchestrator:
                 success=True,
                 output_analysis=f"Phase transition approved. Agent is now in {new_phase} phase and can use {new_phase}-specific tools. DO NOT request another transition to {new_phase} - you are already there.",
             )
-            updated_trace = state.get("execution_trace", []) + [transition_step.model_dump()]
+            updated_trace = state.get("execution_trace", []) + [
+                transition_step.model_dump()
+            ]
 
             return {
                 **clear_approval_state,
                 "current_phase": new_phase,
-                "phase_history": state.get("phase_history", []) + [
-                    PhaseHistoryEntry(phase=new_phase).model_dump()
-                ],
+                "phase_history": state.get("phase_history", [])
+                + [PhaseHistoryEntry(phase=new_phase).model_dump()],
                 "conversation_objectives": objectives,  # Updated
                 "execution_trace": updated_trace,  # Add transition to trace so LLM sees it
-                "messages": [AIMessage(content=f"Phase transition approved. Now in **{new_phase}** phase.")],
+                "messages": [
+                    AIMessage(
+                        content=f"Phase transition approved. Now in **{new_phase}** phase."
+                    )
+                ],
                 # Mark that we just transitioned to prevent re-requesting
                 "_just_transitioned_to": new_phase,
             }
@@ -1308,7 +1510,9 @@ class AgentOrchestrator:
                 **clear_approval_state,
                 "messages": [
                     HumanMessage(content=f"User modification: {modification}"),
-                    AIMessage(content="Understood. Adjusting approach based on your feedback."),
+                    AIMessage(
+                        content="Understood. Adjusting approach based on your feedback."
+                    ),
                 ],
             }
 
@@ -1316,16 +1520,22 @@ class AgentOrchestrator:
             return {
                 **clear_approval_state,
                 "_abort_transition": True,
-                "messages": [AIMessage(content="Phase transition cancelled by user. Continuing in current phase. What would you like to do next?")],
+                "messages": [
+                    AIMessage(
+                        content="Phase transition cancelled by user. Continuing in current phase. What would you like to do next?"
+                    )
+                ],
             }
 
-    async def _await_question_node(self, state: AgentState, config = None) -> dict:
+    async def _await_question_node(self, state: AgentState, config=None) -> dict:
         """Pause and request user answer to a question."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
         question = state.get("pending_question", {})
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Awaiting answer: {question.get('question', '')[:10000]}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Awaiting answer: {question.get('question', '')[:10000]}"
+        )
 
         # Format options for display
         options_text = ""
@@ -1348,14 +1558,16 @@ class AgentOrchestrator:
             "messages": [AIMessage(content=message)],
         }
 
-    async def _process_answer_node(self, state: AgentState, config = None) -> dict:
+    async def _process_answer_node(self, state: AgentState, config=None) -> dict:
         """Process user's answer to a question."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
         answer = state.get("user_question_answer")
         question = state.get("pending_question", {})
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Processing answer: {answer[:10000] if answer else 'None'}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Processing answer: {answer[:10000] if answer else 'None'}"
+        )
 
         # Create Q&A history entry
         qa_entry = QAHistoryEntry(
@@ -1380,23 +1592,29 @@ class AgentOrchestrator:
             "qa_history": qa_history,
             "messages": [
                 HumanMessage(content=f"User answer: {answer}"),
-                AIMessage(content="Thank you for the clarification. Continuing with the task..."),
+                AIMessage(
+                    content="Thank you for the clarification. Continuing with the task..."
+                ),
             ],
         }
 
-    async def _generate_response_node(self, state: AgentState, config = None) -> dict:
+    async def _generate_response_node(self, state: AgentState, config=None) -> dict:
         """Generate final response summarizing the session."""
         user_id, project_id, session_id = get_identifiers(state, config)
 
         # If this was an aborted phase transition, just output the cancel message
         # without generating a full report — keep session alive for next user message
         if state.get("_abort_transition"):
-            logger.info(f"[{user_id}/{project_id}/{session_id}] Abort transition — skipping full report")
+            logger.info(
+                f"[{user_id}/{project_id}/{session_id}] Abort transition — skipping full report"
+            )
             return {
                 "_abort_transition": False,
             }
 
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Generating final response...")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Generating final response..."
+        )
 
         # Emit a thinking event so the frontend shows a loading indicator
         if self._streaming_callback:
@@ -1405,7 +1623,7 @@ class AgentOrchestrator:
                     state.get("current_iteration", 0),
                     state.get("current_phase", "informational"),
                     "Generating final summary report...",
-                    "Compiling all findings, tool outputs, and recommendations into a comprehensive report."
+                    "Compiling all findings, tool outputs, and recommendations into a comprehensive report.",
                 )
             except Exception as e:
                 logger.error(f"Error emitting report thinking event: {e}")
@@ -1420,7 +1638,7 @@ class AgentOrchestrator:
                 state.get("execution_trace", []),
                 objectives=state.get("conversation_objectives", []),
                 objective_history=state.get("objective_history", []),
-                current_objective_index=state.get("current_objective_index", 0)
+                current_objective_index=state.get("current_objective_index", 0),
             ),
             target_info=json_dumps_safe(state.get("target_info", {}), indent=2),
             todo_list=format_todo_list(state.get("todo_list", [])),
@@ -1431,7 +1649,8 @@ class AgentOrchestrator:
         return {
             "messages": [AIMessage(content=normalize_content(response.content))],
             "task_complete": True,
-            "completion_reason": state.get("completion_reason") or "Task completed successfully",
+            "completion_reason": state.get("completion_reason")
+            or "Task completed successfully",
             "_report_generated": True,
         }
 
@@ -1442,7 +1661,9 @@ class AgentOrchestrator:
     def _route_after_initialize(self, state: AgentState) -> str:
         """Route after initialization - process approval, process answer, or think."""
         # If we have an approval response pending, go to process_approval
-        if state.get("user_approval_response") and state.get("phase_transition_pending"):
+        if state.get("user_approval_response") and state.get(
+            "phase_transition_pending"
+        ):
             logger.info("Routing to process_approval - approval response pending")
             return "process_approval"
 
@@ -1456,7 +1677,9 @@ class AgentOrchestrator:
     def _route_after_think(self, state: AgentState) -> str:
         """Route based on think node decision."""
         # Check for max iterations
-        if state.get("current_iteration", 0) >= state.get("max_iterations", get_setting('MAX_ITERATIONS', 100)):
+        if state.get("current_iteration", 0) >= state.get(
+            "max_iterations", get_setting("MAX_ITERATIONS", 100)
+        ):
             logger.info("Max iterations reached, generating response")
             return "generate_response"
 
@@ -1484,7 +1707,9 @@ class AgentOrchestrator:
             if state.get("pending_question"):
                 return "await_question"
             else:
-                logger.warning("ask_user action but no pending_question, continuing to think")
+                logger.warning(
+                    "ask_user action but no pending_question, continuing to think"
+                )
                 return "generate_response"
         elif action == "transition_phase":
             # If transition is pending, await approval
@@ -1492,7 +1717,9 @@ class AgentOrchestrator:
                 return "await_approval"
             # If transition was auto-approved (no pending, but phase changed), continue thinking
             if state.get("_just_transitioned_to"):
-                logger.info(f"Phase auto-approved to {state.get('_just_transitioned_to')}, continuing to think")
+                logger.info(
+                    f"Phase auto-approved to {state.get('_just_transitioned_to')}, continuing to think"
+                )
                 return "think"
             # Transition was ignored - route based on tool availability
             if tool_name:
@@ -1535,24 +1762,20 @@ class AgentOrchestrator:
     # =========================================================================
 
     async def invoke(
-        self,
-        question: str,
-        user_id: str,
-        project_id: str,
-        session_id: str
+        self, question: str, user_id: str, project_id: str, session_id: str
     ) -> InvokeResponse:
         """Main entry point for agent invocation."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Invoking with: {question[:10000]}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Invoking with: {question[:10000]}"
+        )
 
         try:
             config = create_config(user_id, project_id, session_id)
-            input_data = {
-                "messages": [HumanMessage(content=question)]
-            }
+            input_data = {"messages": [HumanMessage(content=question)]}
 
             final_state = await self.graph.ainvoke(input_data, config)
 
@@ -1568,14 +1791,16 @@ class AgentOrchestrator:
         user_id: str,
         project_id: str,
         decision: str,
-        modification: Optional[str] = None
+        modification: Optional[str] = None,
     ) -> InvokeResponse:
         """Resume execution after user provides approval response."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with approval: {decision}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Resuming with approval: {decision}"
+        )
 
         try:
             config = create_config(user_id, project_id, session_id)
@@ -1606,18 +1831,16 @@ class AgentOrchestrator:
             return InvokeResponse(error=str(e))
 
     async def resume_after_answer(
-        self,
-        session_id: str,
-        user_id: str,
-        project_id: str,
-        answer: str
+        self, session_id: str, user_id: str, project_id: str, answer: str
     ) -> InvokeResponse:
         """Resume execution after user provides answer to a question."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with answer: {answer[:10000]}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Resuming with answer: {answer[:10000]}"
+        )
 
         try:
             config = create_config(user_id, project_id, session_id)
@@ -1688,7 +1911,7 @@ class AgentOrchestrator:
         project_id: str,
         session_id: str,
         streaming_callback,
-        guidance_queue=None
+        guidance_queue=None,
     ) -> InvokeResponse:
         """
         Invoke agent with streaming callbacks for real-time updates.
@@ -1711,7 +1934,9 @@ class AgentOrchestrator:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Invoking with streaming: {question[:10000]}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Invoking with streaming: {question[:10000]}"
+        )
 
         # Store streaming callback and guidance queue for use in nodes
         self._streaming_callback = streaming_callback
@@ -1719,13 +1944,13 @@ class AgentOrchestrator:
 
         try:
             config = create_config(user_id, project_id, session_id)
-            input_data = {
-                "messages": [HumanMessage(content=question)]
-            }
+            input_data = {"messages": [HumanMessage(content=question)]}
 
             # Stream graph execution
             final_state = None
-            async for event in self.graph.astream(input_data, config, stream_mode="values"):
+            async for event in self.graph.astream(
+                input_data, config, stream_mode="values"
+            ):
                 final_state = event
                 await self._emit_streaming_events(event, streaming_callback)
 
@@ -1736,7 +1961,7 @@ class AgentOrchestrator:
                     response.answer,
                     response.iteration_count,
                     response.current_phase,
-                    response.task_complete
+                    response.task_complete,
                 )
                 return response
             else:
@@ -1758,14 +1983,16 @@ class AgentOrchestrator:
         decision: str,
         modification: Optional[str],
         streaming_callback,
-        guidance_queue=None
+        guidance_queue=None,
     ) -> InvokeResponse:
         """Resume after approval with streaming callbacks."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with streaming approval: {decision}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Resuming with streaming approval: {decision}"
+        )
 
         # Store streaming callback and guidance queue for use in nodes
         self._streaming_callback = streaming_callback
@@ -1777,7 +2004,9 @@ class AgentOrchestrator:
             # Get current state
             current_state = await self.graph.aget_state(config)
             if not current_state or not current_state.values:
-                await streaming_callback.on_error("No pending session found", recoverable=False)
+                await streaming_callback.on_error(
+                    "No pending session found", recoverable=False
+                )
                 return InvokeResponse(error="No pending session found")
 
             # Update with approval
@@ -1788,7 +2017,9 @@ class AgentOrchestrator:
 
             # Stream execution
             final_state = None
-            async for event in self.graph.astream(update_data, config, stream_mode="values"):
+            async for event in self.graph.astream(
+                update_data, config, stream_mode="values"
+            ):
                 final_state = event
                 await self._emit_streaming_events(event, streaming_callback)
 
@@ -1798,14 +2029,16 @@ class AgentOrchestrator:
                     response.answer,
                     response.iteration_count,
                     response.current_phase,
-                    response.task_complete
+                    response.task_complete,
                 )
                 return response
             else:
                 raise RuntimeError("No final state returned")
 
         except Exception as e:
-            logger.error(f"[{user_id}/{project_id}/{session_id}] Resume streaming error: {e}")
+            logger.error(
+                f"[{user_id}/{project_id}/{session_id}] Resume streaming error: {e}"
+            )
             await streaming_callback.on_error(str(e), recoverable=False)
             return InvokeResponse(error=str(e))
         finally:
@@ -1819,14 +2052,16 @@ class AgentOrchestrator:
         project_id: str,
         answer: str,
         streaming_callback,
-        guidance_queue=None
+        guidance_queue=None,
     ) -> InvokeResponse:
         """Resume after answer with streaming callbacks."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming with streaming answer: {answer[:10000]}")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Resuming with streaming answer: {answer[:10000]}"
+        )
 
         # Store streaming callback and guidance queue for use in nodes
         self._streaming_callback = streaming_callback
@@ -1838,7 +2073,9 @@ class AgentOrchestrator:
             # Get current state
             current_state = await self.graph.aget_state(config)
             if not current_state or not current_state.values:
-                await streaming_callback.on_error("No pending session found", recoverable=False)
+                await streaming_callback.on_error(
+                    "No pending session found", recoverable=False
+                )
                 return InvokeResponse(error="No pending session found")
 
             # Update with answer
@@ -1848,7 +2085,9 @@ class AgentOrchestrator:
 
             # Stream execution
             final_state = None
-            async for event in self.graph.astream(update_data, config, stream_mode="values"):
+            async for event in self.graph.astream(
+                update_data, config, stream_mode="values"
+            ):
                 final_state = event
                 await self._emit_streaming_events(event, streaming_callback)
 
@@ -1858,14 +2097,16 @@ class AgentOrchestrator:
                     response.answer,
                     response.iteration_count,
                     response.current_phase,
-                    response.task_complete
+                    response.task_complete,
                 )
                 return response
             else:
                 raise RuntimeError("No final state returned")
 
         except Exception as e:
-            logger.error(f"[{user_id}/{project_id}/{session_id}] Resume streaming error: {e}")
+            logger.error(
+                f"[{user_id}/{project_id}/{session_id}] Resume streaming error: {e}"
+            )
             await streaming_callback.on_error(str(e), recoverable=False)
             return InvokeResponse(error=str(e))
         finally:
@@ -1878,14 +2119,16 @@ class AgentOrchestrator:
         project_id: str,
         session_id: str,
         streaming_callback,
-        guidance_queue=None
+        guidance_queue=None,
     ) -> InvokeResponse:
         """Resume execution from last checkpoint (after stop)."""
         if not self._initialized:
             raise RuntimeError("Orchestrator not initialized. Call initialize() first.")
 
         self._apply_project_settings(project_id)
-        logger.info(f"[{user_id}/{project_id}/{session_id}] Resuming execution from checkpoint")
+        logger.info(
+            f"[{user_id}/{project_id}/{session_id}] Resuming execution from checkpoint"
+        )
 
         self._streaming_callback = streaming_callback
         self._guidance_queue = guidance_queue
@@ -1895,7 +2138,9 @@ class AgentOrchestrator:
 
             current_state = await self.graph.aget_state(config)
             if not current_state or not current_state.values:
-                await streaming_callback.on_error("No session state to resume", recoverable=False)
+                await streaming_callback.on_error(
+                    "No session state to resume", recoverable=False
+                )
                 return InvokeResponse(error="No session state to resume")
 
             # Re-invoke graph from last checkpoint with empty input
@@ -1910,14 +2155,16 @@ class AgentOrchestrator:
                     response.answer,
                     response.iteration_count,
                     response.current_phase,
-                    response.task_complete
+                    response.task_complete,
                 )
                 return response
             else:
                 raise RuntimeError("No final state returned")
 
         except Exception as e:
-            logger.error(f"[{user_id}/{project_id}/{session_id}] Resume execution error: {e}")
+            logger.error(
+                f"[{user_id}/{project_id}/{session_id}] Resume execution error: {e}"
+            )
             await streaming_callback.on_error(str(e), recoverable=False)
             return InvokeResponse(error=str(e))
         finally:
@@ -1932,7 +2179,7 @@ class AgentOrchestrator:
                 await callback.on_phase_update(
                     state.get("current_phase", "informational"),
                     state.get("current_iteration", 0),
-                    state.get("attack_path_type", "cve_exploit")
+                    state.get("attack_path_type", "cve_exploit"),
                 )
 
             # Todo list update
@@ -1940,10 +2187,14 @@ class AgentOrchestrator:
                 await callback.on_todo_update(state["todo_list"])
 
             # Approval request - use state marker to prevent duplicate emissions
-            if state.get("awaiting_user_approval") and state.get("phase_transition_pending"):
+            if state.get("awaiting_user_approval") and state.get(
+                "phase_transition_pending"
+            ):
                 pending = state["phase_transition_pending"]
                 # Create unique key for this specific transition
-                approval_key = f"{pending.get('from_phase', '')}_{pending.get('to_phase', '')}"
+                approval_key = (
+                    f"{pending.get('from_phase', '')}_{pending.get('to_phase', '')}"
+                )
                 if state.get("_emitted_approval_key") != approval_key:
                     await callback.on_approval_request(pending)
                     state["_emitted_approval_key"] = approval_key
@@ -1962,7 +2213,11 @@ class AgentOrchestrator:
             #    tool_complete → thinking → tool_start (correct timeline order)
             if "_completed_step" in state and state["_completed_step"]:
                 cstep = state["_completed_step"]
-                if cstep.get("success") is not None and cstep.get("output_analysis") and not cstep.get("_emitted_complete"):
+                if (
+                    cstep.get("success") is not None
+                    and cstep.get("output_analysis")
+                    and not cstep.get("_emitted_complete")
+                ):
                     await callback.on_tool_complete(
                         cstep.get("tool_name", "unknown"),
                         cstep["success"],
@@ -1973,16 +2228,20 @@ class AgentOrchestrator:
                     cstep["_emitted_complete"] = True
 
                     # Also emit execution_step summary for the completed step
-                    await callback.on_execution_step({
-                        "iteration": cstep.get("iteration", 0),
-                        "phase": state.get("current_phase", "informational"),
-                        "thought": cstep.get("thought", ""),
-                        "tool_name": cstep.get("tool_name"),
-                        "success": cstep.get("success", False),
-                        "output_summary": cstep.get("output_analysis", "")[:10000],
-                        "actionable_findings": cstep.get("actionable_findings", []),
-                        "recommended_next_steps": cstep.get("recommended_next_steps", []),
-                    })
+                    await callback.on_execution_step(
+                        {
+                            "iteration": cstep.get("iteration", 0),
+                            "phase": state.get("current_phase", "informational"),
+                            "thought": cstep.get("thought", ""),
+                            "tool_name": cstep.get("tool_name"),
+                            "success": cstep.get("success", False),
+                            "output_summary": cstep.get("output_analysis", "")[:10000],
+                            "actionable_findings": cstep.get("actionable_findings", []),
+                            "recommended_next_steps": cstep.get(
+                                "recommended_next_steps", []
+                            ),
+                        }
+                    )
 
             # 2. Emit thinking (from _decision stored by _think_node)
             if "_decision" in state and state["_decision"]:
@@ -1993,7 +2252,7 @@ class AgentOrchestrator:
                             state.get("current_iteration", 0),
                             state.get("current_phase", "informational"),
                             decision.get("thought", ""),
-                            decision.get("reasoning", "")
+                            decision.get("reasoning", ""),
                         )
                         decision["_emitted_thinking"] = True
                     except Exception as e:
@@ -2005,8 +2264,7 @@ class AgentOrchestrator:
                 # Emit tool start
                 if step.get("tool_name") and not step.get("_emitted_start"):
                     await callback.on_tool_start(
-                        step["tool_name"],
-                        step.get("tool_args", {})
+                        step["tool_name"], step.get("tool_args", {})
                     )
                     step["_emitted_start"] = True
 
@@ -2015,7 +2273,7 @@ class AgentOrchestrator:
                     await callback.on_tool_output_chunk(
                         step.get("tool_name", "unknown"),
                         step["tool_output"],
-                        is_final=True
+                        is_final=True,
                     )
                     step["_emitted_output"] = True
 
@@ -2029,7 +2287,7 @@ class AgentOrchestrator:
                 await callback.on_task_complete(
                     state.get("completion_reason", "Task completed successfully"),
                     state.get("current_phase", "informational"),
-                    state.get("current_iteration", 0)
+                    state.get("current_iteration", 0),
                 )
 
         except Exception as e:

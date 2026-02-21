@@ -23,7 +23,7 @@ import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Strip ANSI escape codes (terminal colors) from output
-ANSI_ESCAPE = re.compile(r'\x1b\[[0-9;]*[a-zA-Z]')
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
 
 # Server configuration
 SERVER_NAME = "network_recon"
@@ -101,10 +101,7 @@ def execute_curl(args: str) -> str:
     try:
         cmd_args = shlex.split(args)
         result = subprocess.run(
-            ["curl"] + cmd_args,
-            capture_output=True,
-            text=True,
-            timeout=60
+            ["curl"] + cmd_args, capture_output=True, text=True, timeout=60
         )
         output = result.stdout
         if result.stderr:
@@ -155,18 +152,16 @@ def execute_naabu(args: str) -> str:
     try:
         cmd_args = shlex.split(args)
         result = subprocess.run(
-            ["naabu"] + cmd_args,
-            capture_output=True,
-            text=True,
-            timeout=300
+            ["naabu"] + cmd_args, capture_output=True, text=True, timeout=300
         )
-        output = ANSI_ESCAPE.sub('', result.stdout)
+        output = ANSI_ESCAPE.sub("", result.stdout)
         if result.stderr:
             # Strip ANSI codes then filter out progress/info messages, keep errors
-            clean_stderr = ANSI_ESCAPE.sub('', result.stderr)
+            clean_stderr = ANSI_ESCAPE.sub("", result.stderr)
             stderr_lines = [
-                line for line in clean_stderr.split('\n')
-                if line and not line.startswith('[INF]')
+                line
+                for line in clean_stderr.split("\n")
+                if line and not line.startswith("[INF]")
             ]
             if stderr_lines:
                 output += f"\n[STDERR]: {chr(10).join(stderr_lines)}"
@@ -215,10 +210,7 @@ def kali_shell(command: str) -> str:
     """
     try:
         result = subprocess.run(
-            ["bash", "-c", command],
-            capture_output=True,
-            text=True,
-            timeout=120
+            ["bash", "-c", command], capture_output=True, text=True, timeout=120
         )
         output = result.stdout
         if result.stderr:
@@ -272,17 +264,17 @@ def execute_code(code: str, language: str = "python", filename: str = "exploit")
     language = language.lower().strip()
     LANG_MAP = {
         "python": ("py", "python3"),
-        "py":     ("py", "python3"),
-        "bash":   ("sh", "bash"),
-        "sh":     ("sh", "bash"),
-        "shell":  ("sh", "bash"),
-        "ruby":   ("rb", "ruby"),
-        "rb":     ("rb", "ruby"),
-        "perl":   ("pl", "perl"),
-        "pl":     ("pl", "perl"),
-        "c":      ("c",  None),
-        "cpp":    ("cpp", None),
-        "c++":    ("cpp", None),
+        "py": ("py", "python3"),
+        "bash": ("sh", "bash"),
+        "sh": ("sh", "bash"),
+        "shell": ("sh", "bash"),
+        "ruby": ("rb", "ruby"),
+        "rb": ("rb", "ruby"),
+        "perl": ("pl", "perl"),
+        "pl": ("pl", "perl"),
+        "c": ("c", None),
+        "cpp": ("cpp", None),
+        "c++": ("cpp", None),
     }
 
     if language not in LANG_MAP:
@@ -292,18 +284,15 @@ def execute_code(code: str, language: str = "python", filename: str = "exploit")
     ext, interpreter = LANG_MAP[language]
 
     # Sanitize filename to prevent path traversal / shell injection
-    safe_filename = re.sub(r'[^a-zA-Z0-9_-]', '_', filename)
+    safe_filename = re.sub(r"[^a-zA-Z0-9_-]", "_", filename)
     filepath = f"/tmp/{safe_filename}.{ext}"
     binary_path = f"/tmp/{safe_filename}"
 
     # Step 1: Write code to file using single-quoted heredoc (no shell interpretation)
-    write_cmd = f"cat << 'REDAMON_CODE_EOF' > {filepath}\n{code}\nREDAMON_CODE_EOF"
+    write_cmd = f"cat << 'parallax_CODE_EOF' > {filepath}\n{code}\nparallax_CODE_EOF"
     try:
         write_result = subprocess.run(
-            ["bash", "-c", write_cmd],
-            capture_output=True,
-            text=True,
-            timeout=10
+            ["bash", "-c", write_cmd], capture_output=True, text=True, timeout=10
         )
         if write_result.returncode != 0:
             return f"[ERROR] Failed to write code file: {write_result.stderr}"
@@ -315,10 +304,7 @@ def execute_code(code: str, language: str = "python", filename: str = "exploit")
         if interpreter:
             # Interpreted language — run directly
             result = subprocess.run(
-                [interpreter, filepath],
-                capture_output=True,
-                text=True,
-                timeout=120
+                [interpreter, filepath], capture_output=True, text=True, timeout=120
             )
         else:
             # Compiled language — compile first, then execute
@@ -327,16 +313,13 @@ def execute_code(code: str, language: str = "python", filename: str = "exploit")
                 [compiler, filepath, "-o", binary_path],
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
             )
             if compile_result.returncode != 0:
                 return f"[ERROR] Compilation failed:\n{compile_result.stderr}"
 
             result = subprocess.run(
-                [binary_path],
-                capture_output=True,
-                text=True,
-                timeout=120
+                [binary_path], capture_output=True, text=True, timeout=120
             )
 
         output = result.stdout
@@ -414,13 +397,13 @@ def execute_hydra(args: str) -> str:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,  # Merge stderr into stdout for unified streaming
             text=True,
-            bufsize=1  # Line-buffered
+            bufsize=1,  # Line-buffered
         )
 
         output_lines = []
         try:
             for line in proc.stdout:
-                clean_line = ANSI_ESCAPE.sub('', line.rstrip())
+                clean_line = ANSI_ESCAPE.sub("", line.rstrip())
                 output_lines.append(clean_line)
                 with _hydra_lock:
                     _hydra_output.append(clean_line)
@@ -439,7 +422,7 @@ def execute_hydra(args: str) -> str:
         with _hydra_lock:
             _hydra_active = False
 
-        output = '\n'.join(output_lines)
+        output = "\n".join(output_lines)
         return output if output.strip() else "[INFO] No valid credentials found"
 
     except FileNotFoundError:
@@ -462,14 +445,16 @@ HYDRA_PROGRESS_PORT = int(os.getenv("HYDRA_PROGRESS_PORT", "8014"))
 def get_hydra_progress() -> dict:
     """Get current Hydra execution progress (thread-safe)."""
     with _hydra_lock:
-        raw_output = '\n'.join(_hydra_output[-100:])
-        clean_output = ANSI_ESCAPE.sub('', raw_output)
+        raw_output = "\n".join(_hydra_output[-100:])
+        clean_output = ANSI_ESCAPE.sub("", raw_output)
         return {
             "active": _hydra_active,
             "command": _hydra_command,
-            "elapsed_seconds": round(time.time() - _hydra_start_time, 1) if _hydra_active else 0,
+            "elapsed_seconds": (
+                round(time.time() - _hydra_start_time, 1) if _hydra_active else 0
+            ),
             "line_count": len(_hydra_output),
-            "output": clean_output
+            "output": clean_output,
         }
 
 
@@ -477,22 +462,22 @@ class HydraProgressHandler(BaseHTTPRequestHandler):
     """HTTP handler for Hydra progress endpoint."""
 
     def do_GET(self):
-        if self.path == '/progress':
+        if self.path == "/progress":
             try:
                 progress = get_hydra_progress()
                 self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps(progress).encode())
             except Exception as e:
                 self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
+                self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
-        elif self.path == '/health':
+        elif self.path == "/health":
             self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
+            self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"status": "ok"}).encode())
         else:
@@ -506,7 +491,7 @@ class HydraProgressHandler(BaseHTTPRequestHandler):
 
 def start_hydra_progress_server(port: int = HYDRA_PROGRESS_PORT):
     """Start HTTP server for Hydra progress endpoint in a background thread."""
-    server = HTTPServer(('0.0.0.0', port), HydraProgressHandler)
+    server = HTTPServer(("0.0.0.0", port), HydraProgressHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     print(f"[HYDRA] Progress server started on port {port}")

@@ -1,5 +1,5 @@
 """
-RedAmon Agent Tools
+parallax Agent Tools
 
 MCP tools and Neo4j graph query tool definitions.
 Includes phase-aware tool management.
@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Context variables to pass user_id and project_id to tools
-current_user_id: ContextVar[str] = ContextVar('current_user_id', default='')
-current_project_id: ContextVar[str] = ContextVar('current_project_id', default='')
-current_phase: ContextVar[str] = ContextVar('current_phase', default='informational')
+current_user_id: ContextVar[str] = ContextVar("current_user_id", default="")
+current_project_id: ContextVar[str] = ContextVar("current_project_id", default="")
+current_phase: ContextVar[str] = ContextVar("current_phase", default="informational")
 
 
 def set_tenant_context(user_id: str, project_id: str) -> None:
@@ -55,6 +55,7 @@ def get_phase_context() -> str:
 # MCP TOOLS MANAGER
 # =============================================================================
 
+
 class MCPToolsManager:
     """Manages MCP (Model Context Protocol) tool connections."""
 
@@ -65,10 +66,18 @@ class MCPToolsManager:
         metasploit_url: str = None,
         nuclei_url: str = None,
     ):
-        self.network_recon_url = network_recon_url or os.environ.get('MCP_NETWORK_RECON_URL', 'http://host.docker.internal:8000/sse')
-        self.nmap_url = nmap_url or os.environ.get('MCP_NMAP_URL', 'http://host.docker.internal:8004/sse')
-        self.metasploit_url = metasploit_url or os.environ.get('MCP_METASPLOIT_URL', 'http://host.docker.internal:8003/sse')
-        self.nuclei_url = nuclei_url or os.environ.get('MCP_NUCLEI_URL', 'http://host.docker.internal:8002/sse')
+        self.network_recon_url = network_recon_url or os.environ.get(
+            "MCP_NETWORK_RECON_URL", "http://host.docker.internal:8000/sse"
+        )
+        self.nmap_url = nmap_url or os.environ.get(
+            "MCP_NMAP_URL", "http://host.docker.internal:8004/sse"
+        )
+        self.metasploit_url = metasploit_url or os.environ.get(
+            "MCP_METASPLOIT_URL", "http://host.docker.internal:8003/sse"
+        )
+        self.nuclei_url = nuclei_url or os.environ.get(
+            "MCP_NUCLEI_URL", "http://host.docker.internal:8002/sse"
+        )
         self.client: Optional[MultiServerMCPClient] = None
         self._tools_cache: Dict[str, any] = {}
 
@@ -91,10 +100,15 @@ class MCPToolsManager:
         # - sse_read_timeout: How long to wait for SSE events (default 300s = 5 min)
         # Metasploit needs longer timeouts for brute force attacks (30 min for large wordlists)
         server_configs = [
-            ("network_recon", self.network_recon_url, 60, 1800),  # curl+naabu+hydra+command, 30 min read (hydra needs up to 30 min)
-            ("nmap", self.nmap_url, 60, 600),                     # 10 min read
-            ("metasploit", self.metasploit_url, 60, 1800),        # 30 min read
-            ("nuclei", self.nuclei_url, 60, 600),                 # 10 min read
+            (
+                "network_recon",
+                self.network_recon_url,
+                60,
+                1800,
+            ),  # curl+naabu+hydra+command, 30 min read (hydra needs up to 30 min)
+            ("nmap", self.nmap_url, 60, 600),  # 10 min read
+            ("metasploit", self.metasploit_url, 60, 1800),  # 30 min read
+            ("nuclei", self.nuclei_url, 60, 600),  # 10 min read
         ]
 
         for server_name, url, timeout, sse_read_timeout in server_configs:
@@ -122,11 +136,13 @@ class MCPToolsManager:
                 all_tools = []
                 # Cache tools by name for easy access
                 for tool in mcp_tools:
-                    tool_name = getattr(tool, 'name', str(tool))
+                    tool_name = getattr(tool, "name", str(tool))
                     self._tools_cache[tool_name] = tool
                     all_tools.append(tool)
 
-                logger.info(f"Loaded {len(all_tools)} tools from MCP servers: {list(self._tools_cache.keys())}")
+                logger.info(
+                    f"Loaded {len(all_tools)} tools from MCP servers: {list(self._tools_cache.keys())}"
+                )
                 return all_tools
 
             except Exception as e:
@@ -138,7 +154,9 @@ class MCPToolsManager:
                     )
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(f"Failed to connect to MCP servers after {max_retries} attempts: {e}")
+                    logger.error(
+                        f"Failed to connect to MCP servers after {max_retries} attempts: {e}"
+                    )
                     logger.warning("Continuing without MCP tools")
                     return []
 
@@ -149,7 +167,8 @@ class MCPToolsManager:
     def get_available_tools_for_phase(self, phase: str) -> List:
         """Get tools that are allowed in the current phase."""
         return [
-            tool for name, tool in self._tools_cache.items()
+            tool
+            for name, tool in self._tools_cache.items()
             if is_tool_allowed_in_phase(name, phase)
         ]
 
@@ -157,6 +176,7 @@ class MCPToolsManager:
 # =============================================================================
 # NEO4J TOOL MANAGER
 # =============================================================================
+
 
 class Neo4jToolManager:
     """Manages Neo4j graph query tool with tenant filtering."""
@@ -198,7 +218,9 @@ class Neo4jToolManager:
             """Add tenant properties to a node pattern."""
             var_name = match.group(1)
             label = match.group(2)
-            existing_props_content = match.group(3)  # Content INSIDE braces (without braces), or None
+            existing_props_content = match.group(
+                3
+            )  # Content INSIDE braces (without braces), or None
 
             if existing_props_content is not None:
                 # Has existing properties - merge with tenant props
@@ -216,17 +238,14 @@ class Neo4jToolManager:
         # Pattern matches: (variable:Label) or (variable:Label {props})
         # Captures: 1=variable, 2=label, 3=optional content INSIDE braces (without braces)
         # Uses a non-greedy match for the props content
-        node_pattern = r'\((\w+):(\w+)(?:\s*\{([^}]*)\})?\)'
+        node_pattern = r"\((\w+):(\w+)(?:\s*\{([^}]*)\})?\)"
 
         result = re.sub(node_pattern, add_tenant_to_node, cypher)
 
         return result
 
     async def _generate_cypher(
-        self,
-        question: str,
-        previous_error: str = None,
-        previous_cypher: str = None
+        self, question: str, previous_error: str = None, previous_cypher: str = None
     ) -> str:
         """
         Use LLM to generate a Cypher query from natural language.
@@ -279,6 +298,7 @@ Cypher Query:"""
 
         response = await self.llm.ainvoke(prompt)
         from orchestrator_helpers.json_utils import normalize_content
+
         cypher = normalize_content(response.content).strip()
 
         # Clean up the response - remove markdown code blocks if present
@@ -299,9 +319,7 @@ Cypher Query:"""
 
         try:
             self.graph = Neo4jGraph(
-                url=self.uri,
-                username=self.user,
-                password=self.password
+                url=self.uri, username=self.user, password=self.password
             )
 
             # Store reference to self for use in the tool closure
@@ -335,37 +353,47 @@ Cypher Query:"""
                 if not user_id or not project_id:
                     return "Error: Missing user_id or project_id context"
 
-                logger.info(f"[{user_id}/{project_id}] Generating Cypher for: {question[:50]}...")
+                logger.info(
+                    f"[{user_id}/{project_id}] Generating Cypher for: {question[:50]}..."
+                )
 
                 last_error = None
                 last_cypher = None
 
-                for attempt in range(get_setting('CYPHER_MAX_RETRIES', 3)):
+                for attempt in range(get_setting("CYPHER_MAX_RETRIES", 3)):
                     try:
                         # Step 1: Generate Cypher from natural language (with error context on retry)
                         if attempt == 0:
                             cypher = await manager._generate_cypher(question)
                         else:
-                            logger.info(f"[{user_id}/{project_id}] Retry {attempt}/{get_setting('CYPHER_MAX_RETRIES', 3) - 1}: Regenerating Cypher...")
+                            logger.info(
+                                f"[{user_id}/{project_id}] Retry {attempt}/{get_setting('CYPHER_MAX_RETRIES', 3) - 1}: Regenerating Cypher..."
+                            )
                             cypher = await manager._generate_cypher(
                                 question,
                                 previous_error=last_error,
-                                previous_cypher=last_cypher
+                                previous_cypher=last_cypher,
                             )
 
-                        logger.info(f"[{user_id}/{project_id}] Generated Cypher (attempt {attempt + 1}): {cypher}")
+                        logger.info(
+                            f"[{user_id}/{project_id}] Generated Cypher (attempt {attempt + 1}): {cypher}"
+                        )
 
                         # Step 2: Inject mandatory tenant filters
-                        filtered_cypher = manager._inject_tenant_filter(cypher, user_id, project_id)
-                        logger.info(f"[{user_id}/{project_id}] Filtered Cypher: {filtered_cypher}")
+                        filtered_cypher = manager._inject_tenant_filter(
+                            cypher, user_id, project_id
+                        )
+                        logger.info(
+                            f"[{user_id}/{project_id}] Filtered Cypher: {filtered_cypher}"
+                        )
 
                         # Step 3: Execute the filtered query
                         result = manager.graph.query(
                             filtered_cypher,
                             params={
                                 "tenant_user_id": user_id,
-                                "tenant_project_id": project_id
-                            }
+                                "tenant_project_id": project_id,
+                            },
                         )
 
                         if not result:
@@ -375,13 +403,17 @@ Cypher Query:"""
 
                     except Exception as e:
                         error_msg = str(e)
-                        logger.warning(f"[{user_id}/{project_id}] Query attempt {attempt + 1} failed: {error_msg}")
+                        logger.warning(
+                            f"[{user_id}/{project_id}] Query attempt {attempt + 1} failed: {error_msg}"
+                        )
                         last_error = error_msg
-                        last_cypher = cypher if 'cypher' in locals() else None
+                        last_cypher = cypher if "cypher" in locals() else None
 
                         # If this is the last attempt, return the error
-                        if attempt == get_setting('CYPHER_MAX_RETRIES', 3) - 1:
-                            logger.error(f"[{user_id}/{project_id}] All {get_setting('CYPHER_MAX_RETRIES', 3)} attempts failed")
+                        if attempt == get_setting("CYPHER_MAX_RETRIES", 3) - 1:
+                            logger.error(
+                                f"[{user_id}/{project_id}] All {get_setting('CYPHER_MAX_RETRIES', 3)} attempts failed"
+                            )
                             return f"Error querying graph after {get_setting('CYPHER_MAX_RETRIES', 3)} attempts: {error_msg}"
 
                 return "Error: Unexpected end of retry loop"
@@ -399,11 +431,12 @@ Cypher Query:"""
 # WEB SEARCH TOOL MANAGER
 # =============================================================================
 
+
 class WebSearchToolManager:
     """Manages Tavily web search tool for CVE research and exploit lookups."""
 
     def __init__(self, api_key: str = None, max_results: int = 5):
-        self.api_key = api_key or os.environ.get('TAVILY_API_KEY', '')
+        self.api_key = api_key or os.environ.get("TAVILY_API_KEY", "")
         self.max_results = max_results
 
     def get_tool(self) -> Optional[callable]:
@@ -484,6 +517,7 @@ class WebSearchToolManager:
 # PHASE-AWARE TOOL EXECUTOR
 # =============================================================================
 
+
 class PhaseAwareToolExecutor:
     """
     Executes tools with phase-awareness.
@@ -512,7 +546,7 @@ class PhaseAwareToolExecutor:
     def register_mcp_tools(self, tools: List) -> None:
         """Register MCP tools after they're loaded."""
         for tool in tools:
-            tool_name = getattr(tool, 'name', None)
+            tool_name = getattr(tool, "name", None)
             if tool_name:
                 self._all_tools[tool_name] = tool
 
@@ -540,22 +574,22 @@ class PhaseAwareToolExecutor:
             for item in output:
                 if isinstance(item, dict):
                     # Extract 'text' field from content block
-                    if 'text' in item:
-                        text_parts.append(item['text'])
-                    elif 'content' in item:
-                        text_parts.append(str(item['content']))
+                    if "text" in item:
+                        text_parts.append(item["text"])
+                    elif "content" in item:
+                        text_parts.append(str(item["content"]))
                 elif isinstance(item, str):
                     text_parts.append(item)
-            return '\n'.join(text_parts) if text_parts else str(output)
+            return "\n".join(text_parts) if text_parts else str(output)
 
         # If it's a dict with 'text' or 'content'
         if isinstance(output, dict):
-            if 'text' in output:
-                return output['text']
-            if 'content' in output:
-                return str(output['content'])
-            if 'output' in output:
-                return str(output['output'])
+            if "text" in output:
+                return output["text"]
+            if "content" in output:
+                return str(output["content"])
+            if "output" in output:
+                return str(output["output"])
 
         # Fallback: convert to string
         return str(output)
@@ -565,7 +599,7 @@ class PhaseAwareToolExecutor:
         tool_name: str,
         tool_args: dict,
         phase: str,
-        skip_phase_check: bool = False
+        skip_phase_check: bool = False,
     ) -> dict:
         """
         Execute a tool if allowed in the current phase.
@@ -585,7 +619,7 @@ class PhaseAwareToolExecutor:
                 "success": False,
                 "output": None,
                 "error": f"Tool '{tool_name}' is not allowed in '{phase}' phase. "
-                         f"This tool requires: {get_phase_for_tool(tool_name)}"
+                f"This tool requires: {get_phase_for_tool(tool_name)}",
             }
 
         # Get the tool
@@ -594,7 +628,7 @@ class PhaseAwareToolExecutor:
             return {
                 "success": False,
                 "output": None,
-                "error": f"Tool '{tool_name}' not found"
+                "error": f"Tool '{tool_name}' not found",
             }
 
         try:
@@ -615,19 +649,11 @@ class PhaseAwareToolExecutor:
             # MCP returns list of content blocks: [{'type': 'text', 'text': '...', 'id': '...'}]
             clean_output = self._extract_text_from_output(output)
 
-            return {
-                "success": True,
-                "output": clean_output,
-                "error": None
-            }
+            return {"success": True, "output": clean_output, "error": None}
 
         except Exception as e:
             logger.error(f"Tool execution failed: {tool_name} - {e}")
-            return {
-                "success": False,
-                "output": None,
-                "error": str(e)
-            }
+            return {"success": False, "output": None, "error": str(e)}
 
     async def execute_with_progress(
         self,
@@ -636,7 +662,7 @@ class PhaseAwareToolExecutor:
         phase: str,
         progress_callback: Callable[[str, str, bool], Awaitable[None]],
         poll_interval: float = 5.0,
-        progress_url: str | None = None
+        progress_url: str | None = None,
     ) -> dict:
         """
         Execute a long-running tool with integrated progress streaming.
@@ -657,16 +683,13 @@ class PhaseAwareToolExecutor:
             dict with 'success', 'output', and optionally 'error'
         """
         # Start the main tool execution as a background task
-        execution_task = asyncio.create_task(
-            self.execute(tool_name, tool_args, phase)
-        )
+        execution_task = asyncio.create_task(self.execute(tool_name, tool_args, phase))
 
         last_line_count = 0
         last_output = ""
 
         url = progress_url or os.environ.get(
-            'MCP_METASPLOIT_PROGRESS_URL',
-            'http://host.docker.internal:8013/progress'
+            "MCP_METASPLOIT_PROGRESS_URL", "http://host.docker.internal:8013/progress"
         )
 
         async with httpx.AsyncClient(timeout=2.0) as client:
@@ -687,10 +710,15 @@ class PhaseAwareToolExecutor:
                             elapsed = progress.get("elapsed_seconds", 0)
 
                             # Only send if new content
-                            if line_count > last_line_count and current_output != last_output:
+                            if (
+                                line_count > last_line_count
+                                and current_output != last_output
+                            ):
                                 # Calculate the new portion
-                                if last_output and current_output.startswith(last_output):
-                                    new_content = current_output[len(last_output):]
+                                if last_output and current_output.startswith(
+                                    last_output
+                                ):
+                                    new_content = current_output[len(last_output) :]
                                 else:
                                     new_content = current_output
 
@@ -698,9 +726,7 @@ class PhaseAwareToolExecutor:
                                     # Format progress update with context
                                     progress_msg = f"[Progress: {line_count} lines, {elapsed}s]\n{new_content[-1000:]}"
                                     await progress_callback(
-                                        tool_name,
-                                        progress_msg,
-                                        False  # not final
+                                        tool_name, progress_msg, False  # not final
                                     )
 
                                 last_output = current_output
@@ -726,14 +752,15 @@ class PhaseAwareToolExecutor:
     def get_tools_for_phase(self, phase: str) -> List:
         """Get tools allowed in the given phase."""
         return [
-            tool for name, tool in self._all_tools.items()
+            tool
+            for name, tool in self._all_tools.items()
             if is_tool_allowed_in_phase(name, phase)
         ]
 
 
 def get_phase_for_tool(tool_name: str) -> str:
     """Get the minimum phase required for a tool."""
-    allowed_phases = get_setting('TOOL_PHASE_MAP', {}).get(tool_name, [])
+    allowed_phases = get_setting("TOOL_PHASE_MAP", {}).get(tool_name, [])
     if "informational" in allowed_phases:
         return "informational"
     elif "exploitation" in allowed_phases:

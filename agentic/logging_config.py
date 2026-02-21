@@ -1,5 +1,5 @@
 """
-RedAmon Agent Logging Configuration
+parallax Agent Logging Configuration
 
 Configures logging with file rotation, console output, and proper formatting.
 """
@@ -19,7 +19,7 @@ LOG_DIR = Path(__file__).parent / "logs"
 
 # Log file settings
 LOG_FILE_NAME = "agent.log"
-LOG_MAX_BYTES = get_setting('LOG_MAX_MB', 10) * 1024 * 1024  # Convert MB to bytes
+LOG_MAX_BYTES = get_setting("LOG_MAX_MB", 10) * 1024 * 1024  # Convert MB to bytes
 
 # Log levels
 FILE_LOG_LEVEL = logging.DEBUG
@@ -30,7 +30,9 @@ LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Detailed format for file (includes more context)
-FILE_LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)-25s | %(funcName)-20s | %(message)s"
+FILE_LOG_FORMAT = (
+    "%(asctime)s | %(levelname)-8s | %(name)-25s | %(funcName)-20s | %(message)s"
+)
 
 
 def setup_logging(
@@ -39,7 +41,7 @@ def setup_logging(
     log_to_file: bool = True,
 ) -> None:
     """
-    Configure logging for the RedAmon agent.
+    Configure logging for the parallax agent.
 
     Args:
         log_level: Minimum log level for console output
@@ -70,7 +72,7 @@ def setup_logging(
         file_handler = RotatingFileHandler(
             filename=str(log_file_path),
             maxBytes=LOG_MAX_BYTES,
-            backupCount=get_setting('LOG_BACKUP_COUNT', 5),
+            backupCount=get_setting("LOG_BACKUP_COUNT", 5),
             encoding="utf-8",
         )
         file_handler.setLevel(FILE_LOG_LEVEL)
@@ -94,7 +96,9 @@ def setup_logging(
     # Log startup message
     logger = logging.getLogger(__name__)
     logger.info(f"Logging configured - File: {LOG_DIR / LOG_FILE_NAME}")
-    logger.info(f"Max file size: {LOG_MAX_BYTES / 1024 / 1024:.1f} MB, Backup count: {get_setting('LOG_BACKUP_COUNT', 5)}")
+    logger.info(
+        f"Max file size: {LOG_MAX_BYTES / 1024 / 1024:.1f} MB, Backup count: {get_setting('LOG_BACKUP_COUNT', 5)}"
+    )
 
 
 def get_logger(name: str) -> logging.Logger:

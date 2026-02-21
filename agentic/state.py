@@ -1,5 +1,5 @@
 """
-RedAmon Agent State Management
+parallax Agent State Management
 
 LangGraph state and Pydantic models for the ReAct agent orchestrator.
 Supports iterative Thought-Tool-Output pattern with phase tracking.
@@ -15,6 +15,7 @@ from project_settings import get_setting
 def utc_now() -> datetime:
     """Get current UTC time as timezone-aware datetime."""
     return datetime.now(timezone.utc)
+
 
 import re
 from pydantic import BaseModel, Field, field_validator
@@ -33,8 +34,8 @@ QuestionFormat = Literal["text", "single_choice", "multi_choice"]
 
 # Attack path types for dynamic routing
 AttackPathType = Literal[
-    "cve_exploit",                  # CVE-based exploitation (default)
-    "brute_force_credential_guess", # Brute force / credential attacks
+    "cve_exploit",  # CVE-based exploitation (default)
+    "brute_force_credential_guess",  # Brute force / credential attacks
 ]
 
 
@@ -42,8 +43,10 @@ AttackPathType = Literal[
 # PYDANTIC MODELS FOR STRUCTURED DATA
 # =============================================================================
 
+
 class TodoItem(BaseModel):
     """LLM-managed task item for tracking progress."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
     description: str
     status: TodoStatus = "pending"
@@ -54,10 +57,9 @@ class TodoItem(BaseModel):
 
     def mark_complete(self) -> "TodoItem":
         """Mark this todo as completed."""
-        return self.model_copy(update={
-            "status": "completed",
-            "completed_at": utc_now()
-        })
+        return self.model_copy(
+            update={"status": "completed", "completed_at": utc_now()}
+        )
 
     def mark_in_progress(self) -> "TodoItem":
         """Mark this todo as in progress."""
@@ -66,6 +68,7 @@ class TodoItem(BaseModel):
 
 class ExecutionStep(BaseModel):
     """Single step in the Thought-Tool-Output execution trace."""
+
     step_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
     iteration: int
     timestamp: datetime = Field(default_factory=utc_now)
@@ -90,12 +93,15 @@ class ExecutionStep(BaseModel):
 
 class TargetInfo(BaseModel):
     """Accumulated intelligence about the target from graph queries and tools."""
+
     primary_target: Optional[str] = None  # IP or hostname
     target_type: Optional[Literal["ip", "hostname", "domain", "url"]] = None
     ports: List[int] = Field(default_factory=list)
     services: List[str] = Field(default_factory=list)
     technologies: List[str] = Field(default_factory=list)
-    vulnerabilities: List[str] = Field(default_factory=list)  # CVE IDs or vuln descriptions
+    vulnerabilities: List[str] = Field(
+        default_factory=list
+    )  # CVE IDs or vuln descriptions
     credentials: List[dict] = Field(default_factory=list)  # Discovered credentials
     sessions: List[int] = Field(default_factory=list)  # Metasploit session IDs
     # Session details for richer tracking: {session_id: {'type': str, 'connection': str, 'info': str}}
@@ -112,7 +118,8 @@ class TargetInfo(BaseModel):
             services=list(set(self.services + other.services)),
             technologies=list(set(self.technologies + other.technologies)),
             vulnerabilities=list(set(self.vulnerabilities + other.vulnerabilities)),
-            credentials=self.credentials + [c for c in other.credentials if c not in self.credentials],
+            credentials=self.credentials
+            + [c for c in other.credentials if c not in self.credentials],
             sessions=list(set(self.sessions + other.sessions)),
             session_details=merged_session_details,
         )
@@ -120,6 +127,7 @@ class TargetInfo(BaseModel):
 
 class PhaseTransitionRequest(BaseModel):
     """Request for user approval to transition between phases."""
+
     from_phase: Phase
     to_phase: Phase
     reason: str
@@ -130,6 +138,7 @@ class PhaseTransitionRequest(BaseModel):
 
 class PhaseHistoryEntry(BaseModel):
     """Record of a phase transition."""
+
     phase: Phase
     entered_at: datetime = Field(default_factory=utc_now)
     exited_at: Optional[datetime] = None
@@ -139,8 +148,10 @@ class PhaseHistoryEntry(BaseModel):
 # USER Q&A MODELS
 # =============================================================================
 
+
 class UserQuestionRequest(BaseModel):
     """Request for user clarification from the agent."""
+
     question_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
     question: str  # The question text to display to user
     context: str  # Why the agent needs this information
@@ -152,6 +163,7 @@ class UserQuestionRequest(BaseModel):
 
 class UserQuestionAnswer(BaseModel):
     """User's answer to an agent question."""
+
     question_id: str
     answer: str  # The actual answer text
     timestamp: datetime = Field(default_factory=utc_now)
@@ -159,6 +171,7 @@ class UserQuestionAnswer(BaseModel):
 
 class QAHistoryEntry(BaseModel):
     """Combined Q&A entry for history tracking."""
+
     question: UserQuestionRequest
     answer: Optional[UserQuestionAnswer] = None
     answered_at: Optional[datetime] = None
@@ -168,8 +181,10 @@ class QAHistoryEntry(BaseModel):
 # CONVERSATION OBJECTIVES (Multi-Objective Support)
 # =============================================================================
 
+
 class ConversationObjective(BaseModel):
     """Single objective within a continuous conversation."""
+
     objective_id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
     content: str  # The user's question/request
     created_at: datetime = Field(default_factory=utc_now)
@@ -180,8 +195,11 @@ class ConversationObjective(BaseModel):
 
 class ObjectiveOutcome(BaseModel):
     """Outcome of a completed objective."""
+
     objective: ConversationObjective
-    execution_steps: List[str] = Field(default_factory=list)  # Step IDs from execution_trace
+    execution_steps: List[str] = Field(
+        default_factory=list
+    )  # Step IDs from execution_trace
     findings: dict = Field(default_factory=dict)  # Key findings from target_info
     success: bool = True
 
@@ -195,6 +213,7 @@ ActionType = Literal["use_tool", "transition_phase", "complete", "ask_user"]
 
 class PhaseTransitionDecision(BaseModel):
     """Phase transition details from LLM decision."""
+
     to_phase: Phase
     reason: str = ""
     planned_actions: List[str] = Field(default_factory=list)
@@ -203,6 +222,7 @@ class PhaseTransitionDecision(BaseModel):
 
 class UserQuestionDecision(BaseModel):
     """Question details from LLM decision when action=ask_user."""
+
     question: str
     context: str
     format: QuestionFormat = "text"
@@ -212,6 +232,7 @@ class UserQuestionDecision(BaseModel):
 
 class TodoItemUpdate(BaseModel):
     """Todo item from LLM response (simplified for updates)."""
+
     id: Optional[str] = None
     description: str
     status: TodoStatus = "pending"
@@ -220,6 +241,7 @@ class TodoItemUpdate(BaseModel):
 
 class ExtractedTargetInfo(BaseModel):
     """Target information extracted from tool output analysis."""
+
     primary_target: Optional[str] = None
     ports: List[int] = Field(default_factory=list)
     services: List[str] = Field(default_factory=list)
@@ -231,6 +253,7 @@ class ExtractedTargetInfo(BaseModel):
 
 class OutputAnalysisInline(BaseModel):
     """Inline output analysis embedded in LLMDecision when tool output is pending."""
+
     interpretation: str = ""
     extracted_info: ExtractedTargetInfo = Field(default_factory=ExtractedTargetInfo)
     actionable_findings: List[str] = Field(default_factory=list)
@@ -246,22 +269,31 @@ class LLMDecision(BaseModel):
     The LLM outputs JSON matching this schema to decide its next action.
     When tool output is pending, also includes output_analysis.
     """
+
     thought: str = Field(description="Analysis of current situation")
     reasoning: str = Field(description="Why this action was chosen")
     action: ActionType = Field(default="use_tool", description="Type of action to take")
 
     # Tool execution fields (when action="use_tool")
-    tool_name: Optional[str] = Field(default=None, description="Name of tool to execute")
-    tool_args: Optional[dict] = Field(default=None, description="Arguments for the tool")
+    tool_name: Optional[str] = Field(
+        default=None, description="Name of tool to execute"
+    )
+    tool_args: Optional[dict] = Field(
+        default=None, description="Arguments for the tool"
+    )
 
     # Phase transition fields (when action="transition_phase")
     phase_transition: Optional[PhaseTransitionDecision] = Field(default=None)
 
     # Completion fields (when action="complete")
-    completion_reason: Optional[str] = Field(default=None, description="Why task is complete")
+    completion_reason: Optional[str] = Field(
+        default=None, description="Why task is complete"
+    )
 
     # User question fields (when action="ask_user")
-    user_question: Optional[UserQuestionDecision] = Field(default=None, description="Question to ask user")
+    user_question: Optional[UserQuestionDecision] = Field(
+        default=None, description="Question to ask user"
+    )
 
     # Todo list updates (always present)
     updated_todo_list: List[TodoItemUpdate] = Field(default_factory=list)
@@ -276,13 +308,19 @@ class OutputAnalysis(BaseModel):
 
     The LLM outputs JSON matching this schema after a tool executes.
     """
+
     interpretation: str = Field(description="What the output tells us about the target")
     extracted_info: ExtractedTargetInfo = Field(default_factory=ExtractedTargetInfo)
     actionable_findings: List[str] = Field(default_factory=list)
     recommended_next_steps: List[str] = Field(default_factory=list)
     # LLM-based exploit success detection
-    exploit_succeeded: bool = Field(default=False, description="True if this output indicates successful exploitation")
-    exploit_details: Optional[dict] = Field(default=None, description="Details about the successful exploit")
+    exploit_succeeded: bool = Field(
+        default=False,
+        description="True if this output indicates successful exploitation",
+    )
+    exploit_details: Optional[dict] = Field(
+        default=None, description="Details about the successful exploit"
+    )
 
 
 class AttackPathClassification(BaseModel):
@@ -293,33 +331,32 @@ class AttackPathClassification(BaseModel):
     Determines BOTH the phase (informational/exploitation) AND the attack path type,
     plus an optional secondary attack path for fallback.
     """
+
     required_phase: Phase = Field(
         default="informational",
-        description="Required phase for this request: 'informational' for recon, 'exploitation' for attacks"
+        description="Required phase for this request: 'informational' for recon, 'exploitation' for attacks",
     )
     attack_path_type: AttackPathType = Field(
         description="The classified attack path type based on user intent (only used for exploitation phase)"
     )
     secondary_attack_path: Optional[str] = Field(
         default=None,
-        description="Fallback attack path if primary fails (e.g., brute_force after CVE exploit fails). null if no alternative."
+        description="Fallback attack path if primary fails (e.g., brute_force after CVE exploit fails). null if no alternative.",
     )
     confidence: float = Field(
-        ge=0.0, le=1.0,
-        description="Confidence score for the classification (0.0-1.0)"
+        ge=0.0, le=1.0, description="Confidence score for the classification (0.0-1.0)"
     )
-    reasoning: str = Field(
-        description="Brief explanation of the classification"
-    )
+    reasoning: str = Field(description="Brief explanation of the classification")
     detected_service: Optional[str] = Field(
         default=None,
-        description="Specific service detected (ssh, mysql, etc.) for brute_force_credential_guess paths"
+        description="Specific service detected (ssh, mysql, etc.) for brute_force_credential_guess paths",
     )
 
 
 # =============================================================================
 # LANGGRAPH STATE
 # =============================================================================
+
 
 class AgentState(TypedDict):
     """
@@ -328,6 +365,7 @@ class AgentState(TypedDict):
     This state is maintained in memory via MemorySaver checkpointer.
     All execution history, todos, and phase tracking lives here.
     """
+
     # Core conversation history (managed by add_messages reducer)
     messages: Annotated[list, add_messages]
 
@@ -340,10 +378,14 @@ class AgentState(TypedDict):
     # Phase tracking
     current_phase: Phase
     phase_history: List[dict]  # List of PhaseHistoryEntry.model_dump()
-    phase_transition_pending: Optional[dict]  # PhaseTransitionRequest.model_dump() or None
+    phase_transition_pending: Optional[
+        dict
+    ]  # PhaseTransitionRequest.model_dump() or None
 
     # Attack path routing
-    attack_path_type: str  # AttackPathType: "cve_exploit" or "brute_force_credential_guess"
+    attack_path_type: (
+        str  # AttackPathType: "cve_exploit" or "brute_force_credential_guess"
+    )
 
     # Execution trace (Thought-Tool-Output history)
     execution_trace: List[dict]  # List of ExecutionStep.model_dump()
@@ -378,59 +420,85 @@ class AgentState(TypedDict):
 
     # Internal fields for inter-node communication (not persisted long-term)
     _current_step: Optional[dict]  # Current ExecutionStep being processed
-    _completed_step: Optional[dict]  # Previous step with analysis, for streaming emission
+    _completed_step: Optional[
+        dict
+    ]  # Previous step with analysis, for streaming emission
     _decision: Optional[dict]  # LLM decision from think node
     _tool_result: Optional[dict]  # Result from tool execution
-    _just_transitioned_to: Optional[str]  # Phase we just transitioned to (prevents re-requesting)
-    _abort_transition: bool  # True when user aborted a phase transition (routes to generate_response)
+    _just_transitioned_to: Optional[
+        str
+    ]  # Phase we just transitioned to (prevents re-requesting)
+    _abort_transition: (
+        bool  # True when user aborted a phase transition (routes to generate_response)
+    )
 
     # Metasploit state tracking
-    msf_session_reset_done: bool  # True if metasploit was reset at start of this session
+    msf_session_reset_done: (
+        bool  # True if metasploit was reset at start of this session
+    )
 
 
 # =============================================================================
 # RESPONSE MODELS
 # =============================================================================
 
+
 class InvokeResponse(BaseModel):
     """Response from agent invocation - returned by API."""
+
     # Core response
-    answer: str = Field(default="", description="The agent's final answer or current status")
-    tool_used: Optional[str] = Field(default=None, description="Name of the tool executed")
-    tool_output: Optional[str] = Field(default=None, description="Raw output from the tool")
+    answer: str = Field(
+        default="", description="The agent's final answer or current status"
+    )
+    tool_used: Optional[str] = Field(
+        default=None, description="Name of the tool executed"
+    )
+    tool_output: Optional[str] = Field(
+        default=None, description="Raw output from the tool"
+    )
     error: Optional[str] = Field(default=None, description="Error message if failed")
 
     # ReAct state
-    current_phase: Phase = Field(default="informational", description="Current agent phase")
+    current_phase: Phase = Field(
+        default="informational", description="Current agent phase"
+    )
     iteration_count: int = Field(default=0, description="Current iteration number")
-    task_complete: bool = Field(default=False, description="Whether the task is complete")
+    task_complete: bool = Field(
+        default=False, description="Whether the task is complete"
+    )
 
     # Todo list for frontend display
-    todo_list: List[dict] = Field(default_factory=list, description="Current task breakdown")
+    todo_list: List[dict] = Field(
+        default_factory=list, description="Current task breakdown"
+    )
 
     # Execution trace summary (last N steps for context)
     execution_trace_summary: List[dict] = Field(
-        default_factory=list,
-        description="Summary of recent execution steps"
+        default_factory=list, description="Summary of recent execution steps"
     )
 
     # Approval flow
-    awaiting_approval: bool = Field(default=False, description="True if waiting for user approval")
+    awaiting_approval: bool = Field(
+        default=False, description="True if waiting for user approval"
+    )
     approval_request: Optional[dict] = Field(
         default=None,
-        description="Phase transition request details if awaiting approval"
+        description="Phase transition request details if awaiting approval",
     )
 
     # Q&A flow
-    awaiting_question: bool = Field(default=False, description="True if waiting for user answer")
+    awaiting_question: bool = Field(
+        default=False, description="True if waiting for user answer"
+    )
     question_request: Optional[dict] = Field(
         default=None,
-        description="Question request details if awaiting_question is True"
+        description="Question request details if awaiting_question is True",
     )
 
 
 class ApprovalRequest(BaseModel):
     """Request model for user approval endpoint."""
+
     session_id: str
     user_id: str
     project_id: str
@@ -442,16 +510,17 @@ class ApprovalRequest(BaseModel):
 # HELPER FUNCTIONS
 # =============================================================================
 
+
 def create_initial_state(
     user_id: str,
     project_id: str,
     session_id: str,
     objective: str,
-    max_iterations: int = None
+    max_iterations: int = None,
 ) -> dict:
     """Create initial state for a new agent session."""
     if max_iterations is None:
-        max_iterations = get_setting('MAX_ITERATIONS', 100)
+        max_iterations = get_setting("MAX_ITERATIONS", 100)
     # Create first objective
     first_objective = ConversationObjective(content=objective).model_dump()
 
@@ -507,13 +576,17 @@ def format_todo_list(todo_list: List[dict]) -> str:
             "pending": "[ ]",
             "in_progress": "[~]",
             "completed": "[x]",
-            "blocked": "[!]"
+            "blocked": "[!]",
         }.get(todo.get("status", "pending"), "[ ]")
 
         priority = todo.get("priority", "medium")
-        priority_marker = {"high": "!!!", "medium": "!!", "low": "!"}.get(priority, "!!")
+        priority_marker = {"high": "!!!", "medium": "!!", "low": "!"}.get(
+            priority, "!!"
+        )
 
-        lines.append(f"{i}. {status_icon} {priority_marker} {todo.get('description', 'No description')}")
+        lines.append(
+            f"{i}. {status_icon} {priority_marker} {todo.get('description', 'No description')}"
+        )
         if todo.get("notes"):
             lines.append(f"   Notes: {todo['notes']}")
 
@@ -525,7 +598,7 @@ def format_execution_trace(
     objectives: List[dict] = None,
     objective_history: List[dict] = None,
     current_objective_index: int = 0,
-    last_n: int = None
+    last_n: int = None,
 ) -> str:
     """
     Format execution trace with objective grouping.
@@ -548,7 +621,11 @@ def format_execution_trace(
         return "No steps executed yet."
 
     # Use configured limit or override
-    limit = last_n if last_n is not None else get_setting('EXECUTION_TRACE_MEMORY_STEPS', 100)
+    limit = (
+        last_n
+        if last_n is not None
+        else get_setting("EXECUTION_TRACE_MEMORY_STEPS", 100)
+    )
 
     # Apply limit to trace (most recent steps)
     limited_trace = trace[-limit:] if len(trace) > limit else trace
@@ -591,23 +668,33 @@ def format_execution_trace(
             if obj_steps:
                 completed_step_ids.update(step_ids)
                 lines.append(f"\n{'='*60}")
-                lines.append(f"=== OBJECTIVE {i+1}: {obj.get('content', 'Unknown')[:80]}...")
+                lines.append(
+                    f"=== OBJECTIVE {i+1}: {obj.get('content', 'Unknown')[:80]}..."
+                )
                 lines.append(f"=== Status: COMPLETED")
                 lines.append(f"{'='*60}\n")
 
                 for step in obj_steps:
-                    lines.extend(_format_single_step(step, compact=not _is_recent(step)))
+                    lines.extend(
+                        _format_single_step(step, compact=not _is_recent(step))
+                    )
 
     # Current objective steps (not in completed history)
-    current_steps = [s for s in limited_trace if s.get("step_id") not in completed_step_ids]
+    current_steps = [
+        s for s in limited_trace if s.get("step_id") not in completed_step_ids
+    ]
 
     if current_steps:
         current_obj_content = "Current objective"
         if objectives and current_objective_index < len(objectives):
-            current_obj_content = objectives[current_objective_index].get("content", "Current objective")[:80]
+            current_obj_content = objectives[current_objective_index].get(
+                "content", "Current objective"
+            )[:80]
 
         lines.append(f"\n{'='*60}")
-        lines.append(f"=== OBJECTIVE {len(objective_history or []) + 1}: {current_obj_content}...")
+        lines.append(
+            f"=== OBJECTIVE {len(objective_history or []) + 1}: {current_obj_content}..."
+        )
         lines.append(f"=== Status: IN PROGRESS")
         lines.append(f"{'='*60}\n")
 
@@ -635,14 +722,22 @@ def _format_single_step(step: dict, compact: bool = False) -> List[str]:
     error_msg = step.get("error_message")
 
     lines.append(f"--- Step {iteration} [{phase}] - {success} ---")
-    lines.append(f"Thought: {thought[:10000]}..." if len(thought) > 10000 else f"Thought: {thought}")
+    lines.append(
+        f"Thought: {thought[:10000]}..."
+        if len(thought) > 10000
+        else f"Thought: {thought}"
+    )
 
     if tool and tool != "none":
         lines.append(f"Tool: {tool}")
         if tool_args:
             args_str = str(tool_args)
             max_args = 200 if compact else 10000
-            lines.append(f"Args: {args_str[:max_args]}..." if len(args_str) > max_args else f"Args: {args_str}")
+            lines.append(
+                f"Args: {args_str[:max_args]}..."
+                if len(args_str) > max_args
+                else f"Args: {args_str}"
+            )
 
         if not compact:
             # Full tool output for recent steps — essential for exploitation workflows
@@ -651,14 +746,20 @@ def _format_single_step(step: dict, compact: bool = False) -> List[str]:
             if tool_output:
                 max_output_len = 10000
                 if len(tool_output) > max_output_len:
-                    lines.append(f"Output (truncated):\n{tool_output[:max_output_len]}...\n[{len(tool_output) - max_output_len} more chars]")
+                    lines.append(
+                        f"Output (truncated):\n{tool_output[:max_output_len]}...\n[{len(tool_output) - max_output_len} more chars]"
+                    )
                 else:
                     lines.append(f"Output:\n{tool_output}")
 
         if step.get("output_analysis"):
             analysis = step["output_analysis"]
             max_analysis = 1000 if compact else 10000
-            lines.append(f"Analysis: {analysis[:max_analysis]}..." if len(analysis) > max_analysis else f"Analysis: {analysis}")
+            lines.append(
+                f"Analysis: {analysis[:max_analysis]}..."
+                if len(analysis) > max_analysis
+                else f"Analysis: {analysis}"
+            )
 
     if error_msg:
         lines.append(f"Error: {error_msg}")
@@ -669,7 +770,11 @@ def _format_single_step(step: dict, compact: bool = False) -> List[str]:
 
 def summarize_trace_for_response(trace: List[dict], last_n: int = None) -> List[dict]:
     """Create a summary of the execution trace for API response."""
-    limit = last_n if last_n is not None else get_setting('EXECUTION_TRACE_MEMORY_STEPS', 100)
+    limit = (
+        last_n
+        if last_n is not None
+        else get_setting("EXECUTION_TRACE_MEMORY_STEPS", 100)
+    )
     recent = trace[-limit:] if len(trace) > limit else trace
 
     return [
@@ -679,7 +784,7 @@ def summarize_trace_for_response(trace: List[dict], last_n: int = None) -> List[
             "thought": step.get("thought", "")[:10000],
             "tool_name": step.get("tool_name"),
             "success": step.get("success", True),
-            "output_summary": (step.get("output_analysis") or "")[:10000]
+            "output_summary": (step.get("output_analysis") or "")[:10000],
         }
         for step in recent
     ]
@@ -717,7 +822,9 @@ def format_objective_history(objective_history: List[dict]) -> str:
     for i, outcome in enumerate(objective_history, 1):
         obj = outcome.get("objective", {})
         lines.append(f"{i}. {obj.get('content', 'Unknown')}")
-        lines.append(f"   Status: {'✓ Success' if outcome.get('success') else '✗ Failed'}")
+        lines.append(
+            f"   Status: {'✓ Success' if outcome.get('success') else '✗ Failed'}"
+        )
 
         # Format findings summary
         findings = outcome.get("findings", {})
@@ -725,7 +832,9 @@ def format_objective_history(objective_history: List[dict]) -> str:
         port_count = len(findings.get("ports", []))
         session_count = len(findings.get("sessions", []))
 
-        lines.append(f"   Findings: {vuln_count} vulns, {port_count} ports, {session_count} sessions")
+        lines.append(
+            f"   Findings: {vuln_count} vulns, {port_count} ports, {session_count} sessions"
+        )
         lines.append("")
 
     return "\n".join(lines)

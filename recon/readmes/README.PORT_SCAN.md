@@ -1,10 +1,10 @@
-# RedAmon - Naabu Port Scanner
+# parallax - Naabu Port Scanner
 
 ## Complete Technical Documentation
 
-> **Module:** `recon/naabu_scan.py`  
-> **Purpose:** Fast, lightweight port scanning using ProjectDiscovery's Naabu  
-> **Author:** RedAmon Security Suite
+> **Module:** `recon/naabu_scan.py`
+> **Purpose:** Fast, lightweight port scanning using ProjectDiscovery's Naabu
+> **Author:** parallax Security Suite
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## Overview
 
-The `naabu_scan.py` module integrates ProjectDiscovery's Naabu scanner into RedAmon's reconnaissance pipeline. Naabu is optimized for fast, reliable port scanning at scale.
+The `naabu_scan.py` module integrates ProjectDiscovery's Naabu scanner into parallax's reconnaissance pipeline. Naabu is optimized for fast, reliable port scanning at scale.
 
 **⚠️ Important:** Naabu runs exclusively via Docker. No native installation is supported.
 
@@ -296,7 +296,7 @@ WITHOUT Host Discovery (NAABU_SKIP_HOST_DISCOVERY = True):
 | `True` (default) | Skip ping, assume all hosts UP | Firewalls block ICMP, hosts from DNS |
 | `False` | Ping first, skip "dead" hosts | Large IP ranges, internal networks |
 
-**Why default is `True`:** RedAmon already confirmed hosts exist via DNS resolution. Many firewalls block ICMP ping, causing false negatives.
+**Why default is `True`:** parallax already confirmed hosts exist via DNS resolution. Many firewalls block ICMP ping, causing false negatives.
 
 ---
 
@@ -462,7 +462,7 @@ docker run --rm \
       "total_targets": 15,
       "cdn_exclusion": true
     },
-    
+
     "by_host": {
       "example.com": {
         "host": "example.com",
@@ -497,7 +497,7 @@ docker run --rm \
         "is_cdn": true
       }
     },
-    
+
     "by_ip": {
       "93.184.216.34": {
         "ip": "93.184.216.34",
@@ -507,13 +507,13 @@ docker run --rm \
         "is_cdn": false
       }
     },
-    
+
     "all_ports": [22, 80, 443, 3306, 8080],
-    
+
     "ip_to_hostnames": {
       "93.184.216.34": ["example.com", "www.example.com"]
     },
-    
+
     "summary": {
       "hosts_scanned": 15,
       "ips_scanned": 12,
@@ -724,5 +724,4 @@ NAABU_EXCLUDE_CDN = True
 
 ---
 
-*Documentation generated for RedAmon v1.0 - Naabu Port Scanner Module*
-
+*Documentation generated for parallax v1.0 - Naabu Port Scanner Module*

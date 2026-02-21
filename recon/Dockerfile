@@ -1,4 +1,4 @@
-# RedAmon Reconnaissance Module - Dockerfile
+# parallax Reconnaissance Module - Dockerfile
 # ============================================
 # Fully containerized OSINT reconnaissance framework
 # Supports Docker-in-Docker for ProjectDiscovery tools
@@ -6,8 +6,8 @@
 
 FROM python:3.11-slim-bookworm
 
-LABEL maintainer="RedAmon Team"
-LABEL description="RedAmon Reconnaissance Module - Automated OSINT Framework"
+LABEL maintainer="parallax Team"
+LABEL description="parallax Reconnaissance Module - Automated OSINT Framework"
 LABEL version="1.0"
 
 # Prevent interactive prompts during package installation
@@ -66,10 +66,10 @@ RUN mkdir -p /var/run/tor && \
     echo "Log notice stdout" >> /etc/tor/torrc
 
 # Create non-root user for security (but allow Docker access)
-RUN groupadd -r redamon && \
-    useradd -r -g redamon -G docker redamon && \
-    mkdir -p /home/redamon && \
-    chown -R redamon:redamon /home/redamon
+RUN groupadd -r parallax && \
+    useradd -r -g parallax -G docker parallax && \
+    mkdir -p /home/parallax && \
+    chown -R parallax:parallax /home/parallax
 
 # Create necessary directories
 RUN mkdir -p /app/recon/output \
@@ -77,7 +77,7 @@ RUN mkdir -p /app/recon/output \
              /app/utils \
              /data/output \
              /data/.env \
-    && chown -R redamon:redamon /app /data
+    && chown -R parallax:parallax /app /data
 
 # Copy requirements first (for better Docker layer caching)
 COPY recon/requirements.txt /app/recon/requirements.txt
@@ -117,7 +117,7 @@ ENV PROJECT_ID="default_project"
 
 # Use non-root user by default
 # Note: May need root for some operations (Naabu SYN scan)
-# USER redamon
+# USER parallax
 
 # Health check - verify Docker socket and Python are working
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

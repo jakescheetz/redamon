@@ -1,6 +1,6 @@
 FROM kalilinux/kali-rolling:latest
 
-LABEL maintainer="RedAmon Project"
+LABEL maintainer="parallax Project"
 LABEL description="Kali Linux sandbox with MCP servers for agentic penetration testing"
 
 # Avoid prompts during package installation

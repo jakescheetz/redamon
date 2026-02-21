@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedAmon - Vulnerability Scanner Main Entry Point
+parallax - Vulnerability Scanner Main Entry Point
 =================================================
 Orchestrates GVM/OpenVAS vulnerability scanning using recon data.
 
@@ -54,41 +54,43 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 def check_recon_has_live_targets(recon_data: dict) -> tuple:
     """
     Check if recon data indicates any reachable/live targets.
-    
+
     GVM can scan network-level vulnerabilities (SSH, FTP, etc.), not just HTTP.
-    However, if both port_scan AND http_probe found nothing, hosts are likely 
+    However, if both port_scan AND http_probe found nothing, hosts are likely
     completely unreachable and GVM will also fail.
-    
+
     Args:
         recon_data: Reconnaissance data from recon/main.py
-        
+
     Returns:
         Tuple of (has_live_targets: bool, warning_message: str or None)
     """
     # Check port_scan results
-    port_scan_data = recon_data.get('port_scan', {})
-    port_summary = port_scan_data.get('summary', {})
-    open_ports = port_summary.get('total_open_ports', 0)
-    
+    port_scan_data = recon_data.get("port_scan", {})
+    port_summary = port_scan_data.get("summary", {})
+    open_ports = port_summary.get("total_open_ports", 0)
+
     # Check http_probe results
-    http_probe_data = recon_data.get('http_probe', {})
-    http_summary = http_probe_data.get('summary', {})
-    live_urls = http_summary.get('live_urls', 0)
-    
+    http_probe_data = recon_data.get("http_probe", {})
+    http_summary = http_probe_data.get("summary", {})
+    live_urls = http_summary.get("live_urls", 0)
+
     # Check if active scans were already skipped in recon pipeline
-    active_scans_skipped = recon_data.get('metadata', {}).get('active_scans_skipped', False)
-    
+    active_scans_skipped = recon_data.get("metadata", {}).get(
+        "active_scans_skipped", False
+    )
+
     # Case 1: Both port_scan and http_probe ran but found nothing
-    port_scan_ran = 'port_scan' in recon_data
-    http_probe_ran = 'http_probe' in recon_data
-    
+    port_scan_ran = "port_scan" in recon_data
+    http_probe_ran = "http_probe" in recon_data
+
     if port_scan_ran and http_probe_ran:
         if open_ports == 0 and live_urls == 0:
             return False, (
                 "No open ports and no live HTTP services found in recon data. "
                 "Targets appear to be unreachable or heavily firewalled."
             )
-    
+
     # Case 2: Only http_probe ran and found nothing (port_scan might have been skipped)
     if http_probe_ran and not port_scan_ran:
         if live_urls == 0:
@@ -96,14 +98,14 @@ def check_recon_has_live_targets(recon_data: dict) -> tuple:
                 "No live HTTP services found in recon data. "
                 "Port scan was not performed - GVM may still find vulnerabilities."
             )
-    
+
     # Case 3: Active scans were skipped in recon pipeline
     if active_scans_skipped:
         return False, (
             "Active scans (resource_enum, vuln_scan) were skipped in recon pipeline. "
             "No live targets were found."
         )
-    
+
     # Targets seem reachable
     return True, None
 
@@ -123,14 +125,14 @@ def run_vulnerability_scan(
         Complete vulnerability scan results
     """
     # Read scan settings from project settings (fetched from webapp API)
-    scan_config = get_setting('SCAN_CONFIG', 'Full and fast')
-    scan_targets = get_setting('SCAN_TARGETS', 'both')
-    task_timeout = get_setting('TASK_TIMEOUT', 14400)
-    poll_interval = get_setting('POLL_INTERVAL', 30)
-    cleanup = get_setting('CLEANUP_AFTER_SCAN', True)
+    scan_config = get_setting("SCAN_CONFIG", "Full and fast")
+    scan_targets = get_setting("SCAN_TARGETS", "both")
+    task_timeout = get_setting("TASK_TIMEOUT", 14400)
+    poll_interval = get_setting("POLL_INTERVAL", 30)
+    cleanup = get_setting("CLEANUP_AFTER_SCAN", True)
 
     print("\n" + "=" * 70)
-    print("           RedAmon - GVM Vulnerability Scanner")
+    print("           parallax - GVM Vulnerability Scanner")
     print("=" * 70)
     print(f"  Target Domain: {domain}")
     print(f"  Scan Config:   {scan_config}")
@@ -176,8 +178,8 @@ def run_vulnerability_scan(
                 "scan_type": "vulnerability_scan",
                 "scan_timestamp": datetime.now().isoformat(),
                 "target_domain": root_domain,
-                "skipped_reason": warning_message
-            }
+                "skipped_reason": warning_message,
+            },
         }
 
     # Clear previous GVM graph data for this project
@@ -185,14 +187,19 @@ def run_vulnerability_scan(
         print("[*] Clearing previous GVM graph data...")
         try:
             from graph_db import Neo4jClient
+
             with Neo4jClient() as graph_client:
                 if graph_client.verify_connection():
                     clear_stats = graph_client.clear_gvm_data(USER_ID, project_id)
-                    total = (clear_stats["vulnerabilities_deleted"] +
-                             clear_stats["technologies_deleted"] +
-                             clear_stats["cves_deleted"])
-                    print(f"    [+] Cleared: {total} GVM nodes removed, "
-                          f"{clear_stats['technologies_cleaned']} shared technologies cleaned")
+                    total = (
+                        clear_stats["vulnerabilities_deleted"]
+                        + clear_stats["technologies_deleted"]
+                        + clear_stats["cves_deleted"]
+                    )
+                    print(
+                        f"    [+] Cleared: {total} GVM nodes removed, "
+                        f"{clear_stats['technologies_cleaned']} shared technologies cleaned"
+                    )
                 else:
                     print("    [!] Could not connect to Neo4j - skipping clear")
         except Exception as e:
@@ -216,10 +223,7 @@ def run_vulnerability_scan(
             "target_domain": root_domain,
             "scan_strategy": scan_targets,
             "recon_file": f"recon_{project_id}.json",
-            "targets": {
-                "ips": list(ips),
-                "hostnames": list(hostnames)
-            }
+            "targets": {"ips": list(ips), "hostnames": list(hostnames)},
         },
         "scans": [],
         "summary": {
@@ -230,60 +234,66 @@ def run_vulnerability_scan(
             "low": 0,
             "log": 0,
             "hosts_scanned": 0,
-        }
+        },
     }
-    
+
     # Connect to GVM
     print("\n[*] Connecting to GVM...")
     scanner = GVMScanner()
-    
+
     if not scanner.connect():
         print("[!] ERROR: Failed to connect to GVM")
         print("[!] Make sure GVM is running:")
         print("[!]   docker compose up -d")
         print("[!]   docker compose logs -f gvmd  # Wait for 'Starting GVMd'")
         return {"error": "Failed to connect to GVM"}
-    
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     output_file = OUTPUT_DIR / f"gvm_{project_id}.json"
-    
+
     def save_incremental():
         """Save current results incrementally."""
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
-    
+
     try:
         # =====================================================================
         # PHASE 1: Scan IPs (one at a time for incremental saving)
         # =====================================================================
         if scan_targets in ("both", "ips_only") and ips:
             ip_list = list(ips)
-            print(f"\n[*] PHASE 1: Scanning {len(ip_list)} IP addresses (individually)...")
+            print(
+                f"\n[*] PHASE 1: Scanning {len(ip_list)} IP addresses (individually)..."
+            )
             print("-" * 50)
-            
+
             for i, ip in enumerate(ip_list, 1):
                 print(f"\n[*] IP {i}/{len(ip_list)}: {ip}")
-                
+
                 ip_results = scanner.scan_targets(
                     targets=[ip],
                     target_name=f"IP_{ip.replace('.', '_')}",
-                    cleanup=cleanup
+                    cleanup=cleanup,
                 )
                 ip_results["scan_type"] = "ip_scan"
                 ip_results["target_ip"] = ip
                 results["scans"].append(ip_results)
-                
+
                 # Update summary
                 if "severity_summary" in ip_results:
                     for sev, count in ip_results["severity_summary"].items():
                         results["summary"][sev] += count
-                results["summary"]["total_vulnerabilities"] += ip_results.get("vulnerability_count", 0)
-                results["summary"]["hosts_scanned"] += ip_results.get("hosts_scanned", 0)
-                
+                results["summary"]["total_vulnerabilities"] += ip_results.get(
+                    "vulnerability_count", 0
+                )
+                results["summary"]["hosts_scanned"] += ip_results.get(
+                    "hosts_scanned", 0
+                )
+
                 # Save after each IP
                 save_incremental()
                 print(f"    [+] Progress saved to {output_file}")
-        
+
         # =====================================================================
         # PHASE 2: Scan Hostnames (one at a time for incremental saving)
         # Reconnect to GVM to avoid stale socket after long Phase 1 scans
@@ -296,38 +306,44 @@ def run_vulnerability_scan(
                 if not scanner.connect(max_retries=10, retry_interval=15):
                     raise RuntimeError("Failed to reconnect to GVM before Phase 2")
             hostname_list = list(hostnames)
-            print(f"\n[*] PHASE 2: Scanning {len(hostname_list)} hostnames (individually)...")
+            print(
+                f"\n[*] PHASE 2: Scanning {len(hostname_list)} hostnames (individually)..."
+            )
             print("-" * 50)
-            
+
             for i, hostname in enumerate(hostname_list, 1):
                 print(f"\n[*] Hostname {i}/{len(hostname_list)}: {hostname}")
-                
+
                 hostname_results = scanner.scan_targets(
                     targets=[hostname],
                     target_name=f"Host_{hostname.replace('.', '_')}",
-                    cleanup=cleanup
+                    cleanup=cleanup,
                 )
                 hostname_results["scan_type"] = "hostname_scan"
                 hostname_results["target_hostname"] = hostname
                 results["scans"].append(hostname_results)
-                
+
                 # Update summary
                 if "severity_summary" in hostname_results:
                     for sev, count in hostname_results["severity_summary"].items():
                         results["summary"][sev] += count
-                results["summary"]["total_vulnerabilities"] += hostname_results.get("vulnerability_count", 0)
-                results["summary"]["hosts_scanned"] += hostname_results.get("hosts_scanned", 0)
+                results["summary"]["total_vulnerabilities"] += hostname_results.get(
+                    "vulnerability_count", 0
+                )
+                results["summary"]["hosts_scanned"] += hostname_results.get(
+                    "hosts_scanned", 0
+                )
 
                 # Save after each hostname
                 save_incremental()
                 print(f"    [+] Progress saved to {output_file}")
-        
+
         # Final save
         save_vuln_results(results, project_id)
-        
+
     finally:
         scanner.disconnect()
-    
+
     # Print summary
     summary = results["summary"]
     print(f"\n{'=' * 70}")
@@ -369,25 +385,24 @@ def main():
             domain=TARGET_DOMAIN,
             project_id=PROJECT_ID,
         )
-        
+
         if "error" in results:
             print(f"\n[!] Scan failed: {results['error']}")
             return 1
-        
+
     except KeyboardInterrupt:
         print("\n[!] Scan interrupted by user")
         return 130
     except Exception as e:
         print(f"\n[!] Unexpected error: {e}")
         raise
-    
+
     # Print duration
     duration = (datetime.now() - start_time).total_seconds()
     print(f"\n[*] Total scan time: {duration:.2f} seconds")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

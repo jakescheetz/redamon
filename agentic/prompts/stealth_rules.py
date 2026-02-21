@@ -1,11 +1,10 @@
 """
-RedAmon Stealth Mode Rules
+parallax Stealth Mode Rules
 
 Comprehensive stealth constraints injected into the agent system prompt
 when STEALTH_MODE is enabled. Prepended BEFORE the main REACT_SYSTEM_PROMPT
 to establish maximum priority.
 """
-
 
 STEALTH_MODE_RULES = """
 # STEALTH MODE — MANDATORY CONSTRAINTS

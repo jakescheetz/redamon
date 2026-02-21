@@ -1,6 +1,7 @@
 """
 Recon Orchestrator API - FastAPI service for managing recon containers
 """
+
 import asyncio
 import json
 import logging
@@ -39,11 +40,11 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 RECON_PATH = os.getenv("RECON_PATH", "./recon")
-RECON_IMAGE = os.getenv("RECON_IMAGE", "redamon-recon:latest")
+RECON_IMAGE = os.getenv("RECON_IMAGE", "parallax-recon:latest")
 GVM_SCAN_PATH = os.getenv("GVM_SCAN_PATH", "./gvm_scan")
-GVM_IMAGE = os.getenv("GVM_IMAGE", "redamon-vuln-scanner:latest")
+GVM_IMAGE = os.getenv("GVM_IMAGE", "parallax-vuln-scanner:latest")
 GITHUB_HUNT_PATH = os.getenv("GITHUB_HUNT_PATH", "./github_secret_hunt")
-GITHUB_HUNT_IMAGE = os.getenv("GITHUB_HUNT_IMAGE", "redamon-github-hunter:latest")
+GITHUB_HUNT_IMAGE = os.getenv("GITHUB_HUNT_IMAGE", "parallax-github-hunter:latest")
 VERSION = "1.0.0"
 
 # Global container manager
@@ -55,7 +56,11 @@ async def lifespan(app: FastAPI):
     """Initialize and cleanup resources"""
     global container_manager
     logger.info("Starting Recon Orchestrator...")
-    container_manager = ContainerManager(recon_image=RECON_IMAGE, gvm_image=GVM_IMAGE, github_hunt_image=GITHUB_HUNT_IMAGE)
+    container_manager = ContainerManager(
+        recon_image=RECON_IMAGE,
+        gvm_image=GVM_IMAGE,
+        github_hunt_image=GITHUB_HUNT_IMAGE,
+    )
     yield
     logger.info("Shutting down Recon Orchestrator...")
     await container_manager.cleanup()
@@ -84,9 +89,17 @@ async def health_check():
     return HealthResponse(
         status="healthy",
         version=VERSION,
-        running_recons=container_manager.get_running_count() if container_manager else 0,
-        running_gvm_scans=container_manager.get_gvm_running_count() if container_manager else 0,
-        running_github_hunts=container_manager.get_github_hunt_running_count() if container_manager else 0,
+        running_recons=(
+            container_manager.get_running_count() if container_manager else 0
+        ),
+        running_gvm_scans=(
+            container_manager.get_gvm_running_count() if container_manager else 0
+        ),
+        running_github_hunts=(
+            container_manager.get_github_hunt_running_count()
+            if container_manager
+            else 0
+        ),
     )
 
 
@@ -112,15 +125,15 @@ async def get_defaults():
         # Runtime-only settings that should NOT be sent to frontend/database
         # These are used by recon module at runtime, not stored in PostgreSQL
         RUNTIME_ONLY_KEYS = {
-            'PROJECT_ID',
-            'USER_ID',
-            'TARGET_DOMAIN',  # Provided by user, not a default
+            "PROJECT_ID",
+            "USER_ID",
+            "TARGET_DOMAIN",  # Provided by user, not a default
         }
 
         # Convert snake_case keys to camelCase for frontend
         def to_camel_case(snake_str: str) -> str:
-            components = snake_str.lower().split('_')
-            return components[0] + ''.join(x.title() for x in components[1:])
+            components = snake_str.lower().split("_")
+            return components[0] + "".join(x.title() for x in components[1:])
 
         camel_case_defaults = {
             to_camel_case(k): v
@@ -132,18 +145,23 @@ async def get_defaults():
         # with recon's project_settings already cached above)
         try:
             import importlib.util
+
             gvm_settings_path = Path("/app/gvm_scan/project_settings.py")
-            spec = importlib.util.spec_from_file_location("gvm_project_settings", gvm_settings_path)
+            spec = importlib.util.spec_from_file_location(
+                "gvm_project_settings", gvm_settings_path
+            )
             gvm_mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(gvm_mod)
 
             # Convert SCAN_CONFIG → gvmScanConfig (prefix with 'gvm_')
             def to_gvm_camel(snake_str: str) -> str:
                 prefixed = f"gvm_{snake_str}"
-                components = prefixed.lower().split('_')
-                return components[0] + ''.join(x.title() for x in components[1:])
+                components = prefixed.lower().split("_")
+                return components[0] + "".join(x.title() for x in components[1:])
 
-            gvm_defaults = {to_gvm_camel(k): v for k, v in gvm_mod.DEFAULT_GVM_SETTINGS.items()}
+            gvm_defaults = {
+                to_gvm_camel(k): v for k, v in gvm_mod.DEFAULT_GVM_SETTINGS.items()
+            }
             camel_case_defaults.update(gvm_defaults)
         except Exception:
             logger.warning("GVM project_settings not found, skipping GVM defaults")
@@ -151,20 +169,27 @@ async def get_defaults():
         # Also import GitHub Secret Hunt defaults
         try:
             import importlib.util
+
             gh_settings_path = Path("/app/github_secret_hunt/project_settings.py")
-            spec = importlib.util.spec_from_file_location("github_hunt_project_settings", gh_settings_path)
+            spec = importlib.util.spec_from_file_location(
+                "github_hunt_project_settings", gh_settings_path
+            )
             gh_mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(gh_mod)
 
             # Convert GITHUB_ACCESS_TOKEN → githubAccessToken (already github-prefixed)
             def to_gh_camel(snake_str: str) -> str:
-                components = snake_str.lower().split('_')
-                return components[0] + ''.join(x.title() for x in components[1:])
+                components = snake_str.lower().split("_")
+                return components[0] + "".join(x.title() for x in components[1:])
 
-            gh_defaults = {to_gh_camel(k): v for k, v in gh_mod.DEFAULT_GITHUB_SETTINGS.items()}
+            gh_defaults = {
+                to_gh_camel(k): v for k, v in gh_mod.DEFAULT_GITHUB_SETTINGS.items()
+            }
             camel_case_defaults.update(gh_defaults)
         except Exception:
-            logger.warning("GitHub Hunt project_settings not found, skipping GitHub defaults")
+            logger.warning(
+                "GitHub Hunt project_settings not found, skipping GitHub defaults"
+            )
 
         return camel_case_defaults
     except ImportError as e:
@@ -242,7 +267,9 @@ async def stream_logs(project_id: str):
     # Check if there's a running container
     state = await container_manager.get_status(project_id)
     if state.status == ReconStatus.IDLE:
-        raise HTTPException(status_code=404, detail="No recon process found for this project")
+        raise HTTPException(
+            status_code=404, detail="No recon process found for this project"
+        )
 
     async def event_generator():
         """Generate SSE events from container logs"""
@@ -250,14 +277,16 @@ async def stream_logs(project_id: str):
             async for event in container_manager.stream_logs(project_id):
                 yield {
                     "event": "log",
-                    "data": json.dumps({
-                        "log": event.log,
-                        "timestamp": event.timestamp.isoformat(),
-                        "phase": event.phase,
-                        "phaseNumber": event.phase_number,
-                        "isPhaseStart": event.is_phase_start,
-                        "level": event.level,
-                    }),
+                    "data": json.dumps(
+                        {
+                            "log": event.log,
+                            "timestamp": event.timestamp.isoformat(),
+                            "phase": event.phase,
+                            "phaseNumber": event.phase_number,
+                            "isPhaseStart": event.is_phase_start,
+                            "level": event.level,
+                        }
+                    ),
                 }
         except Exception as e:
             logger.error(f"Error streaming logs: {e}")
@@ -270,11 +299,17 @@ async def stream_logs(project_id: str):
         final_state = await container_manager.get_status(project_id)
         yield {
             "event": "complete",
-            "data": json.dumps({
-                "status": final_state.status.value,
-                "completedAt": final_state.completed_at.isoformat() if final_state.completed_at else None,
-                "error": final_state.error,
-            }),
+            "data": json.dumps(
+                {
+                    "status": final_state.status.value,
+                    "completedAt": (
+                        final_state.completed_at.isoformat()
+                        if final_state.completed_at
+                        else None
+                    ),
+                    "error": final_state.error,
+                }
+            ),
         }
 
     return EventSourceResponse(event_generator())
@@ -287,7 +322,8 @@ async def list_running():
         raise HTTPException(status_code=503, detail="Service not initialized")
 
     running = [
-        state for state in container_manager.running_states.values()
+        state
+        for state in container_manager.running_states.values()
         if state.status == ReconStatus.RUNNING
     ]
     return {"running": [s.dict() for s in running]}
@@ -386,7 +422,8 @@ async def upload_artifact(project_id: str, artifact_type: str, file: UploadFile)
     ALLOWED_TYPES = {
         "recon": Path("/app/recon/output") / f"recon_{project_id}.json",
         "gvm": Path("/app/gvm_scan/output") / f"gvm_{project_id}.json",
-        "github_hunt": Path("/app/github_secret_hunt/output") / f"github_hunt_{project_id}.json",
+        "github_hunt": Path("/app/github_secret_hunt/output")
+        / f"github_hunt_{project_id}.json",
     }
 
     if artifact_type not in ALLOWED_TYPES:
@@ -404,7 +441,9 @@ async def upload_artifact(project_id: str, artifact_type: str, file: UploadFile)
         # Ensure parent directory exists
         target_path.parent.mkdir(parents=True, exist_ok=True)
         target_path.write_bytes(content)
-        logger.info(f"Uploaded {artifact_type} artifact for project {project_id}: {target_path}")
+        logger.info(
+            f"Uploaded {artifact_type} artifact for project {project_id}: {target_path}"
+        )
         return {"success": True, "path": str(target_path), "size": len(content)}
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Uploaded file is not valid JSON")
@@ -430,6 +469,7 @@ async def start_gvm_scan(project_id: str, request: GvmStartRequest):
 
     # Check that recon data exists
     from pathlib import Path
+
     recon_file = Path("/app/recon/output") / f"recon_{project_id}.json"
     if not recon_file.exists():
         raise HTTPException(
@@ -482,21 +522,25 @@ async def stream_gvm_logs(project_id: str):
 
     state = await container_manager.get_gvm_status(project_id)
     if state.status == GvmStatus.IDLE:
-        raise HTTPException(status_code=404, detail="No GVM scan found for this project")
+        raise HTTPException(
+            status_code=404, detail="No GVM scan found for this project"
+        )
 
     async def event_generator():
         try:
             async for event in container_manager.stream_gvm_logs(project_id):
                 yield {
                     "event": "log",
-                    "data": json.dumps({
-                        "log": event.log,
-                        "timestamp": event.timestamp.isoformat(),
-                        "phase": event.phase,
-                        "phaseNumber": event.phase_number,
-                        "isPhaseStart": event.is_phase_start,
-                        "level": event.level,
-                    }),
+                    "data": json.dumps(
+                        {
+                            "log": event.log,
+                            "timestamp": event.timestamp.isoformat(),
+                            "phase": event.phase,
+                            "phaseNumber": event.phase_number,
+                            "isPhaseStart": event.is_phase_start,
+                            "level": event.level,
+                        }
+                    ),
                 }
         except Exception as e:
             logger.error(f"Error streaming GVM logs: {e}")
@@ -508,11 +552,17 @@ async def stream_gvm_logs(project_id: str):
         final_state = await container_manager.get_gvm_status(project_id)
         yield {
             "event": "complete",
-            "data": json.dumps({
-                "status": final_state.status.value,
-                "completedAt": final_state.completed_at.isoformat() if final_state.completed_at else None,
-                "error": final_state.error,
-            }),
+            "data": json.dumps(
+                {
+                    "status": final_state.status.value,
+                    "completedAt": (
+                        final_state.completed_at.isoformat()
+                        if final_state.completed_at
+                        else None
+                    ),
+                    "error": final_state.error,
+                }
+            ),
         }
 
     return EventSourceResponse(event_generator())
@@ -535,6 +585,7 @@ async def start_github_hunt(project_id: str, request: GithubHuntStartRequest):
 
     # Check that recon data exists
     from pathlib import Path
+
     recon_file = Path("/app/recon/output") / f"recon_{project_id}.json"
     if not recon_file.exists():
         raise HTTPException(
@@ -586,21 +637,25 @@ async def stream_github_hunt_logs(project_id: str):
 
     state = await container_manager.get_github_hunt_status(project_id)
     if state.status == GithubHuntStatus.IDLE:
-        raise HTTPException(status_code=404, detail="No GitHub hunt found for this project")
+        raise HTTPException(
+            status_code=404, detail="No GitHub hunt found for this project"
+        )
 
     async def event_generator():
         try:
             async for event in container_manager.stream_github_hunt_logs(project_id):
                 yield {
                     "event": "log",
-                    "data": json.dumps({
-                        "log": event.log,
-                        "timestamp": event.timestamp.isoformat(),
-                        "phase": event.phase,
-                        "phaseNumber": event.phase_number,
-                        "isPhaseStart": event.is_phase_start,
-                        "level": event.level,
-                    }),
+                    "data": json.dumps(
+                        {
+                            "log": event.log,
+                            "timestamp": event.timestamp.isoformat(),
+                            "phase": event.phase,
+                            "phaseNumber": event.phase_number,
+                            "isPhaseStart": event.is_phase_start,
+                            "level": event.level,
+                        }
+                    ),
                 }
         except Exception as e:
             logger.error(f"Error streaming GitHub hunt logs: {e}")
@@ -612,11 +667,17 @@ async def stream_github_hunt_logs(project_id: str):
         final_state = await container_manager.get_github_hunt_status(project_id)
         yield {
             "event": "complete",
-            "data": json.dumps({
-                "status": final_state.status.value,
-                "completedAt": final_state.completed_at.isoformat() if final_state.completed_at else None,
-                "error": final_state.error,
-            }),
+            "data": json.dumps(
+                {
+                    "status": final_state.status.value,
+                    "completedAt": (
+                        final_state.completed_at.isoformat()
+                        if final_state.completed_at
+                        else None
+                    ),
+                    "error": final_state.error,
+                }
+            ),
         }
 
     return EventSourceResponse(event_generator())
@@ -624,6 +685,7 @@ async def stream_github_hunt_logs(project_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "api:app",
         host="0.0.0.0",

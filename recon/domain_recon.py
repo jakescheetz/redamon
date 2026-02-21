@@ -23,7 +23,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # Settings are passed from main.py to avoid multiple database queries
 
 OUTPUT_DIR = Path(__file__).parent / "output"
-DNS_RECORD_TYPES = ['A', 'AAAA', 'MX', 'NS', 'TXT', 'SOA', 'CNAME']
+DNS_RECORD_TYPES = ["A", "AAAA", "MX", "NS", "TXT", "SOA", "CNAME"]
 
 
 def get_tor_session(anonymous: bool):
@@ -31,6 +31,7 @@ def get_tor_session(anonymous: bool):
     if anonymous:
         try:
             from recon.helpers.anonymity import get_tor_session, is_tor_running
+
             if is_tor_running():
                 session = get_tor_session()
                 if session:
@@ -46,6 +47,7 @@ def get_proxychains_prefix(anonymous: bool) -> list:
     if anonymous:
         try:
             from recon.helpers.anonymity import get_proxychains_cmd, is_tor_running
+
             if is_tor_running():
                 cmd = get_proxychains_cmd()
                 if cmd:
@@ -59,15 +61,15 @@ def get_proxychains_prefix(anonymous: bool) -> list:
 def get_passive_subdomains(domain: str, session) -> set:
     """Combine crt.sh and HackerTarget passive discovery."""
     subdomains = set()
-    
+
     # crt.sh
     print(f"[*] Querying crt.sh...")
     try:
         resp = session.get(f"https://crt.sh/?q=%.{domain}&output=json", timeout=30)
         if resp.status_code == 200:
             for entry in resp.json():
-                for sub in entry['name_value'].lower().split('\n'):
-                    if not sub.startswith('*.'):
+                for sub in entry["name_value"].lower().split("\n"):
+                    if not sub.startswith("*."):
                         subdomains.add(sub.strip())
             print(f"[+] crt.sh: {len(subdomains)} found")
     except Exception as e:
@@ -76,17 +78,19 @@ def get_passive_subdomains(domain: str, session) -> set:
     # HackerTarget
     print(f"[*] Querying HackerTarget...")
     try:
-        resp = session.get(f"https://api.hackertarget.com/hostsearch/?q={domain}", timeout=30)
+        resp = session.get(
+            f"https://api.hackertarget.com/hostsearch/?q={domain}", timeout=30
+        )
         if resp.status_code == 200 and "error" not in resp.text.lower():
             count = 0
-            for line in resp.text.strip().split('\n'):
-                if ',' in line:
-                    subdomains.add(line.split(',')[0].strip())
+            for line in resp.text.strip().split("\n"):
+                if "," in line:
+                    subdomains.add(line.split(",")[0].strip())
                     count += 1
             print(f"[+] HackerTarget: {count} found")
     except Exception as e:
         print(f"[!] HackerTarget error: {e}")
-    
+
     return subdomains
 
 
@@ -95,29 +99,29 @@ def run_knockpy(domain: str, proxychains_prefix: list, bruteforce: bool = False)
     subdomains = set()
     mode = "recon + bruteforce" if bruteforce else "recon only"
     print(f"[*] Running Knockpy ({mode})...")
-    
-    command = ['knockpy', '-d', domain, '--recon']
+
+    command = ["knockpy", "-d", domain, "--recon"]
     if bruteforce:
-        command.append('--bruteforce')
+        command.append("--bruteforce")
     if proxychains_prefix:
         command = proxychains_prefix + command
-    
+
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=600)
-        
+
         # Strip ANSI color codes from output before parsing
-        ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
-        clean_output = ansi_escape.sub('', result.stdout.lower())
-        
+        ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+        clean_output = ansi_escape.sub("", result.stdout.lower())
+
         # Extract everything that looks like a subdomain
-        matches = re.findall(r'([\w.-]+\.' + re.escape(domain) + r')', clean_output)
+        matches = re.findall(r"([\w.-]+\." + re.escape(domain) + r")", clean_output)
         subdomains.update(matches)
-        
+
         if subdomains:
             print(f"[+] Knockpy: {len(subdomains)} found")
         else:
             print(f"[*] Knockpy: 0 found")
-            
+
     except subprocess.TimeoutExpired:
         print("[!] Knockpy timed out")
     except FileNotFoundError:
@@ -131,7 +135,7 @@ def run_knockpy(domain: str, proxychains_prefix: list, bruteforce: bool = False)
                 Path(f).unlink()
             except Exception:
                 pass
-    
+
     return subdomains
 
 
@@ -147,9 +151,9 @@ def dns_lookup_single(hostname: str, rtype: str, max_retries: int = 3) -> list:
     Returns:
         List of DNS records or None if not found/failed
     """
-    
+
     last_error = None
-    
+
     for attempt in range(max_retries):
         try:
             answers = dns.resolver.resolve(hostname, rtype)
@@ -161,7 +165,7 @@ def dns_lookup_single(hostname: str, rtype: str, max_retries: int = 3) -> list:
             # Temporary failures - worth retrying
             last_error = e
             if attempt < max_retries - 1:
-                delay = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+                delay = 2**attempt  # Exponential backoff: 1s, 2s, 4s
                 time.sleep(delay)
                 continue
             return None
@@ -169,11 +173,11 @@ def dns_lookup_single(hostname: str, rtype: str, max_retries: int = 3) -> list:
             # Unexpected errors - retry
             last_error = e
             if attempt < max_retries - 1:
-                delay = 2 ** attempt
+                delay = 2**attempt
                 time.sleep(delay)
                 continue
             return None
-    
+
     return None
 
 
@@ -188,35 +192,34 @@ def dns_lookup(hostname: str, max_retries: int = 3) -> dict:
     Returns:
         Dictionary with all DNS records
     """
-    
+
     dns_data = {}
-    
+
     for rtype in DNS_RECORD_TYPES:
         dns_data[rtype] = dns_lookup_single(hostname, rtype, max_retries)
-    
+
     # Extract IPs for convenience
-    ips = {
-        "ipv4": dns_data.get("A") or [],
-        "ipv6": dns_data.get("AAAA") or []
-    }
-    
+    ips = {"ipv4": dns_data.get("A") or [], "ipv6": dns_data.get("AAAA") or []}
+
     return {
         "records": dns_data,
         "ips": ips,
-        "has_records": any(v for v in dns_data.values() if v)
+        "has_records": any(v for v in dns_data.values() if v),
     }
 
 
-def verify_domain_ownership(domain: str, token: str, txt_prefix: str = "_redamon-verify") -> dict:
+def verify_domain_ownership(
+    domain: str, token: str, txt_prefix: str = "_parallax-verify"
+) -> dict:
     """
     Verify domain ownership via DNS TXT record.
 
-    Checks for a TXT record at {txt_prefix}.{domain} containing "redamon-verify={token}".
+    Checks for a TXT record at {txt_prefix}.{domain} containing "parallax-verify={token}".
 
     Args:
         domain: Root domain to verify (e.g., "example.com")
         token: Expected ownership token
-        txt_prefix: DNS record prefix (default: "_redamon-verify")
+        txt_prefix: DNS record prefix (default: "_parallax-verify")
 
     Returns:
         Dictionary with:
@@ -227,14 +230,14 @@ def verify_domain_ownership(domain: str, token: str, txt_prefix: str = "_redamon
         - error: Error message if verification failed
     """
     record_name = f"{txt_prefix}.{domain}"
-    expected_value = f"redamon-verify={token}"
+    expected_value = f"parallax-verify={token}"
 
     result = {
         "verified": False,
         "record_name": record_name,
         "expected_value": expected_value,
         "found_values": [],
-        "error": None
+        "error": None,
     }
 
     print(f"[*] Verifying domain ownership: {record_name}")
@@ -271,48 +274,51 @@ def verify_domain_ownership(domain: str, token: str, txt_prefix: str = "_redamon
 def resolve_all_dns(domain: str, subdomains: list) -> dict:
     """
     Resolve DNS for domain and all subdomains.
-    
+
     Args:
         domain: Root domain
         subdomains: List of discovered subdomains
-        
+
     Returns:
         Dictionary with DNS data for domain and each subdomain
     """
     print(f"\n[*] Resolving DNS for {len(subdomains) + 1} hosts...")
-    
-    result = {
-        "domain": {},
-        "subdomains": {}
-    }
-    
+
+    result = {"domain": {}, "subdomains": {}}
+
     # Resolve root domain
     print(f"  [*] {domain} (root)")
     result["domain"] = dns_lookup(domain)
     if result["domain"]["ips"]["ipv4"]:
         print(f"      → {', '.join(result['domain']['ips']['ipv4'])}")
-    
+
     # Resolve each subdomain
     for subdomain in subdomains:
         if subdomain == domain:
             continue
-        
+
         dns_result = dns_lookup(subdomain)
         result["subdomains"][subdomain] = dns_result
-        
+
         if dns_result["ips"]["ipv4"] or dns_result["ips"]["ipv6"]:
             all_ips = dns_result["ips"]["ipv4"] + dns_result["ips"]["ipv6"]
             print(f"  [+] {subdomain} → {', '.join(all_ips)}")
-    
+
     # Stats
     resolved_count = sum(1 for v in result["subdomains"].values() if v["has_records"])
     print(f"[+] Resolved: {resolved_count}/{len(subdomains)} subdomains")
-    
+
     return result
 
 
-def discover_subdomains(domain: str, anonymous: bool = False, bruteforce: bool = False,
-                        resolve: bool = True, save_output: bool = True, project_id: str = None) -> dict:
+def discover_subdomains(
+    domain: str,
+    anonymous: bool = False,
+    bruteforce: bool = False,
+    resolve: bool = True,
+    save_output: bool = True,
+    project_id: str = None,
+) -> dict:
     """
     Main discovery function - subdomain enumeration + DNS resolution.
 
@@ -334,19 +340,19 @@ def discover_subdomains(domain: str, anonymous: bool = False, bruteforce: bool =
     if bruteforce:
         print(f"[⚡] BRUTEFORCE MODE")
     print(f"{'=' * 50}\n")
-    
+
     # Setup
     session = get_tor_session(anonymous)
     pc_prefix = get_proxychains_prefix(anonymous)
-    
+
     # Subdomain Discovery
     passive = get_passive_subdomains(domain, session)
     active = run_knockpy(domain, pc_prefix, bruteforce)
-    
+
     # Combine, filter, sort
     all_subs = passive.union(active)
     all_subs = sorted([s for s in all_subs if s.endswith(domain)])
-    
+
     # Build result structure
     result = {
         "metadata": {
@@ -354,35 +360,33 @@ def discover_subdomains(domain: str, anonymous: bool = False, bruteforce: bool =
             "scan_timestamp": datetime.now().isoformat(),
             "target_domain": domain,
             "anonymous_mode": anonymous,
-            "bruteforce_mode": bruteforce
+            "bruteforce_mode": bruteforce,
         },
         "domain": domain,
         "subdomains": all_subs,
         "subdomain_count": len(all_subs),
-        "dns": None
+        "dns": None,
     }
-    
+
     # DNS Resolution for domain + all subdomains
     if resolve:
         result["dns"] = resolve_all_dns(domain, all_subs)
-    
+
     # Save JSON output (use project_id for filename if provided, fallback to domain)
     if save_output:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         file_id = project_id if project_id else domain
         output_file = OUTPUT_DIR / f"recon_{file_id}.json"
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(result, f, indent=2)
 
         print(f"\n{'=' * 50}")
         print(f"[+] TOTAL: {len(all_subs)} unique subdomains")
         print(f"[+] SAVED: {output_file}")
         print(f"{'=' * 50}\n")
-    
+
     if anonymous and session:
         session.close()
-    
+
     return result
-
-

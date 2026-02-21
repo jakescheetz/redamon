@@ -1,5 +1,5 @@
 """
-RedAmon Agent WebSocket API
+parallax Agent WebSocket API
 
 FastAPI application providing WebSocket endpoint for real-time agent communication.
 Supports session-based conversation continuity and phase-based approval flow.
@@ -63,7 +63,7 @@ app = FastAPI(
     title="Parallax Agent API",
     description="WebSocket API for real-time agent communication with phase tracking, MCP tools, and Neo4j integration",
     version="3.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Add CORS middleware for webapp (allow all origins for development)
@@ -80,8 +80,10 @@ app.add_middleware(
 # RESPONSE MODELS (for /health endpoint only)
 # =============================================================================
 
+
 class HealthResponse(BaseModel):
     """Response model for health check."""
+
     status: str
     version: str
     tools_loaded: int
@@ -110,7 +112,7 @@ async def health():
         status="ok" if orchestrator and orchestrator._initialized else "initializing",
         version="3.0.0",
         tools_loaded=tools_count,
-        active_sessions=sessions_count
+        active_sessions=sessions_count,
     )
 
 
@@ -127,17 +129,17 @@ async def get_defaults():
     def to_camel_case(snake_str: str, prefix: str = "agent") -> str:
         """Convert SCREAMING_SNAKE_CASE to prefixCamelCase."""
         prefixed = f"{prefix}_{snake_str}" if prefix else snake_str
-        components = prefixed.lower().split('_')
-        return components[0] + ''.join(x.title() for x in components[1:])
+        components = prefixed.lower().split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
 
     # STEALTH_MODE is a project-level setting (not agent-specific), served by
     # recon defaults as "stealthMode".  Exclude it here to avoid creating a
     # duplicate "agentStealthMode" key that Prisma doesn't recognise.
-    SKIP_KEYS = {'STEALTH_MODE'}
+    SKIP_KEYS = {"STEALTH_MODE"}
 
     # HYDRA_* keys map to Prisma fields without the 'agent' prefix
     # (e.g. HYDRA_ENABLED -> hydraEnabled, not agentHydraEnabled)
-    NO_PREFIX_KEYS = {k for k in DEFAULT_AGENT_SETTINGS if k.startswith('HYDRA_')}
+    NO_PREFIX_KEYS = {k for k in DEFAULT_AGENT_SETTINGS if k.startswith("HYDRA_")}
 
     camel_case_defaults = {}
     for k, v in DEFAULT_AGENT_SETTINGS.items():
@@ -161,6 +163,7 @@ async def get_models():
     Only providers with valid API keys in the environment are queried.
     """
     from model_providers import fetch_all_models
+
     return await fetch_all_models()
 
 

@@ -1,5 +1,5 @@
 """
-RedAmon - Nuclei Helper Functions
+parallax - Nuclei Helper Functions
 ==================================
 Functions for building Nuclei commands, parsing output, and detecting false positives.
 """
@@ -20,10 +20,10 @@ def get_host_path(container_path: str) -> str:
     When running inside a container with mounted volumes, sibling containers
     need host paths, not container paths.
 
-    /tmp/redamon is mounted to the same path inside and outside, so no translation needed.
+    /tmp/parallax is mounted to the same path inside and outside, so no translation needed.
     """
-    # /tmp/redamon paths are the same inside and outside the container
-    if container_path.startswith("/tmp/redamon"):
+    # /tmp/parallax paths are the same inside and outside the container
+    if container_path.startswith("/tmp/parallax"):
         return container_path
 
     host_output_path = os.environ.get("HOST_RECON_OUTPUT_PATH", "")
@@ -37,6 +37,7 @@ def get_host_path(container_path: str) -> str:
 # =============================================================================
 # Nuclei Command Building
 # =============================================================================
+
 
 def build_nuclei_command(
     targets_file: str,
@@ -65,14 +66,14 @@ def build_nuclei_command(
 ) -> List[str]:
     """
     Build nuclei Docker command with all configured parameters.
-    
+
     Args:
         targets_file: Path to file containing target URLs
         output_file: Path for JSON output
         docker_image: Nuclei Docker image to use
         use_proxy: Whether to use Tor proxy
         ... (configuration parameters)
-        
+
     Returns:
         Command as list of arguments
     """
@@ -84,97 +85,106 @@ def build_nuclei_command(
     output_filename = Path(output_file).name
 
     cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{targets_host_path}:/targets:ro",
-        "-v", f"{output_host_path}:/output",
-        "-v", f"{NUCLEI_TEMPLATES_VOLUME}:/root/nuclei-templates",
+        "docker",
+        "run",
+        "--rm",
+        "-v",
+        f"{targets_host_path}:/targets:ro",
+        "-v",
+        f"{output_host_path}:/output",
+        "-v",
+        f"{NUCLEI_TEMPLATES_VOLUME}:/root/nuclei-templates",
     ]
-    
+
     # Add network host mode for Tor proxy access
     if use_proxy:
         cmd.extend(["--network", "host"])
-    
-    cmd.extend([
-        docker_image,
-        "-l", f"/targets/{targets_filename}",
-        "-jsonl",
-        "-o", f"/output/{output_filename}",
-        "-silent",
-        "-nc",
-        "-duc",  # Disable automatic update check
-    ])
-    
+
+    cmd.extend(
+        [
+            docker_image,
+            "-l",
+            f"/targets/{targets_filename}",
+            "-jsonl",
+            "-o",
+            f"/output/{output_filename}",
+            "-silent",
+            "-nc",
+            "-duc",  # Disable automatic update check
+        ]
+    )
+
     # Severity filter
     if severity:
         cmd.extend(["-severity", ",".join(severity)])
-    
+
     # Template selection
     if templates:
         for template in templates:
             cmd.extend(["-t", template])
-    
+
     if exclude_templates:
         for template in exclude_templates:
             cmd.extend(["-exclude-templates", template])
-    
+
     if custom_templates:
         for template in custom_templates:
             cmd.extend(["-t", template])
-    
+
     # Tags
     if tags:
         cmd.extend(["-tags", ",".join(tags)])
-    
+
     if exclude_tags:
         cmd.extend(["-exclude-tags", ",".join(exclude_tags)])
-    
+
     # Rate limiting
     if rate_limit > 0:
         cmd.extend(["-rate-limit", str(rate_limit)])
-    
+
     if bulk_size > 0:
         cmd.extend(["-bulk-size", str(bulk_size)])
-    
+
     if concurrency > 0:
         cmd.extend(["-concurrency", str(concurrency)])
-    
+
     # Timeouts
     if timeout > 0:
         cmd.extend(["-timeout", str(timeout)])
-    
+
     if retries > 0:
         cmd.extend(["-retries", str(retries)])
-    
+
     # DAST mode for active vulnerability fuzzing
     if dast_mode:
         cmd.append("-dast")
-    
+
     # New templates only
     if new_templates_only:
         cmd.append("-nt")
-    
+
     # Headless browser
     if headless:
         cmd.append("-headless")
-    
+
     # System resolvers
     if system_resolvers:
         cmd.append("-system-resolvers")
-    
+
     # Follow redirects
     if follow_redirects:
         cmd.extend(["-follow-redirects"])
         if max_redirects > 0:
             cmd.extend(["-max-redirects", str(max_redirects)])
-    
+
     # Interactsh (OOB testing)
     if not interactsh:
         cmd.append("-no-interactsh")
-    
+
     # Proxy for Tor
     if use_proxy:
         cmd.extend(["-proxy", "socks5://127.0.0.1:9050"])
-    
+
     return cmd
 
 
@@ -182,18 +192,19 @@ def build_nuclei_command(
 # False Positive Detection
 # =============================================================================
 
+
 def is_false_positive(finding: dict) -> tuple:
     """
     Detect common false positive patterns in nuclei findings.
-    
+
     False positive indicators:
     1. Rate limiting (429 status) - timing-based attacks become unreliable
     2. WAF/firewall blocks - response doesn't reflect actual vulnerability
     3. Generic error pages - timing variations due to error handling
-    
+
     Args:
         finding: Raw nuclei JSON output line
-        
+
     Returns:
         Tuple of (is_false_positive: bool, reason: str or None)
     """
@@ -201,7 +212,7 @@ def is_false_positive(finding: dict) -> tuple:
     template_id = finding.get("template-id", "")
     info = finding.get("info", {})
     tags = info.get("tags", [])
-    
+
     # Patterns that indicate false positives
     rate_limit_indicators = [
         "429 Too Many Requests",
@@ -217,7 +228,7 @@ def is_false_positive(finding: dict) -> tuple:
         "temporarily blocked",
         "Request blocked",
     ]
-    
+
     waf_block_indicators = [
         "403 Forbidden",
         "Access Denied",
@@ -229,29 +240,43 @@ def is_false_positive(finding: dict) -> tuple:
         "Cloudflare",
         "AWS WAF",
     ]
-    
+
     # Check for rate limiting - especially bad for time-based attacks
-    is_time_based = any(t in ["time-based", "blind", "time-based-sqli"] for t in tags) or \
-                    "time" in template_id.lower() or "blind" in template_id.lower()
-    
+    is_time_based = (
+        any(t in ["time-based", "blind", "time-based-sqli"] for t in tags)
+        or "time" in template_id.lower()
+        or "blind" in template_id.lower()
+    )
+
     for indicator in rate_limit_indicators:
         if indicator.lower() in response.lower():
             if is_time_based:
-                return True, f"Rate limiting detected ('{indicator}') - invalidates time-based attack detection"
+                return (
+                    True,
+                    f"Rate limiting detected ('{indicator}') - invalidates time-based attack detection",
+                )
             else:
                 # For non-time-based, rate limiting is less critical but still suspicious
-                return True, f"Rate limiting detected ('{indicator}') - response may not reflect actual vulnerability"
-    
+                return (
+                    True,
+                    f"Rate limiting detected ('{indicator}') - response may not reflect actual vulnerability",
+                )
+
     # Check for WAF blocks on injection attacks
-    is_injection = any(t in ["sqli", "xss", "rce", "lfi", "ssti", "injection"] for t in tags)
-    
+    is_injection = any(
+        t in ["sqli", "xss", "rce", "lfi", "ssti", "injection"] for t in tags
+    )
+
     if is_injection:
         for indicator in waf_block_indicators:
             if indicator.lower() in response.lower():
                 # 403 with WAF indicators likely means WAF blocked the payload, not a real vuln
                 if "403" in response[:50]:
-                    return True, f"WAF/Firewall block detected ('{indicator}') - payload was blocked, not executed"
-    
+                    return (
+                        True,
+                        f"WAF/Firewall block detected ('{indicator}') - payload was blocked, not executed",
+                    )
+
     return False, None
 
 
@@ -259,21 +284,22 @@ def is_false_positive(finding: dict) -> tuple:
 # Nuclei Output Parsing
 # =============================================================================
 
+
 def parse_nuclei_finding(finding: dict) -> dict:
     """
     Parse a single nuclei finding into standardized format.
-    
+
     Args:
         finding: Raw nuclei JSON output line
-        
+
     Returns:
         Standardized finding dictionary
     """
     info = finding.get("info", {})
-    
+
     # Extract CVE IDs from various locations
     cves = []
-    
+
     # From classification
     classification = info.get("classification", {})
     if classification.get("cve-id"):
@@ -282,29 +308,33 @@ def parse_nuclei_finding(finding: dict) -> dict:
             cve_ids = [cve_ids]
         for cve_id in cve_ids:
             if cve_id and cve_id.startswith("CVE-"):
-                cves.append({
-                    "id": cve_id,
-                    "cvss": classification.get("cvss-score"),
-                    "url": f"https://nvd.nist.gov/vuln/detail/{cve_id}"
-                })
-    
+                cves.append(
+                    {
+                        "id": cve_id,
+                        "cvss": classification.get("cvss-score"),
+                        "url": f"https://nvd.nist.gov/vuln/detail/{cve_id}",
+                    }
+                )
+
     # From CVE details
     if classification.get("cve"):
         cve_detail = classification["cve"]
         if isinstance(cve_detail, list):
             for cve_id in cve_detail:
                 if cve_id and not any(c["id"] == cve_id for c in cves):
-                    cves.append({
-                        "id": cve_id,
-                        "cvss": None,
-                        "url": f"https://nvd.nist.gov/vuln/detail/{cve_id}"
-                    })
-    
+                    cves.append(
+                        {
+                            "id": cve_id,
+                            "cvss": None,
+                            "url": f"https://nvd.nist.gov/vuln/detail/{cve_id}",
+                        }
+                    )
+
     # Extract tags
     tags = info.get("tags", [])
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",")]
-    
+
     # Determine category from tags
     category = "general"
     category_map = {
@@ -342,7 +372,7 @@ def parse_nuclei_finding(finding: dict) -> dict:
         "kubernetes": "cloud",
         "docker": "cloud",
     }
-    
+
     for tag in tags:
         tag_lower = tag.lower()
         for key, cat in category_map.items():
@@ -351,7 +381,7 @@ def parse_nuclei_finding(finding: dict) -> dict:
                 break
         if category != "general":
             break
-    
+
     # Build result
     result = {
         "template_id": finding.get("template-id", "unknown"),
@@ -372,10 +402,11 @@ def parse_nuclei_finding(finding: dict) -> dict:
         "extracted_results": finding.get("extracted-results", []),
         "curl_command": finding.get("curl-command", ""),
         "request": finding.get("request", ""),
-        "response": finding.get("response", "")[:500] if finding.get("response") else "",
+        "response": (
+            finding.get("response", "")[:500] if finding.get("response") else ""
+        ),
         "timestamp": finding.get("timestamp", datetime.now().isoformat()),
-        "raw": finding  # Keep raw data for reference
+        "raw": finding,  # Keep raw data for reference
     }
-    
-    return result
 
+    return result

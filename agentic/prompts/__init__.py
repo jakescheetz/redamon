@@ -1,5 +1,5 @@
 """
-RedAmon Agent Prompts Package
+parallax Agent Prompts Package
 
 System prompts for the ReAct agent orchestrator.
 Includes phase-aware reasoning, tool descriptions, and structured output formats.
@@ -54,7 +54,11 @@ from .stealth_rules import STEALTH_MODE_RULES
 
 # Import utilities
 from utils import get_session_config_prompt
-from project_settings import get_setting, get_allowed_tools_for_phase, get_hydra_flags_from_settings
+from project_settings import (
+    get_setting,
+    get_allowed_tools_for_phase,
+    get_hydra_flags_from_settings,
+)
 
 
 def _msf_search_failed(execution_trace: list) -> bool:
@@ -102,7 +106,7 @@ def get_phase_tools(
     is_statefull = post_expl_type == "statefull"
 
     # Stealth mode header — reminds LLM that stealth constraints apply to all tools below
-    if get_setting('STEALTH_MODE', False):
+    if get_setting("STEALTH_MODE", False):
         parts.append(
             "## STEALTH MODE ACTIVE\n\n"
             "All tools below MUST be used with stealth constraints. "
@@ -110,9 +114,9 @@ def get_phase_tools(
         )
 
     # Add phase-specific custom system prompt if configured
-    informational_prompt = get_setting('INFORMATIONAL_SYSTEM_PROMPT', '')
-    expl_prompt = get_setting('EXPL_SYSTEM_PROMPT', '')
-    post_expl_prompt = get_setting('POST_EXPL_SYSTEM_PROMPT', '')
+    informational_prompt = get_setting("INFORMATIONAL_SYSTEM_PROMPT", "")
+    expl_prompt = get_setting("EXPL_SYSTEM_PROMPT", "")
+    post_expl_prompt = get_setting("POST_EXPL_SYSTEM_PROMPT", "")
 
     if phase == "informational" and informational_prompt:
         parts.append(f"## Custom Instructions\n\n{informational_prompt}\n")
@@ -123,7 +127,9 @@ def get_phase_tools(
 
     # Determine allowed tools for current phase (dynamic from TOOL_PHASE_MAP in DB)
     # Filter out internal tools that should never be shown to the LLM
-    allowed_tools = [t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS]
+    allowed_tools = [
+        t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS
+    ]
 
     # Dynamic tool availability table (only shows allowed tools)
     parts.append(build_tool_availability_table(phase, allowed_tools))
@@ -131,14 +137,22 @@ def get_phase_tools(
     # Add mode decision matrix for exploitation only (not needed in post-expl, mode already determined)
     if phase == "exploitation" and attack_path_type == "cve_exploit":
         # Mode context
-        target_types = "Dropper/Staged/Meterpreter" if is_statefull else "Command/In-Memory/Exec"
-        post_expl_note = "Interactive session commands available" if is_statefull else "Re-run exploit with different CMD values"
+        target_types = (
+            "Dropper/Staged/Meterpreter" if is_statefull else "Command/In-Memory/Exec"
+        )
+        post_expl_note = (
+            "Interactive session commands available"
+            if is_statefull
+            else "Re-run exploit with different CMD values"
+        )
 
-        parts.append(MODE_DECISION_MATRIX.format(
-            mode=post_expl_type,
-            target_types=target_types,
-            post_expl_note=post_expl_note
-        ))
+        parts.append(
+            MODE_DECISION_MATRIX.format(
+                mode=post_expl_type,
+                target_types=target_types,
+                post_expl_note=post_expl_note,
+            )
+        )
 
     # Add phase and ATTACK PATH specific workflow guidance
     if phase == "informational":
@@ -147,24 +161,34 @@ def get_phase_tools(
 
     elif phase == "exploitation":
         # SELECT WORKFLOW BASED ON ATTACK PATH TYPE
-        if attack_path_type == "brute_force_credential_guess" and "execute_hydra" in allowed_tools:
+        if (
+            attack_path_type == "brute_force_credential_guess"
+            and "execute_hydra" in allowed_tools
+        ):
             # Hydra-based brute force workflow
             hydra_flags = get_hydra_flags_from_settings()
             # Build flags without -t for templates that override thread count per protocol
             import re as _re
-            hydra_flags_no_t = _re.sub(r'-t\s+\d+\s*', '', hydra_flags).strip()
-            parts.append(HYDRA_BRUTE_FORCE_TOOLS.format(
-                hydra_max_attempts=get_setting('HYDRA_MAX_WORDLIST_ATTEMPTS', 3),
-                hydra_flags=hydra_flags,
-                hydra_flags_no_t=hydra_flags_no_t
-            ))
+
+            hydra_flags_no_t = _re.sub(r"-t\s+\d+\s*", "", hydra_flags).strip()
+            parts.append(
+                HYDRA_BRUTE_FORCE_TOOLS.format(
+                    hydra_max_attempts=get_setting("HYDRA_MAX_WORDLIST_ATTEMPTS", 3),
+                    hydra_flags=hydra_flags,
+                    hydra_flags_no_t=hydra_flags_no_t,
+                )
+            )
             # Add wordlist reference guide
             parts.append(HYDRA_WORDLIST_GUIDANCE)
         elif "metasploit_console" in allowed_tools:
             # CVE-based exploitation (default)
             parts.append(CVE_EXPLOIT_TOOLS)
             # Select payload guidance based on post_expl_type
-            payload_guidance = CVE_PAYLOAD_GUIDANCE_STATEFULL if is_statefull else CVE_PAYLOAD_GUIDANCE_STATELESS
+            payload_guidance = (
+                CVE_PAYLOAD_GUIDANCE_STATEFULL
+                if is_statefull
+                else CVE_PAYLOAD_GUIDANCE_STATELESS
+            )
             parts.append(payload_guidance)
             # No-module fallback: only inject full workflow AFTER msf search returned no results
             # This saves ~1,100-1,350 tokens when a module IS found
@@ -185,7 +209,9 @@ def get_phase_tools(
 
         # Add note about post-exploitation availability
         if not activate_post_expl:
-            parts.append("\n**NOTE:** Post-exploitation phase is DISABLED. Complete exploitation and use action='complete'.\n")
+            parts.append(
+                "\n**NOTE:** Post-exploitation phase is DISABLED. Complete exploitation and use action='complete'.\n"
+            )
 
     elif phase == "post_exploitation":
         # Only show post-exploitation workflows if metasploit_console is allowed

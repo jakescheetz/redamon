@@ -1,10 +1,10 @@
-# RedAmon - httpx HTTP Prober + Banner Grabbing
+# parallax - httpx HTTP Prober + Banner Grabbing
 
 ## Complete Technical Documentation
 
-> **Module:** `recon/httpx_scan.py`  
-> **Purpose:** HTTP probing, technology detection, and non-HTTP service detection  
-> **Author:** RedAmon Security Suite
+> **Module:** `recon/httpx_scan.py`
+> **Purpose:** HTTP probing, technology detection, and non-HTTP service detection
+> **Author:** parallax Security Suite
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## Overview
 
-The `httpx_scan.py` module integrates ProjectDiscovery's httpx toolkit into RedAmon's reconnaissance pipeline. httpx is a multi-purpose HTTP toolkit designed for probing, technology detection, and web service analysis.
+The `httpx_scan.py` module integrates ProjectDiscovery's httpx toolkit into parallax's reconnaissance pipeline. httpx is a multi-purpose HTTP toolkit designed for probing, technology detection, and web service analysis.
 
 **This module also includes integrated banner grabbing** for non-HTTP services (SSH, FTP, SMTP, MySQL, etc.) to provide complete service detection across all open ports.
 
@@ -917,7 +917,7 @@ docker run --rm -i \
       "proxy_used": false,
       "total_urls_probed": 150
     },
-    
+
     "by_url": {
       "https://example.com": {
         "url": "https://example.com",
@@ -961,7 +961,7 @@ docker run --rm -i \
         "body": "<!DOCTYPE html>..."
       }
     },
-    
+
     "by_host": {
       "example.com": {
         "hostname": "example.com",
@@ -972,19 +972,19 @@ docker run --rm -i \
         "status_codes": [200, 301]
       }
     },
-    
+
     "technologies_found": {
       "nginx": ["https://example.com", "https://api.example.com"],
       "PHP": ["https://example.com"],
       "WordPress": ["https://example.com"],
       "React": ["https://app.example.com"]
     },
-    
+
     "servers_found": {
       "nginx/1.18.0": ["https://example.com"],
       "Apache/2.4.41": ["https://legacy.example.com"]
     },
-    
+
     "summary": {
       "total_urls_probed": 150,
       "live_urls": 45,
@@ -1197,5 +1197,4 @@ HTTPX_CUSTOM_HEADERS = [
 
 ---
 
-*Documentation generated for RedAmon v1.0 - httpx HTTP Prober Module*
-
+*Documentation generated for parallax v1.0 - httpx HTTP Prober Module*

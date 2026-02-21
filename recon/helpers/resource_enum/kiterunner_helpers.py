@@ -1,5 +1,5 @@
 """
-RedAmon - Kiterunner API Discovery Helpers
+parallax - Kiterunner API Discovery Helpers
 ==========================================
 API endpoint bruteforcing using Kiterunner.
 """
@@ -20,8 +20,8 @@ from .classification import classify_endpoint
 
 
 def _create_temp_dir(prefix: str = "kr") -> Path:
-    """Create a temp directory under /tmp/redamon for Docker-in-Docker compatibility."""
-    temp_dir = Path(f"/tmp/redamon/.{prefix}_{uuid.uuid4().hex[:8]}")
+    """Create a temp directory under /tmp/parallax for Docker-in-Docker compatibility."""
+    temp_dir = Path(f"/tmp/parallax/.{prefix}_{uuid.uuid4().hex[:8]}")
     temp_dir.mkdir(parents=True, exist_ok=True)
     return temp_dir
 
@@ -48,7 +48,7 @@ def ensure_kiterunner_binary(wordlist_name: str) -> Tuple[Optional[str], Optiona
         Tuple of (binary_path, wordlist_path) or (None, None) if failed
     """
     # Determine paths
-    tools_dir = Path.home() / ".redamon" / "tools"
+    tools_dir = Path.home() / ".parallax" / "tools"
     kr_dir = tools_dir / "kiterunner"
     kr_dir.mkdir(parents=True, exist_ok=True)
 
@@ -94,10 +94,10 @@ def ensure_kiterunner_binary(wordlist_name: str) -> Tuple[Optional[str], Optiona
             # Download archive with User-Agent header
             request = urllib.request.Request(
                 download_url,
-                headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) RedAmon/1.0'}
+                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) parallax/1.0"},
             )
             with urllib.request.urlopen(request) as response:
-                with open(archive_path, 'wb') as f:
+                with open(archive_path, "wb") as f:
                     f.write(response.read())
 
             # Extract archive
@@ -105,7 +105,7 @@ def ensure_kiterunner_binary(wordlist_name: str) -> Tuple[Optional[str], Optiona
                 with tarfile.open(archive_path, "r:gz") as tar:
                     tar.extractall(path=kr_dir)
             elif asset_name.endswith(".zip"):
-                with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+                with zipfile.ZipFile(archive_path, "r") as zip_ref:
                     zip_ref.extractall(kr_dir)
 
             # Make binary executable
@@ -142,10 +142,12 @@ def ensure_kiterunner_binary(wordlist_name: str) -> Tuple[Optional[str], Optiona
                 # Download compressed wordlist with User-Agent header (required by CDN)
                 request = urllib.request.Request(
                     wordlist_url,
-                    headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) RedAmon/1.0'}
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) parallax/1.0"
+                    },
                 )
                 with urllib.request.urlopen(request) as response:
-                    with open(archive_path, 'wb') as f:
+                    with open(archive_path, "wb") as f:
                         f.write(response.read())
 
                 # Extract wordlist
@@ -167,7 +169,9 @@ def ensure_kiterunner_binary(wordlist_name: str) -> Tuple[Optional[str], Optiona
         else:
             # For apiroutes-* wordlists, they're downloaded automatically by kr using -A flag
             # We'll return a special marker to use -A flag instead of -w
-            print(f"    [*] Wordlist '{wordlist_name}' will be fetched by Kiterunner using -A flag")
+            print(
+                f"    [*] Wordlist '{wordlist_name}' will be fetched by Kiterunner using -A flag"
+            )
             return str(binary_path), f"ASSETNOTE:{wordlist_name}"
 
     if binary_path.exists() and wordlist_path.exists():
@@ -234,21 +238,23 @@ def run_kiterunner_discovery(
 
     # Check if using Assetnote wordlist (via -A flag) or local file
     use_assetnote_wordlist = wordlist_path.startswith("ASSETNOTE:")
-    assetnote_wordlist_name = wordlist_path.replace("ASSETNOTE:", "") if use_assetnote_wordlist else None
+    assetnote_wordlist_name = (
+        wordlist_path.replace("ASSETNOTE:", "") if use_assetnote_wordlist else None
+    )
 
     if not use_assetnote_wordlist and not Path(wordlist_path).exists():
         print(f"    [!] Kiterunner wordlist not found: {wordlist_path}")
         return discovered_endpoints
 
-    # Create temp directory for targets file (use /tmp/redamon for Docker-in-Docker compatibility)
+    # Create temp directory for targets file (use /tmp/parallax for Docker-in-Docker compatibility)
     temp_path = _create_temp_dir("kr_scan")
     try:
         targets_file = temp_path / "targets.txt"
 
         # Write targets to file (one per line)
-        with open(targets_file, 'w') as f:
+        with open(targets_file, "w") as f:
             for url in target_urls:
-                if url.startswith(('http://', 'https://')):
+                if url.startswith(("http://", "https://")):
                     f.write(f"{url}\n")
 
         # Build Kiterunner command using local binary
@@ -257,10 +263,14 @@ def run_kiterunner_discovery(
             binary_path,
             "scan",
             str(targets_file),
-            "-x", str(connections),
-            "-j", str(threads),
-            "-t", f"{timeout}s",  # -t for timeout, not --timeout
-            "-o", "json",  # -o is for output FORMAT (json/text/pretty), not file path
+            "-x",
+            str(connections),
+            "-j",
+            str(threads),
+            "-t",
+            f"{timeout}s",  # -t for timeout, not --timeout
+            "-o",
+            "json",  # -o is for output FORMAT (json/text/pretty), not file path
         ]
 
         # Add wordlist - either local file (-w) or Assetnote wordlist (-A)
@@ -303,10 +313,7 @@ def run_kiterunner_discovery(
         try:
             print(f"    [*] Command: {' '.join(cmd[:6])}...")  # Show partial command
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=scan_timeout + 60
+                cmd, capture_output=True, text=True, timeout=scan_timeout + 60
             )
 
             # Parse Kiterunner JSON output from stdout
@@ -319,7 +326,7 @@ def run_kiterunner_discovery(
             #   "time": "2026-01-04T19:12:21+01:00"
             # }
             if result.stdout:
-                for line in result.stdout.strip().split('\n'):
+                for line in result.stdout.strip().split("\n"):
                     line = line.strip()
                     if not line:
                         continue
@@ -329,42 +336,48 @@ def run_kiterunner_discovery(
                         data = json.loads(line)
 
                         # Skip info/log messages (they have "level" or "message" fields)
-                        if 'level' in data or 'message' in data:
+                        if "level" in data or "message" in data:
                             continue
 
                         # Skip if no method (not a result line)
-                        if 'method' not in data:
+                        if "method" not in data:
                             continue
 
                         # Extract fields from Kiterunner JSON format
-                        method = data.get('method', 'GET').upper()
-                        target = data.get('target', '')
-                        path = data.get('path', '')
+                        method = data.get("method", "GET").upper()
+                        target = data.get("target", "")
+                        path = data.get("path", "")
 
                         # Get status code and content length from responses array
-                        responses = data.get('responses', [])
+                        responses = data.get("responses", [])
                         status = 0
                         content_length = 0
-                        if responses and isinstance(responses, list) and len(responses) > 0:
+                        if (
+                            responses
+                            and isinstance(responses, list)
+                            and len(responses) > 0
+                        ):
                             first_response = responses[0]
-                            status = first_response.get('sc', 0)  # 'sc' = status code
-                            content_length = first_response.get('len', 0)  # 'len' = content length
+                            status = first_response.get("sc", 0)  # 'sc' = status code
+                            content_length = first_response.get(
+                                "len", 0
+                            )  # 'len' = content length
 
                         # Build full URL from target + path
                         if target and path:
-                            url = target.rstrip('/') + path
+                            url = target.rstrip("/") + path
                         elif target:
                             url = target
                         else:
-                            url = ''
+                            url = ""
 
                         if path and target:
                             endpoint = {
-                                'method': method,
-                                'status': status,
-                                'url': url,
-                                'path': path,
-                                'content_length': content_length
+                                "method": method,
+                                "status": status,
+                                "url": url,
+                                "path": path,
+                                "content_length": content_length,
                             }
                             discovered_endpoints.append(endpoint)
                         continue
@@ -376,7 +389,15 @@ def run_kiterunner_discovery(
                     parts = line.split()
                     if len(parts) >= 3:
                         method = parts[0].upper()
-                        if method not in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']:
+                        if method not in [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "DELETE",
+                            "PATCH",
+                            "HEAD",
+                            "OPTIONS",
+                        ]:
                             continue
                         try:
                             status = int(parts[1])
@@ -391,13 +412,18 @@ def run_kiterunner_discovery(
                             continue
 
                         # Avoid duplicates
-                        if not any(e['url'] == url and e['method'] == method for e in discovered_endpoints):
+                        if not any(
+                            e["url"] == url and e["method"] == method
+                            for e in discovered_endpoints
+                        ):
                             endpoint = {
-                                'method': method,
-                                'status': status,
-                                'url': url,
-                                'path': path,
-                                'content_length': int(parts[3]) if len(parts) > 3 else 0
+                                "method": method,
+                                "status": status,
+                                "url": url,
+                                "path": path,
+                                "content_length": (
+                                    int(parts[3]) if len(parts) > 3 else 0
+                                ),
                             }
                             discovered_endpoints.append(endpoint)
 
@@ -416,9 +442,7 @@ def run_kiterunner_discovery(
 
 
 def merge_kiterunner_into_by_base_url(
-    kr_results: List[Dict],
-    by_base_url: Dict,
-    url_methods: Dict[str, List[str]] = None
+    kr_results: List[Dict], by_base_url: Dict, url_methods: Dict[str, List[str]] = None
 ) -> Tuple[Dict, Dict[str, int]]:
     """
     Merge Kiterunner API endpoints into existing by_base_url structure.
@@ -438,14 +462,14 @@ def merge_kiterunner_into_by_base_url(
         "kr_overlap": 0,
         "kr_methods": {},
         "kr_methods_detected": 0,
-        "kr_with_multiple_methods": 0
+        "kr_with_multiple_methods": 0,
     }
 
     for result in kr_results:
-        url = result.get('url', '')
-        path = result.get('path', '')
-        original_method = result.get('method', 'GET').upper()
-        status = result.get('status', 0)
+        url = result.get("url", "")
+        path = result.get("path", "")
+        original_method = result.get("method", "GET").upper()
+        status = result.get("status", 0)
 
         if not url or not path:
             continue
@@ -474,72 +498,68 @@ def merge_kiterunner_into_by_base_url(
         # Initialize base URL if not exists
         if base not in by_base_url:
             by_base_url[base] = {
-                'base_url': base,
-                'endpoints': {},
-                'summary': {
-                    'total_endpoints': 0,
-                    'total_parameters': 0,
-                    'methods': {},
-                    'categories': {}
-                }
+                "base_url": base,
+                "endpoints": {},
+                "summary": {
+                    "total_endpoints": 0,
+                    "total_parameters": 0,
+                    "methods": {},
+                    "categories": {},
+                },
             }
 
-        endpoints = by_base_url[base]['endpoints']
+        endpoints = by_base_url[base]["endpoints"]
 
         if path in endpoints:
             # Endpoint exists - add kiterunner to sources and merge methods
-            existing_sources = endpoints[path].get('sources', [])
+            existing_sources = endpoints[path].get("sources", [])
             if not existing_sources:
                 # Migrate old 'source' string to 'sources' array
-                old_source = endpoints[path].get('source', '')
+                old_source = endpoints[path].get("source", "")
                 if old_source:
                     existing_sources = [old_source]
-            if 'kiterunner' not in existing_sources:
-                existing_sources.append('kiterunner')
-            endpoints[path]['sources'] = existing_sources
-            endpoints[path].pop('source', None)  # Remove old field
+            if "kiterunner" not in existing_sources:
+                existing_sources.append("kiterunner")
+            endpoints[path]["sources"] = existing_sources
+            endpoints[path].pop("source", None)  # Remove old field
 
             stats["kr_overlap"] += 1
 
             # Add all detected methods if new
-            existing_methods = set(endpoints[path].get('methods', []))
+            existing_methods = set(endpoints[path].get("methods", []))
             for method in methods:
                 if method not in existing_methods:
-                    endpoints[path]['methods'].append(method)
-                    by_base_url[base]['summary']['methods'][method] = \
-                        by_base_url[base]['summary']['methods'].get(method, 0) + 1
+                    endpoints[path]["methods"].append(method)
+                    by_base_url[base]["summary"]["methods"][method] = (
+                        by_base_url[base]["summary"]["methods"].get(method, 0) + 1
+                    )
         else:
             # New endpoint from Kiterunner
             stats["kr_new"] += 1
 
             # Classify endpoint using all detected methods
-            category = classify_endpoint(path, methods, {'query': [], 'body': [], 'path': []})
+            category = classify_endpoint(
+                path, methods, {"query": [], "body": [], "path": []}
+            )
 
             endpoints[path] = {
-                'methods': methods,  # Use all detected methods
-                'parameters': {
-                    'query': [],
-                    'body': [],
-                    'path': []
-                },
-                'sources': ['kiterunner'],  # Use array format
-                'category': category,
-                'status_code': status,
-                'parameter_count': {
-                    'query': 0,
-                    'body': 0,
-                    'path': 0,
-                    'total': 0
-                }
+                "methods": methods,  # Use all detected methods
+                "parameters": {"query": [], "body": [], "path": []},
+                "sources": ["kiterunner"],  # Use array format
+                "category": category,
+                "status_code": status,
+                "parameter_count": {"query": 0, "body": 0, "path": 0, "total": 0},
             }
 
             # Update summary for all methods
-            by_base_url[base]['summary']['total_endpoints'] += 1
+            by_base_url[base]["summary"]["total_endpoints"] += 1
             for method in methods:
-                by_base_url[base]['summary']['methods'][method] = \
-                    by_base_url[base]['summary']['methods'].get(method, 0) + 1
-            by_base_url[base]['summary']['categories'][category] = \
-                by_base_url[base]['summary']['categories'].get(category, 0) + 1
+                by_base_url[base]["summary"]["methods"][method] = (
+                    by_base_url[base]["summary"]["methods"].get(method, 0) + 1
+                )
+            by_base_url[base]["summary"]["categories"][category] = (
+                by_base_url[base]["summary"]["categories"].get(category, 0) + 1
+            )
 
     return by_base_url, stats
 
@@ -553,7 +573,7 @@ def detect_kiterunner_methods(
     method_detect_timeout: int,
     method_detect_rate_limit: int,
     method_detect_threads: int,
-    use_proxy: bool = False
+    use_proxy: bool = False,
 ) -> Dict[str, List[str]]:
     """
     Detect allowed HTTP methods for Kiterunner-discovered endpoints.
@@ -578,27 +598,27 @@ def detect_kiterunner_methods(
     """
     if not kr_results or not detect_methods:
         # Return original methods from Kiterunner output
-        return {r['url']: [r.get('method', 'GET')] for r in kr_results if r.get('url')}
+        return {r["url"]: [r.get("method", "GET")] for r in kr_results if r.get("url")}
 
     mode = method_detection_mode.lower()
     print(f"\n[*] Detecting HTTP methods for {len(kr_results)} Kiterunner endpoints...")
     print(f"    Mode: {mode}")
 
     # Extract unique URLs from Kiterunner results
-    urls = list(set(r['url'] for r in kr_results if r.get('url')))
+    urls = list(set(r["url"] for r in kr_results if r.get("url")))
     url_methods: Dict[str, List[str]] = {}
 
     # Initialize with methods found by Kiterunner
     for result in kr_results:
-        url = result.get('url', '')
-        method = result.get('method', 'GET').upper()
+        url = result.get("url", "")
+        method = result.get("method", "GET").upper()
         if url:
             if url not in url_methods:
                 url_methods[url] = []
             if method not in url_methods[url]:
                 url_methods[url].append(method)
 
-    # Use /tmp/redamon for Docker-in-Docker compatibility (avoids paths with spaces)
+    # Use /tmp/parallax for Docker-in-Docker compatibility (avoids paths with spaces)
     temp_path = _create_temp_dir("kr_methods")
     try:
         if mode == "options":
@@ -606,24 +626,34 @@ def detect_kiterunner_methods(
             urls_file = temp_path / "urls.txt"
             output_file = temp_path / "options_output.json"
 
-            with open(urls_file, 'w') as f:
+            with open(urls_file, "w") as f:
                 for url in urls:
                     f.write(f"{url}\n")
 
             cmd = [
-                "docker", "run", "--rm",
-                "-v", f"{temp_path}:/data",
+                "docker",
+                "run",
+                "--rm",
+                "-v",
+                f"{temp_path}:/data",
                 verify_docker_image,
-                "-l", "/data/urls.txt",
-                "-o", "/data/options_output.json",
+                "-l",
+                "/data/urls.txt",
+                "-o",
+                "/data/options_output.json",
                 "-json",
                 "-silent",
                 "-nc",
-                "-X", "OPTIONS",
-                "-include-response-header", "Allow,allow",
-                "-t", str(method_detect_threads),
-                "-timeout", str(method_detect_timeout),
-                "-rl", str(method_detect_rate_limit),
+                "-X",
+                "OPTIONS",
+                "-include-response-header",
+                "Allow,allow",
+                "-t",
+                str(method_detect_threads),
+                "-timeout",
+                str(method_detect_timeout),
+                "-rl",
+                str(method_detect_rate_limit),
             ]
 
             if use_proxy:
@@ -633,30 +663,53 @@ def detect_kiterunner_methods(
                 subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
                 if output_file.exists():
-                    with open(output_file, 'r') as f:
+                    with open(output_file, "r") as f:
                         for line in f:
                             try:
                                 entry = json.loads(line.strip())
-                                url = entry.get('url', '')
-                                status = entry.get('status_code') or entry.get('status-code', 0)
+                                url = entry.get("url", "")
+                                status = entry.get("status_code") or entry.get(
+                                    "status-code", 0
+                                )
 
-                                headers = entry.get('header', {}) or entry.get('headers', {})
+                                headers = entry.get("header", {}) or entry.get(
+                                    "headers", {}
+                                )
                                 allow_header = None
 
-                                for key in ['Allow', 'allow', 'ALLOW']:
+                                for key in ["Allow", "allow", "ALLOW"]:
                                     if key in headers:
                                         allow_value = headers[key]
                                         if isinstance(allow_value, list):
-                                            allow_header = allow_value[0] if allow_value else None
+                                            allow_header = (
+                                                allow_value[0] if allow_value else None
+                                            )
                                         else:
                                             allow_header = allow_value
                                         break
 
                                 if allow_header and status and status < 500:
-                                    methods = [m.strip().upper() for m in allow_header.split(',')]
-                                    valid_methods = [m for m in methods if m in
-                                                   ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']]
-                                    valid_methods = [m for m in valid_methods if m != 'OPTIONS']
+                                    methods = [
+                                        m.strip().upper()
+                                        for m in allow_header.split(",")
+                                    ]
+                                    valid_methods = [
+                                        m
+                                        for m in methods
+                                        if m
+                                        in [
+                                            "GET",
+                                            "POST",
+                                            "PUT",
+                                            "DELETE",
+                                            "PATCH",
+                                            "HEAD",
+                                            "OPTIONS",
+                                        ]
+                                    ]
+                                    valid_methods = [
+                                        m for m in valid_methods if m != "OPTIONS"
+                                    ]
 
                                     if valid_methods and url in url_methods:
                                         # Merge with existing methods
@@ -681,23 +734,32 @@ def detect_kiterunner_methods(
                 urls_file = temp_path / f"urls_{method.lower()}.txt"
                 output_file = temp_path / f"output_{method.lower()}.json"
 
-                with open(urls_file, 'w') as f:
+                with open(urls_file, "w") as f:
                     for url in urls:
                         f.write(f"{url}\n")
 
                 cmd = [
-                    "docker", "run", "--rm",
-                    "-v", f"{temp_path}:/data",
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{temp_path}:/data",
                     verify_docker_image,
-                    "-l", f"/data/urls_{method.lower()}.txt",
-                    "-o", f"/data/output_{method.lower()}.json",
+                    "-l",
+                    f"/data/urls_{method.lower()}.txt",
+                    "-o",
+                    f"/data/output_{method.lower()}.json",
                     "-json",
                     "-silent",
                     "-nc",
-                    "-X", method,
-                    "-t", str(method_detect_threads),
-                    "-timeout", str(method_detect_timeout),
-                    "-rl", str(method_detect_rate_limit),
+                    "-X",
+                    method,
+                    "-t",
+                    str(method_detect_threads),
+                    "-timeout",
+                    str(method_detect_timeout),
+                    "-rl",
+                    str(method_detect_rate_limit),
                 ]
 
                 if use_proxy:
@@ -707,12 +769,14 @@ def detect_kiterunner_methods(
                     subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
                     if output_file.exists():
-                        with open(output_file, 'r') as f:
+                        with open(output_file, "r") as f:
                             for line in f:
                                 try:
                                     entry = json.loads(line.strip())
-                                    url = entry.get('url', '')
-                                    status = entry.get('status_code') or entry.get('status-code', 0)
+                                    url = entry.get("url", "")
+                                    status = entry.get("status_code") or entry.get(
+                                        "status-code", 0
+                                    )
 
                                     # Accept responses that indicate the endpoint accepts this method
                                     # 200, 201, 204 = success
@@ -721,8 +785,18 @@ def detect_kiterunner_methods(
                                     # 401, 403 = auth required (method accepted)
                                     # 405 = method not allowed (skip)
                                     # 404 = not found (skip - might be method-specific)
-                                    if status and status not in [404, 405, 500, 502, 503, 504]:
-                                        if url in url_methods and method not in url_methods[url]:
+                                    if status and status not in [
+                                        404,
+                                        405,
+                                        500,
+                                        502,
+                                        503,
+                                        504,
+                                    ]:
+                                        if (
+                                            url in url_methods
+                                            and method not in url_methods[url]
+                                        ):
                                             url_methods[url].append(method)
 
                                 except json.JSONDecodeError:
@@ -747,4 +821,3 @@ def detect_kiterunner_methods(
     print(f"        - Method distribution: {method_counts}")
 
     return url_methods
-

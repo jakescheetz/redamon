@@ -1,4 +1,4 @@
-# RedAmon MCP Servers
+# parallax MCP Servers
 
 MCP (Model Context Protocol) servers for agentic penetration testing. These servers expose security tools to AI agents via the MCP protocol, enabling autonomous vulnerability discovery and exploitation.
 

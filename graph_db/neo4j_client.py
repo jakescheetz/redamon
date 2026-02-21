@@ -1,5 +1,5 @@
 """
-Neo4j Graph Database Client for RedAmon Reconnaissance Data
+Neo4j Graph Database Client for parallax Reconnaissance Data
 
 This client initializes the graph database with reconnaissance data
 after the domain_discovery module completes.
@@ -183,8 +183,16 @@ def _load_wappalyzer_reverse_cpe():
     _WAPPALYZER_REVERSE_CPE = {}
     # Try multiple paths (works from different execution contexts)
     candidates = [
-        Path(__file__).parent.parent / "recon" / "data" / "wappalyzer_cache" / "technologies.json",
-        Path(__file__).parent.parent.parent / "recon" / "data" / "wappalyzer_cache" / "technologies.json",
+        Path(__file__).parent.parent
+        / "recon"
+        / "data"
+        / "wappalyzer_cache"
+        / "technologies.json",
+        Path(__file__).parent.parent.parent
+        / "recon"
+        / "data"
+        / "wappalyzer_cache"
+        / "technologies.json",
     ]
     for cache_path in candidates:
         if cache_path.exists():
@@ -200,7 +208,9 @@ def _load_wappalyzer_reverse_cpe():
                         key = (parsed["vendor"], parsed["product"])
                         # First match wins (don't overwrite)
                         _WAPPALYZER_REVERSE_CPE.setdefault(key, name)
-                print(f"[+] Loaded Wappalyzer reverse CPE cache: {len(_WAPPALYZER_REVERSE_CPE)} entries")
+                print(
+                    f"[+] Loaded Wappalyzer reverse CPE cache: {len(_WAPPALYZER_REVERSE_CPE)} entries"
+                )
                 break
             except Exception as e:
                 print(f"[!] Failed to load Wappalyzer cache from {cache_path}: {e}")
@@ -243,9 +253,9 @@ def _is_ip_address(host: str) -> bool:
     if not host:
         return False
     # IPv4 pattern
-    ipv4_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
     # IPv6 pattern (simplified)
-    ipv6_pattern = r'^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$'
+    ipv6_pattern = r"^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$"
     return bool(re.match(ipv4_pattern, host) or re.match(ipv6_pattern, host))
 
 
@@ -384,7 +394,8 @@ class Neo4jClient:
                 DETACH DELETE n
                 RETURN count(n) as deleted_count
                 """,
-                user_id=user_id, project_id=project_id
+                user_id=user_id,
+                project_id=project_id,
             )
             record = result.single()
             if record:
@@ -434,7 +445,8 @@ class Neo4jClient:
                 DETACH DELETE v
                 RETURN count(v) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -447,7 +459,8 @@ class Neo4jClient:
                 DETACH DELETE tr
                 RETURN count(tr) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -461,7 +474,7 @@ class Neo4jClient:
                 DETACH DELETE c
                 RETURN count(c) as deleted
                 """,
-                pid=project_id
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -474,7 +487,8 @@ class Neo4jClient:
                 DETACH DELETE e
                 RETURN count(e) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -487,7 +501,8 @@ class Neo4jClient:
                 DETACH DELETE c
                 RETURN count(c) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -501,7 +516,8 @@ class Neo4jClient:
                 DETACH DELETE t
                 RETURN count(t) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -516,7 +532,8 @@ class Neo4jClient:
                     t.cpe = null, t.cpe_vendor = null, t.cpe_product = null
                 RETURN count(t) as cleaned
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -543,19 +560,29 @@ class Neo4jClient:
                 REMOVE d.gvm_scan_timestamp, d.gvm_total_vulnerabilities,
                        d.gvm_critical, d.gvm_high, d.gvm_medium, d.gvm_low
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
 
-            total = (stats["vulnerabilities_deleted"] + stats["cves_deleted"] +
-                     stats["technologies_deleted"] + stats["traceroutes_deleted"] +
-                     stats["certificates_deleted"] + stats["exploits_gvm_deleted"] +
-                     stats["relationships_deleted"])
-            print(f"[*] Cleared GVM data: {total} items removed, "
-                  f"{stats['technologies_cleaned']} shared technologies cleaned")
+            total = (
+                stats["vulnerabilities_deleted"]
+                + stats["cves_deleted"]
+                + stats["technologies_deleted"]
+                + stats["traceroutes_deleted"]
+                + stats["certificates_deleted"]
+                + stats["exploits_gvm_deleted"]
+                + stats["relationships_deleted"]
+            )
+            print(
+                f"[*] Cleared GVM data: {total} items removed, "
+                f"{stats['technologies_cleaned']} shared technologies cleaned"
+            )
 
         return stats
 
-    def update_graph_from_domain_discovery(self, recon_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_domain_discovery(
+        self, recon_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Initialize the Neo4j graph database with reconnaissance data after domain_discovery.
 
@@ -580,7 +607,7 @@ class Neo4jClient:
             "ips_created": 0,
             "dns_records_created": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         with self.driver.session() as session:
@@ -637,7 +664,7 @@ class Neo4jClient:
                     "reseller": whois_data.get("reseller"),
                     "name_servers": whois_data.get("name_servers", []),
                     "whois_emails": whois_data.get("emails", []),
-                    "updated_at": datetime.now().isoformat()
+                    "updated_at": datetime.now().isoformat(),
                 }
 
                 # Handle date fields (can be list or single value)
@@ -652,9 +679,13 @@ class Neo4jClient:
                 status = whois_data.get("status", [])
                 if isinstance(status, list):
                     # Clean status strings (remove URL part)
-                    domain_props["status"] = [s.split()[0] if " " in s else s for s in status]
+                    domain_props["status"] = [
+                        s.split()[0] if " " in s else s for s in status
+                    ]
                 elif status:
-                    domain_props["status"] = [status.split()[0] if " " in status else status]
+                    domain_props["status"] = [
+                        status.split()[0] if " " in status else status
+                    ]
 
                 # Remove None values
                 domain_props = {k: v for k, v in domain_props.items() if v is not None}
@@ -664,7 +695,10 @@ class Neo4jClient:
                     MERGE (d:Domain {name: $name, user_id: $user_id, project_id: $project_id})
                     SET d += $props
                     """,
-                    name=root_domain, user_id=user_id, project_id=project_id, props=domain_props
+                    name=root_domain,
+                    user_id=user_id,
+                    project_id=project_id,
+                    props=domain_props,
                 )
                 stats["domain_created"] = True
                 print(f"[+] Created Domain node: {root_domain}")
@@ -695,8 +729,10 @@ class Neo4jClient:
                             s.discovered_at = datetime(),
                             s.updated_at = datetime()
                         """,
-                        name=subdomain, user_id=user_id, project_id=project_id,
-                        has_records=has_records
+                        name=subdomain,
+                        user_id=user_id,
+                        project_id=project_id,
+                        has_records=has_records,
                     )
                     stats["subdomains_created"] += 1
 
@@ -707,8 +743,10 @@ class Neo4jClient:
                         MATCH (s:Subdomain {name: $subdomain})
                         MERGE (s)-[:BELONGS_TO]->(d)
                         """,
-                        domain=root_domain, subdomain=subdomain,
-                        user_id=user_id, project_id=project_id
+                        domain=root_domain,
+                        subdomain=subdomain,
+                        user_id=user_id,
+                        project_id=project_id,
                     )
                     stats["relationships_created"] += 1
 
@@ -731,28 +769,39 @@ class Neo4jClient:
                                             i.version = $version,
                                             i.updated_at = datetime()
                                         """,
-                                        address=ip_addr, user_id=user_id, project_id=project_id,
-                                        version=ip_version
+                                        address=ip_addr,
+                                        user_id=user_id,
+                                        project_id=project_id,
+                                        version=ip_version,
                                     )
                                     stats["ips_created"] += 1
 
                                     # Create relationship: Subdomain -[:RESOLVES_TO]-> IP
-                                    record_type = "A" if ip_version == "ipv4" else "AAAA"
+                                    record_type = (
+                                        "A" if ip_version == "ipv4" else "AAAA"
+                                    )
                                     session.run(
                                         """
                                         MATCH (s:Subdomain {name: $subdomain})
                                         MATCH (i:IP {address: $ip})
                                         MERGE (s)-[:RESOLVES_TO {record_type: $record_type}]->(i)
                                         """,
-                                        subdomain=subdomain, ip=ip_addr, record_type=record_type
+                                        subdomain=subdomain,
+                                        ip=ip_addr,
+                                        record_type=record_type,
                                     )
                                     stats["relationships_created"] += 1
                                 except Exception as e:
-                                    stats["errors"].append(f"IP {ip_addr} creation failed: {e}")
+                                    stats["errors"].append(
+                                        f"IP {ip_addr} creation failed: {e}"
+                                    )
 
                     # Create DNSRecord nodes for other record types
                     for record_type, record_values in records.items():
-                        if record_values and record_type not in ["A", "AAAA"]:  # A/AAAA handled via IP nodes
+                        if record_values and record_type not in [
+                            "A",
+                            "AAAA",
+                        ]:  # A/AAAA handled via IP nodes
                             if not isinstance(record_values, list):
                                 record_values = [record_values]
 
@@ -767,8 +816,11 @@ class Neo4jClient:
                                                 dns.project_id = $project_id,
                                                 dns.updated_at = datetime()
                                             """,
-                                            type=record_type, value=str(value), subdomain=subdomain,
-                                            user_id=user_id, project_id=project_id
+                                            type=record_type,
+                                            value=str(value),
+                                            subdomain=subdomain,
+                                            user_id=user_id,
+                                            project_id=project_id,
                                         )
                                         stats["dns_records_created"] += 1
 
@@ -779,14 +831,20 @@ class Neo4jClient:
                                             MATCH (dns:DNSRecord {type: $type, value: $value, subdomain: $subdomain})
                                             MERGE (s)-[:HAS_DNS_RECORD]->(dns)
                                             """,
-                                            subdomain=subdomain, type=record_type, value=str(value)
+                                            subdomain=subdomain,
+                                            type=record_type,
+                                            value=str(value),
                                         )
                                         stats["relationships_created"] += 1
                                     except Exception as e:
-                                        stats["errors"].append(f"DNSRecord {record_type}={value} failed: {e}")
+                                        stats["errors"].append(
+                                            f"DNSRecord {record_type}={value} failed: {e}"
+                                        )
 
                 except Exception as e:
-                    stats["errors"].append(f"Subdomain {subdomain} processing failed: {e}")
+                    stats["errors"].append(
+                        f"Subdomain {subdomain} processing failed: {e}"
+                    )
                     print(f"[!] Subdomain {subdomain} processing failed: {e}")
 
             print(f"[+] Created {stats['subdomains_created']} Subdomain nodes")
@@ -799,7 +857,9 @@ class Neo4jClient:
 
         return stats
 
-    def update_graph_from_port_scan(self, recon_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_port_scan(
+        self, recon_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with port scan data.
 
@@ -822,7 +882,7 @@ class Neo4jClient:
             "services_created": 0,
             "ips_updated": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         port_scan_data = recon_data.get("port_scan", {})
@@ -854,8 +914,11 @@ class Neo4jClient:
                             i.cdn_name = $cdn_name,
                             i.updated_at = datetime()
                         """,
-                        address=ip_addr, user_id=user_id, project_id=project_id,
-                        is_cdn=is_cdn, cdn_name=cdn_name
+                        address=ip_addr,
+                        user_id=user_id,
+                        project_id=project_id,
+                        is_cdn=is_cdn,
+                        cdn_name=cdn_name,
                     )
                     stats["ips_updated"] += 1
 
@@ -881,8 +944,11 @@ class Neo4jClient:
                                 i.cdn_name = $cdn_name,
                                 i.updated_at = datetime()
                             """,
-                            address=ip_addr, user_id=user_id, project_id=project_id,
-                            is_cdn=is_cdn, cdn_name=cdn_name
+                            address=ip_addr,
+                            user_id=user_id,
+                            project_id=project_id,
+                            is_cdn=is_cdn,
+                            cdn_name=cdn_name,
                         )
                     except Exception as e:
                         stats["errors"].append(f"IP {ip_addr} update failed: {e}")
@@ -907,8 +973,11 @@ class Neo4jClient:
                                 p.state = 'open',
                                 p.updated_at = datetime()
                             """,
-                            port_number=port_number, protocol=protocol, ip_addr=ip_addr,
-                            user_id=user_id, project_id=project_id
+                            port_number=port_number,
+                            protocol=protocol,
+                            ip_addr=ip_addr,
+                            user_id=user_id,
+                            project_id=project_id,
                         )
                         stats["ports_created"] += 1
 
@@ -920,7 +989,9 @@ class Neo4jClient:
                                 MATCH (p:Port {number: $port_number, protocol: $protocol, ip_address: $ip_addr})
                                 MERGE (i)-[:HAS_PORT]->(p)
                                 """,
-                                ip_addr=ip_addr, port_number=port_number, protocol=protocol
+                                ip_addr=ip_addr,
+                                port_number=port_number,
+                                protocol=protocol,
                             )
                             stats["relationships_created"] += 1
 
@@ -933,8 +1004,11 @@ class Neo4jClient:
                                     svc.project_id = $project_id,
                                     svc.updated_at = datetime()
                                 """,
-                                service_name=service_name, port_number=port_number, ip_addr=ip_addr,
-                                user_id=user_id, project_id=project_id
+                                service_name=service_name,
+                                port_number=port_number,
+                                ip_addr=ip_addr,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
                             stats["services_created"] += 1
 
@@ -945,13 +1019,17 @@ class Neo4jClient:
                                 MATCH (svc:Service {name: $service_name, port_number: $port_number, ip_address: $ip_addr})
                                 MERGE (p)-[:RUNS_SERVICE]->(svc)
                                 """,
-                                port_number=port_number, protocol=protocol, ip_addr=ip_addr,
-                                service_name=service_name
+                                port_number=port_number,
+                                protocol=protocol,
+                                ip_addr=ip_addr,
+                                service_name=service_name,
                             )
                             stats["relationships_created"] += 1
 
                     except Exception as e:
-                        stats["errors"].append(f"Port {port_number}/{protocol} on {ip_addr} failed: {e}")
+                        stats["errors"].append(
+                            f"Port {port_number}/{protocol} on {ip_addr} failed: {e}"
+                        )
 
             # Update Domain node with port scan metadata
             metadata = recon_data.get("metadata", {})
@@ -968,11 +1046,15 @@ class Neo4jClient:
                             d.port_scan_total_open_ports = $total_open_ports,
                             d.updated_at = datetime()
                         """,
-                        root_domain=root_domain, user_id=user_id, project_id=project_id,
+                        root_domain=root_domain,
+                        user_id=user_id,
+                        project_id=project_id,
                         scan_timestamp=scan_metadata.get("scan_timestamp"),
                         scan_type=scan_metadata.get("scan_type"),
                         ports_config=scan_metadata.get("ports_config"),
-                        total_open_ports=port_scan_data.get("summary", {}).get("total_open_ports", 0)
+                        total_open_ports=port_scan_data.get("summary", {}).get(
+                            "total_open_ports", 0
+                        ),
                     )
                 except Exception as e:
                     stats["errors"].append(f"Domain update failed: {e}")
@@ -987,7 +1069,9 @@ class Neo4jClient:
 
         return stats
 
-    def update_graph_from_http_probe(self, recon_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_http_probe(
+        self, recon_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with HTTP probe data.
 
@@ -1013,7 +1097,7 @@ class Neo4jClient:
             "technologies_created": 0,
             "headers_created": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         http_probe_data = recon_data.get("http_probe", {})
@@ -1059,7 +1143,7 @@ class Neo4jClient:
                         "asn": url_info.get("asn"),
                         "favicon_hash": url_info.get("favicon_hash"),
                         "is_live": url_info.get("status_code") is not None,
-                        "source": "http_probe"
+                        "source": "http_probe",
                     }
 
                     # Add body hash info if available
@@ -1075,7 +1159,9 @@ class Neo4jClient:
                         baseurl_props["tls_version"] = tls_data.get("version")
 
                     # Remove None values
-                    baseurl_props = {k: v for k, v in baseurl_props.items() if v is not None}
+                    baseurl_props = {
+                        k: v for k, v in baseurl_props.items() if v is not None
+                    }
 
                     session.run(
                         """
@@ -1083,7 +1169,8 @@ class Neo4jClient:
                         SET u += $props,
                             u.updated_at = datetime()
                         """,
-                        url=url, props=baseurl_props
+                        url=url,
+                        props=baseurl_props,
                     )
                     stats["baseurls_created"] += 1
 
@@ -1091,25 +1178,33 @@ class Neo4jClient:
                     if tls_data and tls_data.get("certificate"):
                         cert_data = tls_data.get("certificate", {})
                         subject_cn = cert_data.get("subject_cn", "")
-                        
+
                         if subject_cn:
                             # Build certificate properties
                             cert_props = {
                                 "subject_cn": subject_cn,
                                 "user_id": user_id,
                                 "project_id": project_id,
-                                "issuer": ", ".join(cert_data.get("issuer", [])) if isinstance(cert_data.get("issuer"), list) else cert_data.get("issuer"),
+                                "issuer": (
+                                    ", ".join(cert_data.get("issuer", []))
+                                    if isinstance(cert_data.get("issuer"), list)
+                                    else cert_data.get("issuer")
+                                ),
                                 "not_before": cert_data.get("not_before"),
                                 "not_after": cert_data.get("not_after"),
-                                "san": cert_data.get("san", []),  # Subject Alternative Names as list
+                                "san": cert_data.get(
+                                    "san", []
+                                ),  # Subject Alternative Names as list
                                 "cipher": tls_data.get("cipher"),
                                 "tls_version": tls_data.get("version"),
-                                "source": "http_probe"
+                                "source": "http_probe",
                             }
-                            
+
                             # Remove None values
-                            cert_props = {k: v for k, v in cert_props.items() if v is not None}
-                            
+                            cert_props = {
+                                k: v for k, v in cert_props.items() if v is not None
+                            }
+
                             # Create Certificate node (unique by subject_cn + project_id)
                             session.run(
                                 """
@@ -1117,10 +1212,12 @@ class Neo4jClient:
                                 SET c += $props,
                                     c.updated_at = datetime()
                                 """,
-                                subject_cn=subject_cn, project_id=project_id, props=cert_props
+                                subject_cn=subject_cn,
+                                project_id=project_id,
+                                props=cert_props,
                             )
                             stats["certificates_created"] += 1
-                            
+
                             # Create relationship: BaseURL -[:HAS_CERTIFICATE]-> Certificate
                             session.run(
                                 """
@@ -1128,7 +1225,9 @@ class Neo4jClient:
                                 MATCH (c:Certificate {subject_cn: $subject_cn, project_id: $project_id})
                                 MERGE (u)-[:HAS_CERTIFICATE]->(c)
                                 """,
-                                url=url, subject_cn=subject_cn, project_id=project_id
+                                url=url,
+                                subject_cn=subject_cn,
+                                project_id=project_id,
                             )
                             stats["relationships_created"] += 1
 
@@ -1139,7 +1238,9 @@ class Neo4jClient:
                         # Extract actual port from URL (e.g., http://example.com:8080)
                         # Only use default ports (80/443) if no explicit port in URL
                         parsed_url = urlparse(url)
-                        port_number = parsed_url.port or (443 if scheme == "https" else 80)
+                        port_number = parsed_url.port or (
+                            443 if scheme == "https" else 80
+                        )
                         default_service_name = "https" if scheme == "https" else "http"
 
                         if resolved_ip:
@@ -1150,7 +1251,8 @@ class Neo4jClient:
                                 MATCH (svc:Service {port_number: $port_number, ip_address: $ip_addr})
                                 RETURN svc.name as name LIMIT 1
                                 """,
-                                port_number=port_number, ip_addr=resolved_ip
+                                port_number=port_number,
+                                ip_addr=resolved_ip,
                             ).single()
 
                             if existing_service:
@@ -1166,8 +1268,11 @@ class Neo4jClient:
                                         svc.project_id = $project_id,
                                         svc.updated_at = datetime()
                                     """,
-                                    service_name=service_name, port_number=port_number, ip_addr=resolved_ip,
-                                    user_id=user_id, project_id=project_id
+                                    service_name=service_name,
+                                    port_number=port_number,
+                                    ip_addr=resolved_ip,
+                                    user_id=user_id,
+                                    project_id=project_id,
                                 )
                                 stats["services_created"] += 1
 
@@ -1178,7 +1283,10 @@ class Neo4jClient:
                                 MATCH (u:BaseURL {url: $url})
                                 MERGE (svc)-[:SERVES_URL]->(u)
                                 """,
-                                service_name=service_name, port_number=port_number, ip_addr=resolved_ip, url=url
+                                service_name=service_name,
+                                port_number=port_number,
+                                ip_addr=resolved_ip,
+                                url=url,
                             )
                             stats["relationships_created"] += 1
 
@@ -1194,9 +1302,11 @@ class Neo4jClient:
                                 MATCH (svc:Service {name: $service_name, port_number: $port_number, ip_address: $ip_addr})
                                 MERGE (p)-[:RUNS_SERVICE]->(svc)
                                 """,
-                                port_number=port_number, ip_addr=resolved_ip,
+                                port_number=port_number,
+                                ip_addr=resolved_ip,
                                 service_name=service_name,
-                                user_id=user_id, project_id=project_id
+                                user_id=user_id,
+                                project_id=project_id,
                             )
 
                             # Also ensure IP -[:HAS_PORT]-> Port relationship exists
@@ -1206,7 +1316,8 @@ class Neo4jClient:
                                 MATCH (p:Port {number: $port_number, protocol: 'tcp', ip_address: $ip_addr})
                                 MERGE (i)-[:HAS_PORT]->(p)
                                 """,
-                                ip_addr=resolved_ip, port_number=port_number
+                                ip_addr=resolved_ip,
+                                port_number=port_number,
                             )
 
                     # Process technologies from both httpx and wappalyzer
@@ -1236,11 +1347,13 @@ class Neo4jClient:
                                 "version": tech_version,
                                 "categories": categories,
                                 "confidence": confidence,
-                                "detected_by": "httpx"
+                                "detected_by": "httpx",
                             }
 
                             # Remove None values
-                            tech_props = {k: v for k, v in tech_props.items() if v is not None}
+                            tech_props = {
+                                k: v for k, v in tech_props.items() if v is not None
+                            }
 
                             # Create Technology node (unique by name + version)
                             if tech_version:
@@ -1250,7 +1363,9 @@ class Neo4jClient:
                                     SET t += $props,
                                         t.updated_at = datetime()
                                     """,
-                                    name=tech_name, version=tech_version, props=tech_props
+                                    name=tech_name,
+                                    version=tech_version,
+                                    props=tech_props,
                                 )
                                 processed_techs.add((tech_name, tech_version))
                             else:
@@ -1260,7 +1375,8 @@ class Neo4jClient:
                                     ON CREATE SET t += $props, t.updated_at = datetime()
                                     ON MATCH SET t.updated_at = datetime()
                                     """,
-                                    name=tech_name, props=tech_props
+                                    name=tech_name,
+                                    props=tech_props,
                                 )
                                 processed_techs.add((tech_name, None))
                             stats["technologies_created"] += 1
@@ -1273,7 +1389,10 @@ class Neo4jClient:
                                     MATCH (t:Technology {name: $tech_name, version: $tech_version})
                                     MERGE (u)-[:USES_TECHNOLOGY {confidence: $confidence, detected_by: 'httpx'}]->(t)
                                     """,
-                                    url=url, tech_name=tech_name, tech_version=tech_version, confidence=confidence
+                                    url=url,
+                                    tech_name=tech_name,
+                                    tech_version=tech_version,
+                                    confidence=confidence,
                                 )
                             else:
                                 session.run(
@@ -1283,7 +1402,9 @@ class Neo4jClient:
                                     WHERE t.version IS NULL
                                     MERGE (u)-[:USES_TECHNOLOGY {confidence: $confidence, detected_by: 'httpx'}]->(t)
                                     """,
-                                    url=url, tech_name=tech_name, confidence=confidence
+                                    url=url,
+                                    tech_name=tech_name,
+                                    confidence=confidence,
                                 )
                             stats["relationships_created"] += 1
 
@@ -1318,11 +1439,13 @@ class Neo4jClient:
                                 "version": tech_version,
                                 "categories": categories,
                                 "confidence": confidence,
-                                "detected_by": "wappalyzer"
+                                "detected_by": "wappalyzer",
                             }
 
                             # Remove None values
-                            tech_props = {k: v for k, v in tech_props.items() if v is not None}
+                            tech_props = {
+                                k: v for k, v in tech_props.items() if v is not None
+                            }
 
                             # Create Technology node
                             if tech_version:
@@ -1332,7 +1455,9 @@ class Neo4jClient:
                                     SET t += $props,
                                         t.updated_at = datetime()
                                     """,
-                                    name=tech_name, version=tech_version, props=tech_props
+                                    name=tech_name,
+                                    version=tech_version,
+                                    props=tech_props,
                                 )
                             else:
                                 session.run(
@@ -1341,7 +1466,8 @@ class Neo4jClient:
                                     ON CREATE SET t += $props, t.updated_at = datetime()
                                     ON MATCH SET t.updated_at = datetime()
                                     """,
-                                    name=tech_name, props=tech_props
+                                    name=tech_name,
+                                    props=tech_props,
                                 )
                             stats["technologies_created"] += 1
 
@@ -1353,7 +1479,10 @@ class Neo4jClient:
                                     MATCH (t:Technology {name: $tech_name, version: $tech_version})
                                     MERGE (u)-[:USES_TECHNOLOGY {confidence: $confidence, detected_by: 'wappalyzer'}]->(t)
                                     """,
-                                    url=url, tech_name=tech_name, tech_version=tech_version, confidence=confidence
+                                    url=url,
+                                    tech_name=tech_name,
+                                    tech_version=tech_version,
+                                    confidence=confidence,
                                 )
                             else:
                                 session.run(
@@ -1363,18 +1492,31 @@ class Neo4jClient:
                                     WHERE t.version IS NULL
                                     MERGE (u)-[:USES_TECHNOLOGY {confidence: $confidence, detected_by: 'wappalyzer'}]->(t)
                                     """,
-                                    url=url, tech_name=tech_name, confidence=confidence
+                                    url=url,
+                                    tech_name=tech_name,
+                                    confidence=confidence,
                                 )
                             stats["relationships_created"] += 1
 
                         except Exception as e:
-                            stats["errors"].append(f"Wappalyzer technology {tech_name} failed: {e}")
+                            stats["errors"].append(
+                                f"Wappalyzer technology {tech_name} failed: {e}"
+                            )
 
                     # Process headers
                     headers = url_info.get("headers", {})
-                    security_headers = ["x-frame-options", "x-xss-protection", "content-security-policy",
-                                        "strict-transport-security", "x-content-type-options"]
-                    tech_revealing_headers = ["server", "x-powered-by", "x-aspnet-version"]
+                    security_headers = [
+                        "x-frame-options",
+                        "x-xss-protection",
+                        "content-security-policy",
+                        "strict-transport-security",
+                        "x-content-type-options",
+                    ]
+                    tech_revealing_headers = [
+                        "server",
+                        "x-powered-by",
+                        "x-aspnet-version",
+                    ]
 
                     for header_name, header_value in headers.items():
                         try:
@@ -1390,9 +1532,13 @@ class Neo4jClient:
                                     h.reveals_technology = $reveals_tech,
                                     h.updated_at = datetime()
                                 """,
-                                name=header_name, value=str(header_value), url=url,
-                                user_id=user_id, project_id=project_id,
-                                is_security=is_security, reveals_tech=reveals_tech
+                                name=header_name,
+                                value=str(header_value),
+                                url=url,
+                                user_id=user_id,
+                                project_id=project_id,
+                                is_security=is_security,
+                                reveals_tech=reveals_tech,
                             )
                             stats["headers_created"] += 1
 
@@ -1403,7 +1549,9 @@ class Neo4jClient:
                                 MATCH (h:Header {name: $name, value: $value, baseurl: $url})
                                 MERGE (u)-[:HAS_HEADER]->(h)
                                 """,
-                                url=url, name=header_name, value=str(header_value)
+                                url=url,
+                                name=header_name,
+                                value=str(header_value),
                             )
                             stats["relationships_created"] += 1
 
@@ -1428,10 +1576,12 @@ class Neo4jClient:
                             d.http_probe_technology_count = $tech_count,
                             d.updated_at = datetime()
                         """,
-                        root_domain=root_domain, user_id=user_id, project_id=project_id,
+                        root_domain=root_domain,
+                        user_id=user_id,
+                        project_id=project_id,
                         scan_timestamp=scan_metadata.get("scan_timestamp"),
                         live_urls=summary.get("live_urls", 0),
-                        tech_count=summary.get("technology_count", 0)
+                        tech_count=summary.get("technology_count", 0),
                     )
                 except Exception as e:
                     stats["errors"].append(f"Domain update failed: {e}")
@@ -1468,8 +1618,15 @@ class Neo4jClient:
         if child:
             self._find_cwes_with_capec(child, results)
 
-    def _process_cwe_with_capec(self, session, cwe_node: dict, cve_id: str, user_id: str,
-                                 project_id: str, stats_mitre: dict):
+    def _process_cwe_with_capec(
+        self,
+        session,
+        cwe_node: dict,
+        cve_id: str,
+        user_id: str,
+        project_id: str,
+        stats_mitre: dict,
+    ):
         """
         Create MitreData (CWE) node and its related Capec nodes, directly connected to CVE.
 
@@ -1514,7 +1671,9 @@ class Neo4jClient:
         if cwe_node.get("mitigations"):
             mitre_props["mitigations"] = json.dumps(cwe_node.get("mitigations"))
         if cwe_node.get("detection_methods"):
-            mitre_props["detection_methods"] = json.dumps(cwe_node.get("detection_methods"))
+            mitre_props["detection_methods"] = json.dumps(
+                cwe_node.get("detection_methods")
+            )
 
         # Remove None values
         mitre_props = {k: v for k, v in mitre_props.items() if v is not None}
@@ -1525,7 +1684,8 @@ class Neo4jClient:
             SET m += $props,
                 m.updated_at = datetime()
             """,
-            id=mitre_id, props=mitre_props
+            id=mitre_id,
+            props=mitre_props,
         )
         stats_mitre["nodes"] += 1
 
@@ -1536,7 +1696,8 @@ class Neo4jClient:
             MATCH (m:MitreData {id: $mitre_id})
             MERGE (c)-[:HAS_CWE]->(m)
             """,
-            cve_id=cve_id, mitre_id=mitre_id
+            cve_id=cve_id,
+            mitre_id=mitre_id,
         )
         stats_mitre["rels"] += 1
 
@@ -1592,7 +1753,8 @@ class Neo4jClient:
                 SET cap += $props,
                     cap.updated_at = datetime()
                 """,
-                capec_id=capec_node_id, props=capec_props
+                capec_id=capec_node_id,
+                props=capec_props,
             )
             stats_mitre["capec"] += 1
 
@@ -1603,11 +1765,14 @@ class Neo4jClient:
                 MATCH (cap:Capec {capec_id: $capec_id})
                 MERGE (m)-[:HAS_CAPEC]->(cap)
                 """,
-                mitre_id=mitre_id, capec_id=capec_node_id
+                mitre_id=mitre_id,
+                capec_id=capec_node_id,
             )
             stats_mitre["rels"] += 1
 
-    def update_graph_from_vuln_scan(self, recon_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_vuln_scan(
+        self, recon_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with vulnerability scan data.
 
@@ -1632,7 +1797,7 @@ class Neo4jClient:
             "parameters_created": 0,
             "vulnerabilities_created": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         vuln_scan_data = recon_data.get("vuln_scan", {})
@@ -1677,6 +1842,7 @@ class Neo4jClient:
                 try:
                     # Parse the URL to extract components
                     from urllib.parse import urlparse, parse_qs
+
                     parsed = urlparse(dast_url)
 
                     # Determine scheme, host, path
@@ -1711,10 +1877,13 @@ class Neo4jClient:
                                 e.source = 'katana_crawl',
                                 e.updated_at = datetime()
                             """,
-                            path=path, method=method, baseurl=base_url,
-                            user_id=user_id, project_id=project_id,
+                            path=path,
+                            method=method,
+                            baseurl=base_url,
+                            user_id=user_id,
+                            project_id=project_id,
                             has_parameters=has_parameters,
-                            full_url=dast_url.split('?')[0]  # URL without query params
+                            full_url=dast_url.split("?")[0],  # URL without query params
                         )
                         stats["endpoints_created"] += 1
                         created_endpoints.add(endpoint_key)
@@ -1732,8 +1901,11 @@ class Neo4jClient:
                             MATCH (e:Endpoint {path: $path, method: $method, baseurl: $baseurl})
                             MERGE (bu)-[:HAS_ENDPOINT]->(e)
                             """,
-                            baseurl=base_url, path=path, method=method,
-                            user_id=user_id, project_id=project_id
+                            baseurl=base_url,
+                            path=path,
+                            method=method,
+                            user_id=user_id,
+                            project_id=project_id,
                         )
                         stats["relationships_created"] += 1
 
@@ -1754,9 +1926,13 @@ class Neo4jClient:
                                         p.is_injectable = false,
                                         p.updated_at = datetime()
                                     """,
-                                    name=param_name, position="query", endpoint_path=path, baseurl=base_url,
-                                    user_id=user_id, project_id=project_id,
-                                    sample_value=sample_value
+                                    name=param_name,
+                                    position="query",
+                                    endpoint_path=path,
+                                    baseurl=base_url,
+                                    user_id=user_id,
+                                    project_id=project_id,
+                                    sample_value=sample_value,
                                 )
                                 stats["parameters_created"] += 1
                                 created_parameters.add(param_key)
@@ -1768,18 +1944,25 @@ class Neo4jClient:
                                     MATCH (p:Parameter {name: $param_name, position: $position, endpoint_path: $path, baseurl: $baseurl})
                                     MERGE (e)-[:HAS_PARAMETER]->(p)
                                     """,
-                                    path=path, method=method, baseurl=base_url,
-                                    param_name=param_name, position="query"
+                                    path=path,
+                                    method=method,
+                                    baseurl=base_url,
+                                    param_name=param_name,
+                                    position="query",
                                 )
                                 stats["relationships_created"] += 1
 
                 except Exception as e:
-                    stats["errors"].append(f"DAST URL {dast_url} processing failed: {e}")
+                    stats["errors"].append(
+                        f"DAST URL {dast_url} processing failed: {e}"
+                    )
 
             # Process vulnerability findings by target
             for target_host, target_data in by_target.items():
                 # Skip targets that are not in scan scope
-                target_host_only = target_host.split(":")[0] if ":" in target_host else target_host
+                target_host_only = (
+                    target_host.split(":")[0] if ":" in target_host else target_host
+                )
                 if not is_in_scope(target_host_only):
                     skipped_out_of_scope += 1
                     continue
@@ -1801,13 +1984,16 @@ class Neo4jClient:
 
                         # Extract path from matched_at URL
                         from urllib.parse import urlparse
+
                         matched_parsed = urlparse(matched_at)
                         vuln_path = matched_parsed.path or "/"
                         vuln_scheme = matched_parsed.scheme or "http"
                         vuln_host = matched_parsed.netloc or target_host
 
                         # Also check if matched_at URL host is in scope
-                        vuln_host_only = vuln_host.split(":")[0] if ":" in vuln_host else vuln_host
+                        vuln_host_only = (
+                            vuln_host.split(":")[0] if ":" in vuln_host else vuln_host
+                        )
                         if not is_in_scope(vuln_host_only):
                             skipped_out_of_scope += 1
                             continue
@@ -1830,20 +2016,17 @@ class Neo4jClient:
                             "tags": finding.get("tags", []),
                             "authors": raw_info.get("author", []),
                             "references": finding.get("reference", []),
-
                             # Classification
                             "cwe_ids": finding.get("cwe_id", []),
                             "cves": finding.get("cves", []),
                             "cvss_score": finding.get("cvss_score"),
                             "cvss_metrics": finding.get("cvss_metrics"),
-
                             # Attack details
                             "matched_at": matched_at,
                             "matcher_name": finding.get("matcher_name"),
                             "matcher_status": raw.get("matcher-status", False),
                             "extractor_name": raw.get("extractor-name"),
                             "extracted_results": finding.get("extracted_results", []),
-
                             # Request/Response details
                             "request_type": raw.get("type"),
                             "scheme": raw.get("scheme"),
@@ -1851,30 +2034,31 @@ class Neo4jClient:
                             "port": raw.get("port"),
                             "path": vuln_path,
                             "matched_ip": raw.get("ip"),
-
                             # DAST specific
                             "is_dast_finding": raw.get("is_fuzzing_result", False),
                             "fuzzing_method": raw.get("fuzzing_method"),
                             "fuzzing_parameter": raw.get("fuzzing_parameter"),
                             "fuzzing_position": raw.get("fuzzing_position"),
-
                             # Template metadata
                             "max_requests": raw_metadata.get("max-request"),
-
                             # Reproduction
                             "curl_command": finding.get("curl_command"),
-
                             # Raw request/response (for evidence)
                             "raw_request": finding.get("request"),
-                            "raw_response": finding.get("response", "")[:5000] if finding.get("response") else None,  # Truncate long responses
-
+                            "raw_response": (
+                                finding.get("response", "")[:5000]
+                                if finding.get("response")
+                                else None
+                            ),  # Truncate long responses
                             # Timestamp
                             "timestamp": finding.get("timestamp"),
-                            "discovered_at": finding.get("timestamp")
+                            "discovered_at": finding.get("timestamp"),
                         }
 
                         # Remove None values
-                        vuln_props = {k: v for k, v in vuln_props.items() if v is not None}
+                        vuln_props = {
+                            k: v for k, v in vuln_props.items() if v is not None
+                        }
 
                         session.run(
                             """
@@ -1882,7 +2066,8 @@ class Neo4jClient:
                             SET v += $props,
                                 v.updated_at = datetime()
                             """,
-                            id=vuln_id, props=vuln_props
+                            id=vuln_id,
+                            props=vuln_props,
                         )
                         stats["vulnerabilities_created"] += 1
 
@@ -1906,8 +2091,11 @@ class Neo4jClient:
                                     e.source = 'vuln_scan',
                                     e.updated_at = datetime()
                                 """,
-                                path=vuln_path, method=fuzzing_method, baseurl=vuln_base_url,
-                                user_id=user_id, project_id=project_id
+                                path=vuln_path,
+                                method=fuzzing_method,
+                                baseurl=vuln_base_url,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
                             stats["endpoints_created"] += 1
                             created_endpoints.add(endpoint_key)
@@ -1924,8 +2112,11 @@ class Neo4jClient:
                                 MATCH (e:Endpoint {path: $path, method: $method, baseurl: $baseurl})
                                 MERGE (bu)-[:HAS_ENDPOINT]->(e)
                                 """,
-                                baseurl=vuln_base_url, path=vuln_path, method=fuzzing_method,
-                                user_id=user_id, project_id=project_id
+                                baseurl=vuln_base_url,
+                                path=vuln_path,
+                                method=fuzzing_method,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
                             stats["relationships_created"] += 1
 
@@ -1936,7 +2127,10 @@ class Neo4jClient:
                             MATCH (e:Endpoint {path: $path, method: $method, baseurl: $baseurl})
                             MERGE (v)-[:FOUND_AT]->(e)
                             """,
-                            vuln_id=vuln_id, path=vuln_path, method=fuzzing_method, baseurl=vuln_base_url
+                            vuln_id=vuln_id,
+                            path=vuln_path,
+                            method=fuzzing_method,
+                            baseurl=vuln_base_url,
                         )
                         stats["relationships_created"] += 1
 
@@ -1956,8 +2150,12 @@ class Neo4jClient:
                                     p.is_injectable = true,
                                     p.updated_at = datetime()
                                 """,
-                                name=fuzzing_param, position=fuzzing_position, endpoint_path=vuln_path, baseurl=vuln_base_url,
-                                user_id=user_id, project_id=project_id
+                                name=fuzzing_param,
+                                position=fuzzing_position,
+                                endpoint_path=vuln_path,
+                                baseurl=vuln_base_url,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
 
                             if param_key not in created_parameters:
@@ -1971,8 +2169,11 @@ class Neo4jClient:
                                     MATCH (p:Parameter {name: $param_name, position: $position, endpoint_path: $path, baseurl: $baseurl})
                                     MERGE (e)-[:HAS_PARAMETER]->(p)
                                     """,
-                                    path=vuln_path, method=fuzzing_method, baseurl=vuln_base_url,
-                                    param_name=fuzzing_param, position=fuzzing_position
+                                    path=vuln_path,
+                                    method=fuzzing_method,
+                                    baseurl=vuln_base_url,
+                                    param_name=fuzzing_param,
+                                    position=fuzzing_position,
                                 )
                                 stats["relationships_created"] += 1
 
@@ -1983,13 +2184,18 @@ class Neo4jClient:
                                 MATCH (p:Parameter {name: $param_name, position: $position, endpoint_path: $path, baseurl: $baseurl})
                                 MERGE (v)-[:AFFECTS_PARAMETER]->(p)
                                 """,
-                                vuln_id=vuln_id, param_name=fuzzing_param, position=fuzzing_position,
-                                path=vuln_path, baseurl=vuln_base_url
+                                vuln_id=vuln_id,
+                                param_name=fuzzing_param,
+                                position=fuzzing_position,
+                                path=vuln_path,
+                                baseurl=vuln_base_url,
                             )
                             stats["relationships_created"] += 1
 
                     except Exception as e:
-                        stats["errors"].append(f"Finding {finding.get('template_id', 'unknown')} processing failed: {e}")
+                        stats["errors"].append(
+                            f"Finding {finding.get('template_id', 'unknown')} processing failed: {e}"
+                        )
 
             # =========================================================================
             # Process technology_cves - CVE, MitreData, and Capec nodes
@@ -1998,7 +2204,11 @@ class Neo4jClient:
             by_technology = technology_cves.get("by_technology", {})
 
             cves_created = 0
-            mitre_stats = {"nodes": 0, "capec": 0, "rels": 0}  # Shared stats for MITRE processing
+            mitre_stats = {
+                "nodes": 0,
+                "capec": 0,
+                "rels": 0,
+            }  # Shared stats for MITRE processing
             cve_relationships_created = 0
 
             for tech_name, tech_data in by_technology.items():
@@ -2014,7 +2224,7 @@ class Neo4jClient:
                     for sep in [":", "/"]:
                         suffix = f"{sep}{tech_version}"
                         if tech_name_clean.endswith(suffix):
-                            tech_name_clean = tech_name_clean[:-len(suffix)]
+                            tech_name_clean = tech_name_clean[: -len(suffix)]
                             break
 
                 for cve in cves:
@@ -2042,7 +2252,9 @@ class Neo4jClient:
                             cve_props["references"] = references
 
                         # Remove None values
-                        cve_props = {k: v for k, v in cve_props.items() if v is not None}
+                        cve_props = {
+                            k: v for k, v in cve_props.items() if v is not None
+                        }
 
                         session.run(
                             """
@@ -2050,7 +2262,8 @@ class Neo4jClient:
                             SET c += $props,
                                 c.updated_at = datetime()
                             """,
-                            id=cve_id, props=cve_props
+                            id=cve_id,
+                            props=cve_props,
                         )
                         cves_created += 1
 
@@ -2073,9 +2286,12 @@ class Neo4jClient:
                                 MERGE (t)-[:HAS_KNOWN_CVE]->(c)
                                 RETURN count(*) as matched
                                 """,
-                                project_id=project_id, tech_name_clean=tech_name_clean,
-                                tech_product=tech_product, tech_key=tech_name,
-                                tech_version=tech_version, cve_id=cve_id
+                                project_id=project_id,
+                                tech_name_clean=tech_name_clean,
+                                tech_product=tech_product,
+                                tech_key=tech_name,
+                                tech_version=tech_version,
+                                cve_id=cve_id,
                             )
                             matched = result.single()["matched"]
                             if matched > 0:
@@ -2094,8 +2310,11 @@ class Neo4jClient:
                                 MERGE (t)-[:HAS_KNOWN_CVE]->(c)
                                 RETURN count(*) as matched
                                 """,
-                                project_id=project_id, tech_name_clean=tech_name_clean,
-                                tech_product=tech_product, tech_key=tech_name, cve_id=cve_id
+                                project_id=project_id,
+                                tech_name_clean=tech_name_clean,
+                                tech_product=tech_product,
+                                tech_key=tech_name,
+                                cve_id=cve_id,
                             )
                             matched = result.single()["matched"]
                             if matched > 0:
@@ -2109,33 +2328,51 @@ class Neo4jClient:
                             if cwe_hierarchy:
                                 # Find all CWEs that have related_capec (traverse hierarchy)
                                 cwes_with_capec = []
-                                self._find_cwes_with_capec(cwe_hierarchy, cwes_with_capec)
+                                self._find_cwes_with_capec(
+                                    cwe_hierarchy, cwes_with_capec
+                                )
 
                                 # Create MitreData and Capec nodes for each CWE with CAPEC
                                 for cwe_node in cwes_with_capec:
                                     self._process_cwe_with_capec(
-                                        session, cwe_node, cve_id, user_id, project_id,
-                                        stats_mitre=mitre_stats
+                                        session,
+                                        cwe_node,
+                                        cve_id,
+                                        user_id,
+                                        project_id,
+                                        stats_mitre=mitre_stats,
                                     )
 
                             # Process additional CWE hierarchies if present
-                            additional_hierarchies = mitre_attack.get("additional_cwe_hierarchies", [])
+                            additional_hierarchies = mitre_attack.get(
+                                "additional_cwe_hierarchies", []
+                            )
                             for add_hierarchy in additional_hierarchies:
                                 cwes_with_capec = []
-                                self._find_cwes_with_capec(add_hierarchy, cwes_with_capec)
+                                self._find_cwes_with_capec(
+                                    add_hierarchy, cwes_with_capec
+                                )
 
                                 for cwe_node in cwes_with_capec:
                                     self._process_cwe_with_capec(
-                                        session, cwe_node, cve_id, user_id, project_id,
-                                        stats_mitre=mitre_stats
+                                        session,
+                                        cwe_node,
+                                        cve_id,
+                                        user_id,
+                                        project_id,
+                                        stats_mitre=mitre_stats,
                                     )
 
                     except Exception as e:
-                        stats["errors"].append(f"CVE {cve.get('id', 'unknown')} processing failed: {e}")
+                        stats["errors"].append(
+                            f"CVE {cve.get('id', 'unknown')} processing failed: {e}"
+                        )
 
             if cves_created > 0:
                 print(f"[+] Created {cves_created} CVE nodes")
-                print(f"[+] Created {cve_relationships_created} Technology-CVE relationships")
+                print(
+                    f"[+] Created {cve_relationships_created} Technology-CVE relationships"
+                )
             if mitre_stats["nodes"] > 0:
                 print(f"[+] Created {mitre_stats['nodes']} MitreData (CWE) nodes")
             if mitre_stats["capec"] > 0:
@@ -2189,7 +2426,9 @@ class Neo4jClient:
                             "source": "security_check",
                             "type": check_type,
                             "severity": severity,
-                            "name": check_names.get(check_type, f"Security check: {check_type}"),
+                            "name": check_names.get(
+                                check_type, f"Security check: {check_type}"
+                            ),
                             "description": finding,
                             "url": url,
                             "matched_at": url,
@@ -2206,7 +2445,9 @@ class Neo4jClient:
                         if content_length:
                             vuln_props["content_length"] = content_length
 
-                        vuln_props = {k: v for k, v in vuln_props.items() if v is not None}
+                        vuln_props = {
+                            k: v for k, v in vuln_props.items() if v is not None
+                        }
 
                         session.run(
                             """
@@ -2214,7 +2455,8 @@ class Neo4jClient:
                             SET v += $props,
                                 v.updated_at = datetime()
                             """,
-                            id=vuln_id, props=vuln_props
+                            id=vuln_id,
+                            props=vuln_props,
                         )
                         security_checks_created += 1
                         stats["vulnerabilities_created"] += 1
@@ -2229,7 +2471,9 @@ class Neo4jClient:
                                     i.project_id = $project_id,
                                     i.updated_at = datetime()
                                 """,
-                                address=ip_address, user_id=user_id, project_id=project_id
+                                address=ip_address,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
 
                             session.run(
@@ -2238,7 +2482,8 @@ class Neo4jClient:
                                 MATCH (v:Vulnerability {id: $vuln_id})
                                 MERGE (i)-[:HAS_VULNERABILITY]->(v)
                                 """,
-                                ip_addr=ip_address, vuln_id=vuln_id
+                                ip_addr=ip_address,
+                                vuln_id=vuln_id,
                             )
                             stats["relationships_created"] += 1
 
@@ -2255,16 +2500,21 @@ class Neo4jClient:
                                     evidence: $evidence
                                 }]->(i)
                                 """,
-                                subdomain=target_host, ip_addr=ip_address,
-                                evidence=evidence or ""
+                                subdomain=target_host,
+                                ip_addr=ip_address,
+                                evidence=evidence or "",
                             )
                             waf_bypass_rels += 1
 
                     except Exception as e:
-                        stats["errors"].append(f"Security check {check_type} failed: {e}")
+                        stats["errors"].append(
+                            f"Security check {check_type} failed: {e}"
+                        )
 
             if security_checks_created > 0:
-                print(f"[+] Created {security_checks_created} security check Vulnerability nodes")
+                print(
+                    f"[+] Created {security_checks_created} security check Vulnerability nodes"
+                )
             if waf_bypass_rels > 0:
                 print(f"[+] Created {waf_bypass_rels} WAF_BYPASS_VIA relationships")
 
@@ -2334,7 +2584,8 @@ class Neo4jClient:
                         SET v += $props,
                             v.updated_at = datetime()
                         """,
-                        id=vuln_id, props=vuln_props
+                        id=vuln_id,
+                        props=vuln_props,
                     )
                     security_checks_created += 1
                     stats["vulnerabilities_created"] += 1
@@ -2343,15 +2594,18 @@ class Neo4jClient:
                     # Priority: IP (for IP-based URLs) > BaseURL (for hostname URLs) > Subdomain/Domain > IP
                     # Only ONE relationship is created per vulnerability to avoid redundancy
                     # (You can always traverse: BaseURL <- Service <- Port <- IP <- Subdomain <- Domain)
-                    
+
                     relationship_created = False
-                    
+
                     # For URL-based findings
-                    if url and (url.startswith("http://") or url.startswith("https://")):
+                    if url and (
+                        url.startswith("http://") or url.startswith("https://")
+                    ):
                         from urllib.parse import urlparse
+
                         parsed = urlparse(url)
-                        url_host = parsed.netloc.split(':')[0]  # Remove port if present
-                        
+                        url_host = parsed.netloc.split(":")[0]  # Remove port if present
+
                         # If URL host is an IP address, connect to IP node (not BaseURL)
                         # This keeps the vulnerability connected to the existing IP node in the graph
                         if _is_ip_address(url_host):
@@ -2362,7 +2616,9 @@ class Neo4jClient:
                                 MERGE (i)-[:HAS_VULNERABILITY]->(v)
                                 RETURN count(*) as matched
                                 """,
-                                address=url_host, project_id=project_id, vuln_id=vuln_id
+                                address=url_host,
+                                project_id=project_id,
+                                vuln_id=vuln_id,
                             )
                             if result.single()["matched"] > 0:
                                 stats["relationships_created"] += 1
@@ -2377,7 +2633,9 @@ class Neo4jClient:
                                 MERGE (bu)-[:HAS_VULNERABILITY]->(v)
                                 RETURN count(*) as matched
                                 """,
-                                baseurl=base_url, project_id=project_id, vuln_id=vuln_id
+                                baseurl=base_url,
+                                project_id=project_id,
+                                vuln_id=vuln_id,
                             )
                             if result.single()["matched"] > 0:
                                 stats["relationships_created"] += 1
@@ -2391,7 +2649,9 @@ class Neo4jClient:
                                     MERGE (s)-[:HAS_VULNERABILITY]->(v)
                                     RETURN count(*) as matched
                                     """,
-                                    hostname=url_host, project_id=project_id, vuln_id=vuln_id
+                                    hostname=url_host,
+                                    project_id=project_id,
+                                    vuln_id=vuln_id,
                                 )
                                 if result.single()["matched"] > 0:
                                     stats["relationships_created"] += 1
@@ -2404,11 +2664,13 @@ class Neo4jClient:
                                         MATCH (v:Vulnerability {id: $vuln_id})
                                         MERGE (d)-[:HAS_VULNERABILITY]->(v)
                                         """,
-                                        hostname=url_host, project_id=project_id, vuln_id=vuln_id
+                                        hostname=url_host,
+                                        project_id=project_id,
+                                        vuln_id=vuln_id,
                                     )
                                     stats["relationships_created"] += 1
                                     relationship_created = True
-                    
+
                     # For hostname-only findings (no URL): connect to Subdomain/Domain
                     elif hostname and not relationship_created:
                         # Try to link to Subdomain node
@@ -2419,7 +2681,9 @@ class Neo4jClient:
                             MERGE (s)-[:HAS_VULNERABILITY]->(v)
                             RETURN count(*) as matched
                             """,
-                            hostname=hostname, project_id=project_id, vuln_id=vuln_id
+                            hostname=hostname,
+                            project_id=project_id,
+                            vuln_id=vuln_id,
                         )
                         if result.single()["matched"] > 0:
                             stats["relationships_created"] += 1
@@ -2432,7 +2696,9 @@ class Neo4jClient:
                                 MATCH (v:Vulnerability {id: $vuln_id})
                                 MERGE (d)-[:HAS_VULNERABILITY]->(v)
                                 """,
-                                hostname=hostname, project_id=project_id, vuln_id=vuln_id
+                                hostname=hostname,
+                                project_id=project_id,
+                                vuln_id=vuln_id,
                             )
                             stats["relationships_created"] += 1
                             relationship_created = True
@@ -2445,15 +2711,21 @@ class Neo4jClient:
                             MATCH (v:Vulnerability {id: $vuln_id})
                             MERGE (i)-[:HAS_VULNERABILITY]->(v)
                             """,
-                            address=matched_ip, project_id=project_id, vuln_id=vuln_id
+                            address=matched_ip,
+                            project_id=project_id,
+                            vuln_id=vuln_id,
                         )
                         stats["relationships_created"] += 1
 
                 except Exception as e:
-                    stats["errors"].append(f"Security finding {finding.get('type', 'unknown')} failed: {e}")
+                    stats["errors"].append(
+                        f"Security finding {finding.get('type', 'unknown')} failed: {e}"
+                    )
 
             if security_checks_created > 0:
-                print(f"[+] Created {security_checks_created} SecurityCheck Vulnerability nodes")
+                print(
+                    f"[+] Created {security_checks_created} SecurityCheck Vulnerability nodes"
+                )
 
             # Update Domain node with vuln_scan metadata
             metadata = recon_data.get("metadata", {})
@@ -2475,7 +2747,9 @@ class Neo4jClient:
                             d.vuln_scan_low_count = $low_count,
                             d.updated_at = datetime()
                         """,
-                        root_domain=root_domain, user_id=user_id, project_id=project_id,
+                        root_domain=root_domain,
+                        user_id=user_id,
+                        project_id=project_id,
                         scan_timestamp=scan_metadata.get("scan_timestamp"),
                         dast_mode=scan_metadata.get("dast_mode", False),
                         total_urls=scan_metadata.get("total_urls_scanned", 0),
@@ -2483,7 +2757,7 @@ class Neo4jClient:
                         critical_count=summary.get("critical", 0),
                         high_count=summary.get("high", 0),
                         medium_count=summary.get("medium", 0),
-                        low_count=summary.get("low", 0)
+                        low_count=summary.get("low", 0),
                     )
                 except Exception as e:
                     stats["errors"].append(f"Domain update failed: {e}")
@@ -2501,7 +2775,9 @@ class Neo4jClient:
 
         return stats
 
-    def update_graph_from_resource_enum(self, recon_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_resource_enum(
+        self, recon_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with resource enumeration data.
 
@@ -2524,7 +2800,7 @@ class Neo4jClient:
             "parameters_created": 0,
             "forms_created": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         resource_enum_data = recon_data.get("resource_enum", {})
@@ -2545,8 +2821,11 @@ class Neo4jClient:
             if not target_subdomains:
                 return True  # No filter if no subdomains defined
             from urllib.parse import urlparse
+
             parsed = urlparse(base_url)
-            host = parsed.netloc.split(":")[0] if ":" in parsed.netloc else parsed.netloc
+            host = (
+                parsed.netloc.split(":")[0] if ":" in parsed.netloc else parsed.netloc
+            )
             return host in target_subdomains
 
         with self.driver.session() as session:
@@ -2595,14 +2874,17 @@ class Neo4jClient:
                                     e.source = 'resource_enum',
                                     e.updated_at = datetime()
                                 """,
-                                path=path, method=method, baseurl=base_url,
-                                user_id=user_id, project_id=project_id,
+                                path=path,
+                                method=method,
+                                baseurl=base_url,
+                                user_id=user_id,
+                                project_id=project_id,
                                 category=category,
-                                has_params=param_count.get('total', 0) > 0,
-                                query_count=param_count.get('query', 0),
-                                body_count=param_count.get('body', 0),
-                                path_count=param_count.get('path', 0),
-                                urls_found=endpoint_info.get('urls_found', 1)
+                                has_params=param_count.get("total", 0) > 0,
+                                query_count=param_count.get("query", 0),
+                                body_count=param_count.get("body", 0),
+                                path_count=param_count.get("path", 0),
+                                urls_found=endpoint_info.get("urls_found", 1),
                             )
                             stats["endpoints_created"] += 1
                             created_endpoints.add(endpoint_key)
@@ -2619,8 +2901,11 @@ class Neo4jClient:
                                 MATCH (e:Endpoint {path: $path, method: $method, baseurl: $baseurl})
                                 MERGE (bu)-[:HAS_ENDPOINT]->(e)
                                 """,
-                                baseurl=base_url, path=path, method=method,
-                                user_id=user_id, project_id=project_id
+                                baseurl=base_url,
+                                path=path,
+                                method=method,
+                                user_id=user_id,
+                                project_id=project_id,
                             )
                             stats["relationships_created"] += 1
 
@@ -2651,11 +2936,15 @@ class Neo4jClient:
                                     p.source = 'resource_enum',
                                     p.updated_at = datetime()
                                 """,
-                                name=param_name, position="query", endpoint_path=path, baseurl=base_url,
-                                user_id=user_id, project_id=project_id,
+                                name=param_name,
+                                position="query",
+                                endpoint_path=path,
+                                baseurl=base_url,
+                                user_id=user_id,
+                                project_id=project_id,
                                 param_type=param.get("type", "string"),
                                 category=param.get("category", "other"),
-                                sample_values=sample_values[:5]  # Limit sample values
+                                sample_values=sample_values[:5],  # Limit sample values
                             )
                             stats["parameters_created"] += 1
                             created_parameters.add(param_key)
@@ -2668,8 +2957,11 @@ class Neo4jClient:
                                     MATCH (p:Parameter {name: $param_name, position: $position, endpoint_path: $path, baseurl: $baseurl})
                                     MERGE (e)-[:HAS_PARAMETER]->(p)
                                     """,
-                                    path=path, method=method, baseurl=base_url,
-                                    param_name=param_name, position="query"
+                                    path=path,
+                                    method=method,
+                                    baseurl=base_url,
+                                    param_name=param_name,
+                                    position="query",
                                 )
                                 stats["relationships_created"] += 1
 
@@ -2696,36 +2988,47 @@ class Neo4jClient:
                                     p.source = 'resource_enum',
                                     p.updated_at = datetime()
                                 """,
-                                name=param_name, position="body", endpoint_path=path, baseurl=base_url,
-                                user_id=user_id, project_id=project_id,
+                                name=param_name,
+                                position="body",
+                                endpoint_path=path,
+                                baseurl=base_url,
+                                user_id=user_id,
+                                project_id=project_id,
                                 param_type=param.get("type", "string"),
                                 category=param.get("category", "other"),
                                 input_type=param.get("input_type", "text"),
-                                required=param.get("required", False)
+                                required=param.get("required", False),
                             )
                             stats["parameters_created"] += 1
                             created_parameters.add(param_key)
 
                             # Create relationship for POST method (body params are only relevant for POST)
                             # First ensure the POST endpoint exists (in case it wasn't in methods list)
-                            if 'POST' in methods:
+                            if "POST" in methods:
                                 session.run(
                                     """
                                     MATCH (e:Endpoint {path: $path, method: 'POST', baseurl: $baseurl})
                                     MATCH (p:Parameter {name: $param_name, position: $position, endpoint_path: $path, baseurl: $baseurl})
                                     MERGE (e)-[:HAS_PARAMETER]->(p)
                                     """,
-                                    path=path, baseurl=base_url,
-                                    param_name=param_name, position="body"
+                                    path=path,
+                                    baseurl=base_url,
+                                    param_name=param_name,
+                                    position="body",
                                 )
                                 stats["relationships_created"] += 1
 
                     except Exception as e:
-                        stats["errors"].append(f"Endpoint {path} processing failed: {e}")
+                        stats["errors"].append(
+                            f"Endpoint {path} processing failed: {e}"
+                        )
 
             # Process forms - aggregate by endpoint to collect all found_at locations
             from urllib.parse import urlparse
-            form_data_by_endpoint = {}  # key: (baseurl, path, method) -> {found_at_pages, enctype, input_names}
+
+            form_data_by_endpoint = (
+                {}
+            )  # key: (baseurl, path, method) -> {found_at_pages, enctype, input_names}
 
             for form in forms:
                 try:
@@ -2739,7 +3042,9 @@ class Neo4jClient:
                     # Parse action URL
                     parsed = urlparse(action)
                     path = parsed.path or "/"
-                    baseurl = f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else ""
+                    baseurl = (
+                        f"{parsed.scheme}://{parsed.netloc}" if parsed.netloc else ""
+                    )
 
                     if not baseurl and found_at:
                         # Extract baseurl from found_at
@@ -2751,22 +3056,30 @@ class Neo4jClient:
                     if endpoint_key not in form_data_by_endpoint:
                         form_data_by_endpoint[endpoint_key] = {
                             "found_at_pages": set(),
-                            "enctype": form.get("enctype", "application/x-www-form-urlencoded"),
+                            "enctype": form.get(
+                                "enctype", "application/x-www-form-urlencoded"
+                            ),
                             "input_names": set(),
-                            "input_types": {}  # name -> type mapping
+                            "input_types": {},  # name -> type mapping
                         }
 
                     # Collect found_at page
                     if found_at:
-                        form_data_by_endpoint[endpoint_key]["found_at_pages"].add(found_at)
+                        form_data_by_endpoint[endpoint_key]["found_at_pages"].add(
+                            found_at
+                        )
 
                     # Collect input names and types
                     for inp in form.get("inputs", []):
                         inp_name = inp.get("name", "")
                         inp_type = inp.get("type", "text")
                         if inp_name and inp_type != "submit":  # Skip submit buttons
-                            form_data_by_endpoint[endpoint_key]["input_names"].add(inp_name)
-                            form_data_by_endpoint[endpoint_key]["input_types"][inp_name] = inp_type
+                            form_data_by_endpoint[endpoint_key]["input_names"].add(
+                                inp_name
+                            )
+                            form_data_by_endpoint[endpoint_key]["input_types"][
+                                inp_name
+                            ] = inp_type
 
                 except Exception as e:
                     stats["errors"].append(f"Form data collection failed: {e}")
@@ -2783,11 +3096,13 @@ class Neo4jClient:
                             e.form_input_names = $input_names,
                             e.form_count = $form_count
                         """,
-                        path=path, method=method, baseurl=baseurl,
+                        path=path,
+                        method=method,
+                        baseurl=baseurl,
                         enctype=form_info["enctype"],
                         found_at_pages=list(form_info["found_at_pages"]),
                         input_names=list(form_info["input_names"]),
-                        form_count=len(form_info["found_at_pages"])
+                        form_count=len(form_info["found_at_pages"]),
                     )
                     stats["forms_created"] += 1
 
@@ -2810,11 +3125,15 @@ class Neo4jClient:
                             d.resource_enum_total_forms = $total_forms,
                             d.updated_at = datetime()
                         """,
-                        root_domain=root_domain, user_id=user_id, project_id=project_id,
-                        scan_timestamp=resource_enum_data.get("scan_metadata", {}).get("scan_timestamp"),
+                        root_domain=root_domain,
+                        user_id=user_id,
+                        project_id=project_id,
+                        scan_timestamp=resource_enum_data.get("scan_metadata", {}).get(
+                            "scan_timestamp"
+                        ),
                         total_endpoints=summary.get("total_endpoints", 0),
                         total_parameters=summary.get("total_parameters", 0),
-                        total_forms=summary.get("total_forms", 0)
+                        total_forms=summary.get("total_forms", 0),
                     )
                 except Exception as e:
                     stats["errors"].append(f"Domain update failed: {e}")
@@ -2849,8 +3168,10 @@ class Neo4jClient:
         host_data = report.get("host", {})
 
         # Handle both single host (dict) and multiple hosts (list)
-        hosts = [host_data] if isinstance(host_data, dict) else (
-            host_data if isinstance(host_data, list) else []
+        hosts = (
+            [host_data]
+            if isinstance(host_data, dict)
+            else (host_data if isinstance(host_data, list) else [])
         )
 
         for host in hosts:
@@ -2914,21 +3235,25 @@ class Neo4jClient:
                 # Categorize
                 categories = ["Operating systems"] if part == "o" else []
 
-                technologies.append({
-                    "name": display_name,
-                    "version": cpe_version,
-                    "cpe": value,
-                    "cpe_vendor": vendor,
-                    "cpe_product": product,
-                    "port": port_number,
-                    "protocol": port_protocol,
-                    "categories": categories,
-                    "target_ip": host_ip,
-                })
+                technologies.append(
+                    {
+                        "name": display_name,
+                        "version": cpe_version,
+                        "cpe": value,
+                        "cpe_vendor": vendor,
+                        "cpe_product": product,
+                        "port": port_number,
+                        "protocol": port_protocol,
+                        "categories": categories,
+                        "target_ip": host_ip,
+                    }
+                )
 
         return technologies
 
-    def _merge_gvm_technology(self, session, tech: dict, user_id: str, project_id: str, stats: dict):
+    def _merge_gvm_technology(
+        self, session, tech: dict, user_id: str, project_id: str, stats: dict
+    ):
         """
         Merge a GVM-detected technology into the graph.
 
@@ -2944,7 +3269,7 @@ class Neo4jClient:
         version = tech["version"]
         cpe = tech["cpe"]
         target_ip = tech["target_ip"]
-        port = tech.get("port")          # int or None
+        port = tech.get("port")  # int or None
         protocol = tech.get("protocol")  # str or None
 
         tech_props = {
@@ -2980,7 +3305,9 @@ class Neo4jClient:
                               END,
                               t.updated_at = datetime()
                 """,
-                name=name, version=version, props=tech_props,
+                name=name,
+                version=version,
+                props=tech_props,
                 cpe=cpe,
                 cpe_vendor=tech.get("cpe_vendor"),
                 cpe_product=tech.get("cpe_product"),
@@ -3003,7 +3330,8 @@ class Neo4jClient:
                               END,
                               t.updated_at = datetime()
                 """,
-                name=name, props=tech_props,
+                name=name,
+                props=tech_props,
                 cpe=cpe,
                 cpe_vendor=tech.get("cpe_vendor"),
                 cpe_product=tech.get("cpe_product"),
@@ -3029,8 +3357,11 @@ class Neo4jClient:
                     p.state = 'open',
                     p.updated_at = datetime()
                 """,
-                port_number=port, protocol=effective_protocol, ip_addr=target_ip,
-                user_id=user_id, project_id=project_id,
+                port_number=port,
+                protocol=effective_protocol,
+                ip_addr=target_ip,
+                user_id=user_id,
+                project_id=project_id,
             )
             stats["ports_created"] += 1
 
@@ -3041,8 +3372,11 @@ class Neo4jClient:
                 MATCH (p:Port {number: $port_number, protocol: $protocol, ip_address: $ip})
                 MERGE (i)-[:HAS_PORT]->(p)
                 """,
-                ip=target_ip, user_id=user_id, project_id=project_id,
-                port_number=port, protocol=effective_protocol,
+                ip=target_ip,
+                user_id=user_id,
+                project_id=project_id,
+                port_number=port,
+                protocol=effective_protocol,
             )
 
             # MERGE Port -[:USES_TECHNOLOGY]-> Technology
@@ -3054,8 +3388,11 @@ class Neo4jClient:
                     MERGE (p)-[r:USES_TECHNOLOGY]->(t)
                     SET r.detected_by = 'gvm'
                     """,
-                    port_number=port, protocol=effective_protocol, ip=target_ip,
-                    name=name, version=version,
+                    port_number=port,
+                    protocol=effective_protocol,
+                    ip=target_ip,
+                    name=name,
+                    version=version,
                 )
             else:
                 session.run(
@@ -3066,7 +3403,9 @@ class Neo4jClient:
                     MERGE (p)-[r:USES_TECHNOLOGY]->(t)
                     SET r.detected_by = 'gvm'
                     """,
-                    port_number=port, protocol=effective_protocol, ip=target_ip,
+                    port_number=port,
+                    protocol=effective_protocol,
+                    ip=target_ip,
                     name=name,
                 )
             stats["relationships_created"] += 1
@@ -3082,8 +3421,12 @@ class Neo4jClient:
                     MERGE (i)-[r:USES_TECHNOLOGY]->(t)
                     SET r += $rel_props
                     """,
-                    ip=target_ip, user_id=user_id, project_id=project_id,
-                    name=name, version=version, rel_props=rel_props,
+                    ip=target_ip,
+                    user_id=user_id,
+                    project_id=project_id,
+                    name=name,
+                    version=version,
+                    rel_props=rel_props,
                 )
             else:
                 session.run(
@@ -3094,8 +3437,11 @@ class Neo4jClient:
                     MERGE (i)-[r:USES_TECHNOLOGY]->(t)
                     SET r += $rel_props
                     """,
-                    ip=target_ip, user_id=user_id, project_id=project_id,
-                    name=name, rel_props=rel_props,
+                    ip=target_ip,
+                    user_id=user_id,
+                    project_id=project_id,
+                    name=name,
+                    rel_props=rel_props,
                 )
             stats["relationships_created"] += 1
 
@@ -3127,7 +3473,9 @@ class Neo4jClient:
             result["target_ip"] = header_match.group(2)
 
         # Extract distance from footer line
-        dist_match = re.search(r"Network distance between scanner and target:\s*(\d+)", description)
+        dist_match = re.search(
+            r"Network distance between scanner and target:\s*(\d+)", description
+        )
         if dist_match:
             result["distance"] = int(dist_match.group(1))
 
@@ -3137,7 +3485,9 @@ class Neo4jClient:
 
         return result
 
-    def update_graph_from_gvm_scan(self, gvm_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_gvm_scan(
+        self, gvm_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with GVM/OpenVAS vulnerability scan data.
 
@@ -3181,7 +3531,7 @@ class Neo4jClient:
             "closed_cves_processed": 0,
             "certificates_created": 0,
             "relationships_created": 0,
-            "errors": []
+            "errors": [],
         }
 
         metadata = gvm_data.get("metadata", {})
@@ -3206,9 +3556,13 @@ class Neo4jClient:
                 gvm_technologies = self._extract_gvm_technologies(raw_data, scan)
                 for tech in gvm_technologies:
                     try:
-                        self._merge_gvm_technology(session, tech, user_id, project_id, stats)
+                        self._merge_gvm_technology(
+                            session, tech, user_id, project_id, stats
+                        )
                     except Exception as e:
-                        stats["errors"].append(f"GVM technology {tech.get('name')} failed: {e}")
+                        stats["errors"].append(
+                            f"GVM technology {tech.get('name')} failed: {e}"
+                        )
 
                 vulnerabilities = scan.get("vulnerabilities", [])
 
@@ -3252,8 +3606,16 @@ class Neo4jClient:
 
                         # Extract solution info
                         solution_data = nvt.get("solution", {})
-                        solution_text = solution_data.get("#text", "") if isinstance(solution_data, dict) else ""
-                        solution_type = solution_data.get("@type", "") if isinstance(solution_data, dict) else ""
+                        solution_text = (
+                            solution_data.get("#text", "")
+                            if isinstance(solution_data, dict)
+                            else ""
+                        )
+                        solution_type = (
+                            solution_data.get("@type", "")
+                            if isinstance(solution_data, dict)
+                            else ""
+                        )
 
                         # Extract CVE IDs and CISA KEV flag from refs
                         cve_ids = vuln.get("cves_extracted", [])
@@ -3272,7 +3634,11 @@ class Neo4jClient:
                                     cisa_kev = True
 
                         # Check QoD — if 100, this is a confirmed active exploit
-                        qod_value = int(qod_data.get("value", 0)) if qod_data.get("value") else 0
+                        qod_value = (
+                            int(qod_data.get("value", 0))
+                            if qod_data.get("value")
+                            else 0
+                        )
 
                         if qod_value == 100:
                             # Confirmed active exploit — create ExploitGvm node instead of Vulnerability
@@ -3303,14 +3669,17 @@ class Neo4jClient:
                                 "scanner": "OpenVAS",
                                 "scan_timestamp": scan_timestamp,
                             }
-                            exploit_props = {k: v for k, v in exploit_props.items() if v is not None}
+                            exploit_props = {
+                                k: v for k, v in exploit_props.items() if v is not None
+                            }
 
                             session.run(
                                 """
                                 MERGE (e:ExploitGvm {id: $id})
                                 SET e += $props, e.updated_at = datetime()
                                 """,
-                                id=exploit_id, props=exploit_props
+                                id=exploit_id,
+                                props=exploit_props,
                             )
                             stats["exploits_gvm_created"] += 1
                             if cisa_kev:
@@ -3319,7 +3688,15 @@ class Neo4jClient:
                             # Link ExploitGvm → CVE (only connection)
                             # MERGE CVE node — creates it if not found from previous scan
                             for cve_id_link in cve_ids:
-                                severity_label = "CRITICAL" if cvss_score >= 9.0 else "HIGH" if cvss_score >= 7.0 else "MEDIUM" if cvss_score >= 4.0 else "LOW"
+                                severity_label = (
+                                    "CRITICAL"
+                                    if cvss_score >= 9.0
+                                    else (
+                                        "HIGH"
+                                        if cvss_score >= 7.0
+                                        else "MEDIUM" if cvss_score >= 4.0 else "LOW"
+                                    )
+                                )
                                 session.run(
                                     """
                                     MATCH (e:ExploitGvm {id: $exploit_id})
@@ -3331,9 +3708,12 @@ class Neo4jClient:
                                                   c.project_id = $pid
                                     MERGE (e)-[:EXPLOITED_CVE]->(c)
                                     """,
-                                    exploit_id=exploit_id, cve_id=cve_id_link,
-                                    severity=severity_label, cvss=cvss_score,
-                                    uid=user_id, pid=project_id
+                                    exploit_id=exploit_id,
+                                    cve_id=cve_id_link,
+                                    severity=severity_label,
+                                    cvss=cvss_score,
+                                    uid=user_id,
+                                    pid=project_id,
                                 )
                                 stats["cves_linked"] += 1
 
@@ -3368,7 +3748,9 @@ class Neo4jClient:
                         }
 
                         # Remove None values
-                        vuln_props = {k: v for k, v in vuln_props.items() if v is not None}
+                        vuln_props = {
+                            k: v for k, v in vuln_props.items() if v is not None
+                        }
 
                         session.run(
                             """
@@ -3376,7 +3758,8 @@ class Neo4jClient:
                             SET v += $props,
                                 v.updated_at = datetime()
                             """,
-                            id=vuln_id, props=vuln_props
+                            id=vuln_id,
+                            props=vuln_props,
                         )
                         stats["vulnerabilities_created"] += 1
                         if cisa_kev:
@@ -3396,8 +3779,10 @@ class Neo4jClient:
                                 MERGE (t)-[:HAS_VULNERABILITY]->(v)
                                 RETURN count(t) as matched
                                 """,
-                                port=target_port, protocol=effective_protocol,
-                                ip=target_ip, vuln_id=vuln_id,
+                                port=target_port,
+                                protocol=effective_protocol,
+                                ip=target_ip,
+                                vuln_id=vuln_id,
                             )
                             record = result.single()
                             if record and record["matched"] > 0:
@@ -3416,7 +3801,9 @@ class Neo4jClient:
                                 MERGE (t)-[:HAS_VULNERABILITY]->(v)
                                 RETURN count(t) as matched
                                 """,
-                                ip=target_ip, user_id=user_id, project_id=project_id,
+                                ip=target_ip,
+                                user_id=user_id,
+                                project_id=project_id,
                                 vuln_id=vuln_id,
                             )
                             record = result.single()
@@ -3435,8 +3822,10 @@ class Neo4jClient:
                                 MERGE (p)-[:HAS_VULNERABILITY]->(v)
                                 RETURN p
                                 """,
-                                port=target_port, protocol=effective_protocol,
-                                ip=target_ip, vuln_id=vuln_id,
+                                port=target_port,
+                                protocol=effective_protocol,
+                                ip=target_ip,
+                                vuln_id=vuln_id,
                             )
                             if result.single():
                                 stats["relationships_created"] += 1
@@ -3451,7 +3840,9 @@ class Neo4jClient:
                                 MERGE (i)-[:HAS_VULNERABILITY]->(v)
                                 RETURN i
                                 """,
-                                ip=target_ip, user_id=user_id, project_id=project_id,
+                                ip=target_ip,
+                                user_id=user_id,
+                                project_id=project_id,
                                 vuln_id=vuln_id,
                             )
                             if result.single():
@@ -3467,7 +3858,10 @@ class Neo4jClient:
                                 MERGE (s)-[:HAS_VULNERABILITY]->(v)
                                 RETURN s
                                 """,
-                                hostname=target_hostname, user_id=user_id, project_id=project_id, vuln_id=vuln_id
+                                hostname=target_hostname,
+                                user_id=user_id,
+                                project_id=project_id,
+                                vuln_id=vuln_id,
                             )
                             if result.single():
                                 stats["subdomains_linked"] += 1
@@ -3503,7 +3897,9 @@ class Neo4jClient:
                                 tr.scan_timestamp = $scan_timestamp,
                                 tr.updated_at = datetime()
                             """,
-                            target_ip=target_ip, user_id=user_id, project_id=project_id,
+                            target_ip=target_ip,
+                            user_id=user_id,
+                            project_id=project_id,
                             scanner_ip=tr_data["scanner_ip"],
                             hops=tr_data["hops"],
                             distance=tr_data["distance"],
@@ -3519,7 +3915,9 @@ class Neo4jClient:
                             MERGE (i)-[:HAS_TRACEROUTE]->(tr)
                             RETURN i
                             """,
-                            target_ip=target_ip, user_id=user_id, project_id=project_id,
+                            target_ip=target_ip,
+                            user_id=user_id,
+                            project_id=project_id,
                         )
                         if result.single():
                             stats["relationships_created"] += 1
@@ -3533,7 +3931,11 @@ class Neo4jClient:
                     report = raw_data.get("report", raw_data)
 
                     closed_cves_data = report.get("closed_cves", {})
-                    closed_count = int(closed_cves_data.get("count", "0")) if closed_cves_data else 0
+                    closed_count = (
+                        int(closed_cves_data.get("count", "0"))
+                        if closed_cves_data
+                        else 0
+                    )
 
                     if closed_count > 0:
                         closed_list = closed_cves_data.get("closed_cve", [])
@@ -3552,7 +3954,9 @@ class Neo4jClient:
                                 WHERE $cve_id IN v.cve_ids
                                 SET v.remediated = true, v.updated_at = datetime()
                                 """,
-                                uid=user_id, pid=project_id, cve_id=cve_id
+                                uid=user_id,
+                                pid=project_id,
+                                cve_id=cve_id,
                             )
                             stats["closed_cves_processed"] += 1
 
@@ -3585,7 +3989,11 @@ class Neo4jClient:
 
                             # Extract host:port binding
                             host_info = cert_data.get("host", {})
-                            cert_ip = host_info.get("ip", "") if isinstance(host_info, dict) else str(host_info)
+                            cert_ip = (
+                                host_info.get("ip", "")
+                                if isinstance(host_info, dict)
+                                else str(host_info)
+                            )
 
                             cert_props = {
                                 "subject_cn": subject_cn,
@@ -3606,7 +4014,9 @@ class Neo4jClient:
                                 MERGE (c:Certificate {subject_cn: $subject_cn, project_id: $project_id})
                                 SET c += $props, c.updated_at = datetime()
                                 """,
-                                subject_cn=subject_cn, project_id=project_id, props=cert_props
+                                subject_cn=subject_cn,
+                                project_id=project_id,
+                                props=cert_props,
                             )
 
                             # Link to IP node if available
@@ -3617,7 +4027,10 @@ class Neo4jClient:
                                     MATCH (c:Certificate {subject_cn: $cn, project_id: $pid})
                                     MERGE (i)-[:HAS_CERTIFICATE]->(c)
                                     """,
-                                    ip=cert_ip, uid=user_id, pid=project_id, cn=subject_cn
+                                    ip=cert_ip,
+                                    uid=user_id,
+                                    pid=project_id,
+                                    cn=subject_cn,
                                 )
 
                             stats["certificates_created"] += 1
@@ -3640,26 +4053,36 @@ class Neo4jClient:
                             d.gvm_low = $low,
                             d.updated_at = datetime()
                         """,
-                        root_domain=target_domain, user_id=user_id, project_id=project_id,
+                        root_domain=target_domain,
+                        user_id=user_id,
+                        project_id=project_id,
                         scan_timestamp=scan_timestamp,
                         total_vulns=summary.get("total_vulnerabilities", 0),
                         critical=summary.get("critical", 0),
                         high=summary.get("high", 0),
                         medium=summary.get("medium", 0),
-                        low=summary.get("low", 0)
+                        low=summary.get("low", 0),
                     )
                 except Exception as e:
                     stats["errors"].append(f"Domain update failed: {e}")
 
-            print(f"[+] Created/enriched {stats['technologies_created']} Technology nodes from GVM")
+            print(
+                f"[+] Created/enriched {stats['technologies_created']} Technology nodes from GVM"
+            )
             print(f"[+] Created {stats['ports_created']} Port nodes from GVM")
-            print(f"[+] Created {stats['vulnerabilities_created']} GVM Vulnerability nodes")
-            print(f"[+] Created {stats['exploits_gvm_created']} ExploitGvm nodes (confirmed active exploits)")
+            print(
+                f"[+] Created {stats['vulnerabilities_created']} GVM Vulnerability nodes"
+            )
+            print(
+                f"[+] Created {stats['exploits_gvm_created']} ExploitGvm nodes (confirmed active exploits)"
+            )
             print(f"[+] Created {stats['traceroutes_created']} Traceroute nodes")
             print(f"[+] CISA KEV flagged: {stats['cisa_kev_count']} vulnerabilities")
             print(f"[+] Closed CVEs processed: {stats['closed_cves_processed']}")
             print(f"[+] TLS Certificates created: {stats['certificates_created']}")
-            print(f"[+] Linked {stats['technologies_linked']} vulnerabilities to technologies")
+            print(
+                f"[+] Linked {stats['technologies_linked']} vulnerabilities to technologies"
+            )
             print(f"[+] Linked {stats['cves_linked']} CVEs")
             print(f"[+] Linked {stats['ips_linked']} IPs (fallback)")
             print(f"[+] Linked {stats['subdomains_linked']} Subdomains")
@@ -3704,7 +4127,8 @@ class Neo4jClient:
                 DETACH DELETE gs
                 RETURN count(gs) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -3717,7 +4141,8 @@ class Neo4jClient:
                 DETACH DELETE gsf
                 RETURN count(gsf) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -3726,7 +4151,8 @@ class Neo4jClient:
             # 3. Delete old GithubFinding nodes (from previous schema version)
             session.run(
                 "MATCH (gf:GithubFinding {user_id: $uid, project_id: $pid}) DETACH DELETE gf",
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
 
             # 4. Delete GithubPath nodes
@@ -3736,7 +4162,8 @@ class Neo4jClient:
                 DETACH DELETE gp
                 RETURN count(gp) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -3749,7 +4176,8 @@ class Neo4jClient:
                 DETACH DELETE gr
                 RETURN count(gr) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -3762,7 +4190,8 @@ class Neo4jClient:
                 DETACH DELETE gh
                 RETURN count(gh) as deleted
                 """,
-                uid=user_id, pid=project_id
+                uid=user_id,
+                pid=project_id,
             )
             record = result.single()
             if record:
@@ -3773,7 +4202,9 @@ class Neo4jClient:
 
         return stats
 
-    def update_graph_from_github_hunt(self, github_hunt_data: dict, user_id: str, project_id: str) -> dict:
+    def update_graph_from_github_hunt(
+        self, github_hunt_data: dict, user_id: str, project_id: str
+    ) -> dict:
         """
         Update the Neo4j graph database with GitHub Secret Hunt scan results.
 
@@ -3811,7 +4242,7 @@ class Neo4jClient:
             "relationships_created": 0,
             "findings_skipped_high_entropy": 0,
             "findings_deduplicated": 0,
-            "errors": []
+            "errors": [],
         }
 
         # Validate input
@@ -3854,7 +4285,8 @@ class Neo4jClient:
                     MERGE (gh:GithubHunt {id: $id})
                     SET gh += $props, gh.updated_at = datetime()
                     """,
-                    id=hunt_id, props=hunt_props
+                    id=hunt_id,
+                    props=hunt_props,
                 )
                 stats["hunt_created"] += 1
             except Exception as e:
@@ -3871,13 +4303,17 @@ class Neo4jClient:
                     MERGE (d)-[:HAS_GITHUB_HUNT]->(gh)
                     RETURN count(*) as linked
                     """,
-                    uid=user_id, pid=project_id, hunt_id=hunt_id
+                    uid=user_id,
+                    pid=project_id,
+                    hunt_id=hunt_id,
                 )
                 record = result.single()
                 if record and record["linked"] > 0:
                     stats["relationships_created"] += 1
                 else:
-                    print(f"[!] Warning: No Domain node found for user_id={user_id}, project_id={project_id}")
+                    print(
+                        f"[!] Warning: No Domain node found for user_id={user_id}, project_id={project_id}"
+                    )
             except Exception as e:
                 stats["errors"].append(f"Failed to link GithubHunt to Domain: {e}")
 
@@ -3929,7 +4365,8 @@ class Neo4jClient:
                     try:
                         session.run(
                             "MERGE (gr:GithubRepository {id: $id}) SET gr += $props, gr.updated_at = datetime()",
-                            id=repo_id, props=repo_props
+                            id=repo_id,
+                            props=repo_props,
                         )
                         stats["repositories_created"] += 1
                         created_repos.add(repository)
@@ -3941,11 +4378,14 @@ class Neo4jClient:
                             MATCH (gr:GithubRepository {id: $repo_id})
                             MERGE (gh)-[:HAS_REPOSITORY]->(gr)
                             """,
-                            hunt_id=hunt_id, repo_id=repo_id
+                            hunt_id=hunt_id,
+                            repo_id=repo_id,
                         )
                         stats["relationships_created"] += 1
                     except Exception as e:
-                        stats["errors"].append(f"Failed to create repo {repository}: {e}")
+                        stats["errors"].append(
+                            f"Failed to create repo {repository}: {e}"
+                        )
                         continue
 
                 # 3b. Create/merge GithubPath node
@@ -3961,7 +4401,8 @@ class Neo4jClient:
                     try:
                         session.run(
                             "MERGE (gp:GithubPath {id: $id}) SET gp += $props, gp.updated_at = datetime()",
-                            id=path_id, props=path_props
+                            id=path_id,
+                            props=path_props,
                         )
                         stats["paths_created"] += 1
                         created_paths.add(path_key)
@@ -3973,7 +4414,8 @@ class Neo4jClient:
                             MATCH (gp:GithubPath {id: $path_id})
                             MERGE (gr)-[:HAS_PATH]->(gp)
                             """,
-                            repo_id=repo_id, path_id=path_id
+                            repo_id=repo_id,
+                            path_id=path_id,
                         )
                         stats["relationships_created"] += 1
                     except Exception as e:
@@ -4003,7 +4445,8 @@ class Neo4jClient:
                     try:
                         session.run(
                             "MERGE (gs:GithubSecret {id: $id}) SET gs += $props, gs.updated_at = datetime()",
-                            id=node_id, props=node_props
+                            id=node_id,
+                            props=node_props,
                         )
                         stats["secrets_created"] += 1
 
@@ -4014,14 +4457,19 @@ class Neo4jClient:
                             MATCH (gs:GithubSecret {id: $node_id})
                             MERGE (gp)-[:CONTAINS_SECRET]->(gs)
                             """,
-                            path_id=path_id, node_id=node_id
+                            path_id=path_id,
+                            node_id=node_id,
                         )
                         stats["relationships_created"] += 1
                     except Exception as e:
-                        stats["errors"].append(f"Failed to create secret {dedup_key}: {e}")
+                        stats["errors"].append(
+                            f"Failed to create secret {dedup_key}: {e}"
+                        )
 
                 elif finding_type == "SENSITIVE_FILE":
-                    node_id = f"github-sensitivefi-{user_id}-{project_id}-{finding_hash}"
+                    node_id = (
+                        f"github-sensitivefi-{user_id}-{project_id}-{finding_hash}"
+                    )
                     node_props = {
                         "id": node_id,
                         "user_id": user_id,
@@ -4035,7 +4483,8 @@ class Neo4jClient:
                     try:
                         session.run(
                             "MERGE (gsf:GithubSensitiveFile {id: $id}) SET gsf += $props, gsf.updated_at = datetime()",
-                            id=node_id, props=node_props
+                            id=node_id,
+                            props=node_props,
                         )
                         stats["sensitive_files_created"] += 1
 
@@ -4046,11 +4495,14 @@ class Neo4jClient:
                             MATCH (gsf:GithubSensitiveFile {id: $node_id})
                             MERGE (gp)-[:CONTAINS_SENSITIVE_FILE]->(gsf)
                             """,
-                            path_id=path_id, node_id=node_id
+                            path_id=path_id,
+                            node_id=node_id,
                         )
                         stats["relationships_created"] += 1
                     except Exception as e:
-                        stats["errors"].append(f"Failed to create sensitive file {dedup_key}: {e}")
+                        stats["errors"].append(
+                            f"Failed to create sensitive file {dedup_key}: {e}"
+                        )
 
             # Print summary
             print(f"\n[+] GitHub Hunt Graph Update Summary:")
@@ -4058,10 +4510,16 @@ class Neo4jClient:
             print(f"[+] Created {stats['repositories_created']} GithubRepository nodes")
             print(f"[+] Created {stats['paths_created']} GithubPath nodes")
             print(f"[+] Created {stats['secrets_created']} GithubSecret nodes")
-            print(f"[+] Created {stats['sensitive_files_created']} GithubSensitiveFile nodes")
+            print(
+                f"[+] Created {stats['sensitive_files_created']} GithubSensitiveFile nodes"
+            )
             print(f"[+] Created {stats['relationships_created']} relationships")
-            print(f"[+] Skipped {stats['findings_skipped_high_entropy']} HIGH_ENTROPY findings")
-            print(f"[+] Deduplicated {stats['findings_deduplicated']} cross-commit findings")
+            print(
+                f"[+] Skipped {stats['findings_skipped_high_entropy']} HIGH_ENTROPY findings"
+            )
+            print(
+                f"[+] Deduplicated {stats['findings_deduplicated']} cross-commit findings"
+            )
 
             if stats["errors"]:
                 print(f"[!] {len(stats['errors'])} errors occurred")

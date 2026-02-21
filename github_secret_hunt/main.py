@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedAmon - GitHub Secret Hunter Main Entry Point
+parallax - GitHub Secret Hunter Main Entry Point
 =================================================
 Orchestrates GitHub secret scanning using project settings from the webapp API.
 
@@ -51,17 +51,17 @@ def run_github_secret_hunt(project_id: str) -> dict:
         Dictionary with scan results or error info
     """
     # Read scan settings from project settings (fetched from webapp API)
-    token = get_setting('GITHUB_ACCESS_TOKEN', '')
-    target = get_setting('GITHUB_TARGET_ORG', '')
-    scan_members = get_setting('GITHUB_SCAN_MEMBERS', False)
-    scan_gists = get_setting('GITHUB_SCAN_GISTS', True)
-    scan_commits = get_setting('GITHUB_SCAN_COMMITS', True)
-    max_commits = get_setting('GITHUB_MAX_COMMITS', 100)
-    output_json = get_setting('GITHUB_OUTPUT_JSON', True)
-    target_repos = get_setting('GITHUB_TARGET_REPOS', '')
+    token = get_setting("GITHUB_ACCESS_TOKEN", "")
+    target = get_setting("GITHUB_TARGET_ORG", "")
+    scan_members = get_setting("GITHUB_SCAN_MEMBERS", False)
+    scan_gists = get_setting("GITHUB_SCAN_GISTS", True)
+    scan_commits = get_setting("GITHUB_SCAN_COMMITS", True)
+    max_commits = get_setting("GITHUB_MAX_COMMITS", 100)
+    output_json = get_setting("GITHUB_OUTPUT_JSON", True)
+    target_repos = get_setting("GITHUB_TARGET_REPOS", "")
 
     print("\n" + "=" * 70)
-    print("           RedAmon - GitHub Secret Hunter")
+    print("           parallax - GitHub Secret Hunter")
     print("=" * 70)
     print(f"  Target Org/User: {target}")
     print(f"  Target Repos:    {target_repos or '(all)'}")
@@ -75,24 +75,28 @@ def run_github_secret_hunt(project_id: str) -> dict:
     # Validate required settings
     if not token:
         print("[!] ERROR: GitHub access token not configured")
-        print("[!] Set it in the project settings (Integrations → GitHub Secret Hunting)")
+        print(
+            "[!] Set it in the project settings (Integrations → GitHub Secret Hunting)"
+        )
         return {"error": "GitHub access token not configured"}
 
     if not target:
         print("[!] ERROR: GitHub target organization/user not configured")
-        print("[!] Set it in the project settings (Integrations → GitHub Secret Hunting)")
+        print(
+            "[!] Set it in the project settings (Integrations → GitHub Secret Hunting)"
+        )
         return {"error": "GitHub target organization/user not configured"}
 
     # Build settings dict for the scanner
     settings = {
-        'GITHUB_ACCESS_TOKEN': token,
-        'GITHUB_TARGET_ORG': target,
-        'GITHUB_SCAN_MEMBERS': scan_members,
-        'GITHUB_SCAN_GISTS': scan_gists,
-        'GITHUB_SCAN_COMMITS': scan_commits,
-        'GITHUB_MAX_COMMITS': max_commits,
-        'GITHUB_OUTPUT_JSON': output_json,
-        'GITHUB_TARGET_REPOS': target_repos,
+        "GITHUB_ACCESS_TOKEN": token,
+        "GITHUB_TARGET_ORG": target,
+        "GITHUB_SCAN_MEMBERS": scan_members,
+        "GITHUB_SCAN_GISTS": scan_gists,
+        "GITHUB_SCAN_COMMITS": scan_commits,
+        "GITHUB_MAX_COMMITS": max_commits,
+        "GITHUB_OUTPUT_JSON": output_json,
+        "GITHUB_TARGET_REPOS": target_repos,
     }
 
     # Run the scanner
@@ -112,7 +116,7 @@ def run_github_secret_hunt(project_id: str) -> dict:
         try:
             from graph_db import Neo4jClient
 
-            with open(hunter.output_file, 'r') as f:
+            with open(hunter.output_file, "r") as f:
                 github_hunt_data = json.load(f)
 
             print("\n" + "=" * 50)

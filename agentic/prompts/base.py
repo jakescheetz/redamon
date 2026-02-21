@@ -1,5 +1,5 @@
 """
-RedAmon Agent Base Prompts
+parallax Agent Base Prompts
 
 Common prompts used across all attack paths.
 """
@@ -19,10 +19,12 @@ INTERNAL_TOOLS = {"msf_restart"}
 # DYNAMIC PROMPT BUILDERS
 # =============================================================================
 
+
 def _get_visible_tools(allowed_tools):
     """Get TOOL_REGISTRY entries for allowed tools, preserving registry order."""
     return [
-        (name, info) for name, info in TOOL_REGISTRY.items()
+        (name, info)
+        for name, info in TOOL_REGISTRY.items()
         if name in allowed_tools and name not in INTERNAL_TOOLS
     ]
 
@@ -49,7 +51,8 @@ def build_tool_availability_table(phase, allowed_tools):
 def build_informational_tool_descriptions(allowed_tools):
     """Build detailed tool descriptions for only the allowed tools."""
     visible = [
-        (name, info) for name, info in _get_visible_tools(allowed_tools)
+        (name, info)
+        for name, info in _get_visible_tools(allowed_tools)
         if info.get("description")
     ]
 
@@ -86,16 +89,26 @@ def build_phase_definitions():
     from project_settings import get_allowed_tools_for_phase
 
     def _fmt(phase):
-        tools = [t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS]
+        tools = [
+            t for t in get_allowed_tools_for_phase(phase) if t not in INTERNAL_TOOLS
+        ]
         registry_order = list(TOOL_REGISTRY.keys())
-        tools.sort(key=lambda t: registry_order.index(t) if t in registry_order else len(registry_order))
+        tools.sort(
+            key=lambda t: (
+                registry_order.index(t) if t in registry_order else len(registry_order)
+            )
+        )
         return ", ".join(tools) if tools else "(none)"
 
     info_str = _fmt("informational")
     expl_str = _fmt("exploitation")
     post_str = _fmt("post_exploitation")
 
-    expl_tools = [t for t in get_allowed_tools_for_phase("exploitation") if t not in INTERNAL_TOOLS]
+    expl_tools = [
+        t
+        for t in get_allowed_tools_for_phase("exploitation")
+        if t not in INTERNAL_TOOLS
+    ]
 
     lines = [
         "### Phase Definitions\n",
@@ -110,17 +123,23 @@ def build_phase_definitions():
     ]
 
     if "metasploit_console" in expl_tools:
-        lines.append('- For CVE exploitation: use action="use_tool" with tool_name="metasploit_console"')
+        lines.append(
+            '- For CVE exploitation: use action="use_tool" with tool_name="metasploit_console"'
+        )
     if "execute_hydra" in expl_tools:
-        lines.append('- For brute force credential guessing: use action="use_tool" with tool_name="execute_hydra"')
+        lines.append(
+            '- For brute force credential guessing: use action="use_tool" with tool_name="execute_hydra"'
+        )
 
-    lines.extend([
-        "- DO NOT request transition_phase when already in exploitation - START EXPLOITING IMMEDIATELY\n",
-        "**POST-EXPLOITATION** (Requires user approval to enter)",
-        "- Purpose: Actions on compromised systems",
-        f"- Allowed tools: {post_str}",
-        "- Prerequisites: Must have active session AND user approval",
-    ])
+    lines.extend(
+        [
+            "- DO NOT request transition_phase when already in exploitation - START EXPLOITING IMMEDIATELY\n",
+            "**POST-EXPLOITATION** (Requires user approval to enter)",
+            "- Purpose: Actions on compromised systems",
+            f"- Allowed tools: {post_str}",
+            "- Prerequisites: Must have active session AND user approval",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -139,19 +158,33 @@ def build_dynamic_rules(allowed_tools):
 
     if "execute_curl" in allowed_tools:
         rules.append(f"{rule_num}. **execute_curl usage rules:**")
-        rules.append("   - In informational phase: Use for reachability checks AND vulnerability probing as a FALLBACK")
+        rules.append(
+            "   - In informational phase: Use for reachability checks AND vulnerability probing as a FALLBACK"
+        )
         if "query_graph" in allowed_tools:
-            rules.append("   - **Always query_graph FIRST** — only probe with curl if the graph has no vulnerability data for the target")
-        rules.append("   - Curl probing = lightweight discovery (path traversal, LFI, default endpoints, header checks)")
+            rules.append(
+                "   - **Always query_graph FIRST** — only probe with curl if the graph has no vulnerability data for the target"
+            )
+        rules.append(
+            "   - Curl probing = lightweight discovery (path traversal, LFI, default endpoints, header checks)"
+        )
         if "metasploit_console" in allowed_tools:
-            rules.append("   - Full exploitation (RCE, payload delivery, session establishment) ONLY in exploitation phase using metasploit_console")
+            rules.append(
+                "   - Full exploitation (RCE, payload delivery, session establishment) ONLY in exploitation phase using metasploit_console"
+            )
         rule_num += 1
 
-    rules.append(f"{rule_num}. Request phase transition ONLY when moving from informational to exploitation (or exploitation to post_exploitation)")
+    rules.append(
+        f"{rule_num}. Request phase transition ONLY when moving from informational to exploitation (or exploitation to post_exploitation)"
+    )
     rule_num += 1
-    rules.append(f"{rule_num}. NEVER request transition to the same phase you're already in - this will be ignored")
+    rules.append(
+        f"{rule_num}. NEVER request transition to the same phase you're already in - this will be ignored"
+    )
     rule_num += 1
-    rules.append(f"{rule_num}. **Add exploitation steps as TODO items** and mark them in_progress/completed as you go")
+    rules.append(
+        f"{rule_num}. **Add exploitation steps as TODO items** and mark them in_progress/completed as you go"
+    )
 
     return "\n".join(rules)
 
@@ -968,4 +1001,3 @@ RETURN s.name, collect(t.name) as technologies
 ## Output Format
 Generate ONLY valid Cypher queries. No explanations, no markdown formatting.
 """
-

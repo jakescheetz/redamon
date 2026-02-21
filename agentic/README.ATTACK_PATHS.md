@@ -1,8 +1,8 @@
-# RedAmon Attack Paths Architecture
+# parallax Attack Paths Architecture
 
 Comprehensive documentation of all Metasploit attack path categories and the proposed Agent Routing system for intelligent attack chain orchestration.
 
-> **Context**: The RedAmon agent supports CVE-based exploitation and Hydra brute force credential guess chains, with no-module fallback workflows using nuclei, curl, code execution, and Kali shell tools. This document defines all possible attack path categories to enable evolution toward a multi-path routing system.
+> **Context**: The parallax agent supports CVE-based exploitation and Hydra brute force credential guess chains, with no-module fallback workflows using nuclei, curl, code execution, and Kali shell tools. This document defines all possible attack path categories to enable evolution toward a multi-path routing system.
 
 ---
 
@@ -1281,4 +1281,4 @@ Some attack paths naturally chain into others:
 
 *Document Version: 2.1*
 *Last Updated: 2026-02-19*
-*Author: RedAmon Development Team*
+*Author: parallax Development Team*

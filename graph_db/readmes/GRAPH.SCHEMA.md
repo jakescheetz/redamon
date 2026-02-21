@@ -1,4 +1,4 @@
-# RedAmon Neo4j Graph Schema
+# parallax Neo4j Graph Schema
 
 ## Overview
 
@@ -100,11 +100,11 @@ The entry point for all queries. Contains project/user ownership.
     filtered_mode: true,                    // Was SUBDOMAIN_LIST filter used?
     subdomain_filter: ["testphp."],         // Subdomain prefixes from SUBDOMAIN_LIST
     modules_executed: ["whois", "dns_resolution", "port_scan", "http_probe", "vuln_scan"],
-    
+
     // Scan modes (from metadata)
     anonymous_mode: false,                   // Was Tor used?
     bruteforce_mode: false,                  // Was subdomain bruteforcing enabled?
-    
+
     // WHOIS Information
     registrar: "Gandi SAS",
     registrar_url: "http://www.gandi.net",
@@ -113,7 +113,7 @@ The entry point for all queries. Contains project/user ownership.
     expiration_date: datetime,
     updated_date: datetime,
     dnssec: "unsigned",
-    
+
     // Owner Information
     organization: "Invicti Security Limited",
     country: "MT",
@@ -121,25 +121,25 @@ The entry point for all queries. Contains project/user ownership.
     state: null,                             // State/province
     address: "REDACTED FOR PRIVACY",         // Street address
     registrant_postal_code: "REDACTED FOR PRIVACY",
-    
+
     // Contact Information (may be redacted)
     registrant_name: "REDACTED FOR PRIVACY",
     admin_name: "REDACTED FOR PRIVACY",
     admin_org: "REDACTED FOR PRIVACY",
     tech_name: "REDACTED FOR PRIVACY",
     tech_org: "REDACTED FOR PRIVACY",
-    
+
     // Status
     status: ["clientTransferProhibited"],
-    
+
     // WHOIS Contact Emails
     whois_emails: ["abuse@support.gandi.net", "...@contact.gandi.net"],
-    
+
     // WHOIS extra fields
     domain_name: "VULNWEB.COM",              // Registered domain name (uppercase)
     referral_url: null,                      // Referral URL if any
     reseller: null,                          // Reseller if any
-    
+
     // Name servers (moved from separate node)
     name_servers: ["NS-105-A.GANDI.NET", "NS-105-B.GANDI.NET", "NS-105-C.GANDI.NET"]
 })
@@ -380,14 +380,14 @@ Detected technologies, frameworks, and software.
     name_version: "PHP:5.6.40",             // Combined identifier
     categories: ["Programming languages"],  // Technology categories
     confidence: 100,                        // Detection confidence (0-100)
-    
+
     // Source tracking
     detected_by: "httpx",                   // httpx, wappalyzer, banner_grab
-    
+
     // For CVE lookup matching
     product: "php",                         // Normalized product name for CVE lookup
     cpe_vendor: "php",                      // CPE vendor (if known)
-    
+
     // CVE Summary (denormalized for quick access)
     known_cve_count: 17,
     critical_cve_count: 2,

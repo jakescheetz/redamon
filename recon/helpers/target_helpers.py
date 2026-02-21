@@ -1,5 +1,5 @@
 """
-RedAmon - Target Extraction Helpers
+parallax - Target Extraction Helpers
 ====================================
 Functions for extracting and building target URLs from reconnaissance data.
 """
@@ -11,35 +11,40 @@ from typing import Dict, List, Optional, Set, Tuple
 # Target Extraction from Recon Data
 # =============================================================================
 
-def extract_targets_from_recon(recon_data: dict) -> Tuple[Set[str], Set[str], Dict[str, List[str]]]:
+
+def extract_targets_from_recon(
+    recon_data: dict,
+) -> Tuple[Set[str], Set[str], Dict[str, List[str]]]:
     """
     Extract all unique IPs, hostnames, and build IP-to-hostname mapping.
-    
+
     Args:
         recon_data: The domain reconnaissance JSON data
-        
+
     Returns:
         Tuple of (unique_ips, unique_hostnames, ip_to_hostnames_mapping)
     """
     ips = set()
     hostnames = set()
     ip_to_hostnames = {}
-    
+
     dns_data = recon_data.get("dns", {})
     if not dns_data:
         return ips, hostnames, ip_to_hostnames
-    
+
     # Extract from root domain
-    domain = recon_data.get("domain", "") or recon_data.get("metadata", {}).get("target", "")
+    domain = recon_data.get("domain", "") or recon_data.get("metadata", {}).get(
+        "target", ""
+    )
     domain_dns = dns_data.get("domain", {})
     if domain_dns:
         domain_ips = domain_dns.get("ips", {})
         ipv4_list = domain_ips.get("ipv4", [])
         ipv6_list = domain_ips.get("ipv6", [])
-        
+
         ips.update(ipv4_list)
         ips.update(ipv6_list)
-        
+
         if domain:
             hostnames.add(domain)
             for ip in ipv4_list + ipv6_list:
@@ -48,32 +53,32 @@ def extract_targets_from_recon(recon_data: dict) -> Tuple[Set[str], Set[str], Di
                         ip_to_hostnames[ip] = []
                     if domain not in ip_to_hostnames[ip]:
                         ip_to_hostnames[ip].append(domain)
-    
+
     # Extract from all subdomains
     subdomains_dns = dns_data.get("subdomains", {})
     for subdomain, subdomain_data in subdomains_dns.items():
         if subdomain_data:
             if subdomain_data.get("has_records"):
                 hostnames.add(subdomain)
-            
+
             if subdomain_data.get("ips"):
                 ipv4_list = subdomain_data["ips"].get("ipv4", [])
                 ipv6_list = subdomain_data["ips"].get("ipv6", [])
-                
+
                 ips.update(ipv4_list)
                 ips.update(ipv6_list)
-                
+
                 for ip in ipv4_list + ipv6_list:
                     if ip:
                         if ip not in ip_to_hostnames:
                             ip_to_hostnames[ip] = []
                         if subdomain not in ip_to_hostnames[ip]:
                             ip_to_hostnames[ip].append(subdomain)
-    
+
     # Filter out empty strings
     ips = {ip for ip in ips if ip}
     hostnames = {h for h in hostnames if h}
-    
+
     return ips, hostnames, ip_to_hostnames
 
 
@@ -81,19 +86,20 @@ def extract_targets_from_recon(recon_data: dict) -> Tuple[Set[str], Set[str], Di
 # URL Building from httpx Data
 # =============================================================================
 
+
 def build_target_urls_from_httpx(httpx_data: Optional[dict]) -> List[str]:
     """
     Build list of target URLs from httpx scan results.
     Uses live URLs discovered by httpx for more accurate targeting.
-    
+
     Args:
         httpx_data: httpx scan results containing live URLs
-        
+
     Returns:
         List of live URLs to scan
     """
     urls = []
-    
+
     if httpx_data:
         # Use live URLs from httpx (already verified to be responding)
         by_url = httpx_data.get("by_url", {})
@@ -102,7 +108,7 @@ def build_target_urls_from_httpx(httpx_data: Optional[dict]) -> List[str]:
             # Include URLs with successful responses (not server errors)
             if status_code and status_code < 500:
                 urls.append(url)
-    
+
     return sorted(list(set(urls)))
 
 
@@ -110,7 +116,10 @@ def build_target_urls_from_httpx(httpx_data: Optional[dict]) -> List[str]:
 # URL Building from Resource Enumeration Data
 # =============================================================================
 
-def build_target_urls_from_resource_enum(resource_enum_data: Optional[dict]) -> Tuple[List[str], List[str]]:
+
+def build_target_urls_from_resource_enum(
+    resource_enum_data: Optional[dict],
+) -> Tuple[List[str], List[str]]:
     """
     Build list of target URLs from resource_enum data.
 
@@ -160,11 +169,12 @@ def build_target_urls_from_resource_enum(resource_enum_data: Optional[dict]) -> 
 # Combined URL Building
 # =============================================================================
 
+
 def build_target_urls(
-    hostnames: Set[str], 
-    ips: Set[str], 
+    hostnames: Set[str],
+    ips: Set[str],
     recon_data: Optional[dict] = None,
-    scan_all_ips: bool = False
+    scan_all_ips: bool = False,
 ) -> List[str]:
     """
     Build list of target URLs for nuclei scanning.
@@ -184,11 +194,15 @@ def build_target_urls(
     # Priority 1: Use resource_enum endpoints if available (most comprehensive)
     resource_enum_data = recon_data.get("resource_enum") if recon_data else None
     if resource_enum_data:
-        base_urls, endpoint_urls = build_target_urls_from_resource_enum(resource_enum_data)
+        base_urls, endpoint_urls = build_target_urls_from_resource_enum(
+            resource_enum_data
+        )
         if base_urls:
             # Combine base URLs with endpoint URLs for comprehensive coverage
             urls = list(set(base_urls + endpoint_urls))
-            print(f"    [*] Using {len(base_urls)} base URLs + {len(endpoint_urls)} endpoint URLs from resource_enum")
+            print(
+                f"    [*] Using {len(base_urls)} base URLs + {len(endpoint_urls)} endpoint URLs from resource_enum"
+            )
             return sorted(urls)
 
     # Priority 2: Use live URLs from httpx (fallback if resource_enum not run)
@@ -212,4 +226,3 @@ def build_target_urls(
 
     print(f"    [*] Using {len(urls)} default URLs (no httpx data)")
     return sorted(list(set(urls)))
-

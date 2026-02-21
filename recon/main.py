@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedAmon - Main Reconnaissance Controller
+parallax - Main Reconnaissance Controller
 =========================================
 Orchestrates all OSINT reconnaissance modules:
 1. WHOIS lookup (integrated into domain recon JSON)
@@ -34,17 +34,17 @@ _settings = get_settings()
 _settings = apply_stealth_overrides(_settings)
 
 # Extract commonly used settings as module-level variables for compatibility
-TARGET_DOMAIN = _settings['TARGET_DOMAIN']
-SUBDOMAIN_LIST = _settings['SUBDOMAIN_LIST']
-USE_TOR_FOR_RECON = _settings['USE_TOR_FOR_RECON']
-USE_BRUTEFORCE_FOR_SUBDOMAINS = _settings['USE_BRUTEFORCE_FOR_SUBDOMAINS']
-SCAN_MODULES = _settings['SCAN_MODULES']
-UPDATE_GRAPH_DB = _settings['UPDATE_GRAPH_DB']
-USER_ID = _settings['USER_ID']
-PROJECT_ID = _settings['PROJECT_ID']
-VERIFY_DOMAIN_OWNERSHIP = _settings['VERIFY_DOMAIN_OWNERSHIP']
-OWNERSHIP_TOKEN = _settings['OWNERSHIP_TOKEN']
-OWNERSHIP_TXT_PREFIX = _settings['OWNERSHIP_TXT_PREFIX']
+TARGET_DOMAIN = _settings["TARGET_DOMAIN"]
+SUBDOMAIN_LIST = _settings["SUBDOMAIN_LIST"]
+USE_TOR_FOR_RECON = _settings["USE_TOR_FOR_RECON"]
+USE_BRUTEFORCE_FOR_SUBDOMAINS = _settings["USE_BRUTEFORCE_FOR_SUBDOMAINS"]
+SCAN_MODULES = _settings["SCAN_MODULES"]
+UPDATE_GRAPH_DB = _settings["UPDATE_GRAPH_DB"]
+USER_ID = _settings["USER_ID"]
+PROJECT_ID = _settings["PROJECT_ID"]
+VERIFY_DOMAIN_OWNERSHIP = _settings["VERIFY_DOMAIN_OWNERSHIP"]
+OWNERSHIP_TOKEN = _settings["OWNERSHIP_TOKEN"]
+OWNERSHIP_TXT_PREFIX = _settings["OWNERSHIP_TXT_PREFIX"]
 
 # Import recon modules
 from recon.whois_recon import whois_lookup
@@ -62,30 +62,30 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 def should_skip_active_scans(recon_data: dict) -> tuple:
     """
     Check if active scanning modules (resource_enum, vuln_scan) should be skipped.
-    
+
     These modules require live targets to work with. If http_probe found no live URLs,
     there's nothing to crawl or scan.
-    
+
     Args:
         recon_data: Current reconnaissance data
-        
+
     Returns:
         Tuple of (should_skip: bool, reason: str)
     """
-    http_probe_data = recon_data.get('http_probe', {})
-    http_summary = http_probe_data.get('summary', {})
-    
-    live_urls = http_summary.get('live_urls', 0)
-    total_hosts = http_summary.get('total_hosts', 0)
-    
+    http_probe_data = recon_data.get("http_probe", {})
+    http_summary = http_probe_data.get("summary", {})
+
+    live_urls = http_summary.get("live_urls", 0)
+    total_hosts = http_summary.get("total_hosts", 0)
+
     # Check if http_probe ran but found nothing
-    if 'http_probe' in recon_data:
+    if "http_probe" in recon_data:
         if live_urls == 0 and total_hosts == 0:
             # Also check by_url to be sure
-            by_url = http_probe_data.get('by_url', {})
+            by_url = http_probe_data.get("by_url", {})
             if len(by_url) == 0:
                 return True, "No live URLs found by http_probe - nothing to scan"
-    
+
     return False, ""
 
 
@@ -118,13 +118,13 @@ def parse_target(target: str, subdomain_list: list = None) -> dict:
 
     # Check if root domain should be included (prefix "." means root domain)
     include_root_domain = False
-    
+
     # Build full subdomain names from prefixes
     full_subdomains = []
     if filtered_mode:
         for prefix in subdomain_list:
             # Handle "." as special case meaning root domain itself
-            clean_prefix = prefix.rstrip('.')
+            clean_prefix = prefix.rstrip(".")
             if clean_prefix == "" or prefix == ".":
                 # "." means include root domain directly (e.g., vulnweb.com)
                 include_root_domain = True
@@ -143,7 +143,7 @@ def parse_target(target: str, subdomain_list: list = None) -> dict:
         "filtered_mode": filtered_mode,
         "subdomain_list": subdomain_list,
         "full_subdomains": full_subdomains,
-        "include_root_domain": include_root_domain
+        "include_root_domain": include_root_domain,
     }
 
 
@@ -165,12 +165,16 @@ def build_scan_type() -> str:
 
 def save_recon_file(data: dict, output_file: Path):
     """Save recon data to JSON file."""
-    with open(output_file, 'w') as f:
+    with open(output_file, "w") as f:
         json.dump(data, f, indent=2)
 
 
-def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = False,
-                     target_info: dict = None) -> dict:
+def run_domain_recon(
+    target: str,
+    anonymous: bool = False,
+    bruteforce: bool = False,
+    target_info: dict = None,
+) -> dict:
     """
     Run combined WHOIS + subdomain discovery + DNS resolution.
     Produces a single unified JSON file with incremental saves.
@@ -197,7 +201,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
     full_subdomains = target_info["full_subdomains"]
 
     print("\n" + "=" * 70)
-    print("               RedAmon - Domain Reconnaissance")
+    print("               parallax - Domain Reconnaissance")
     print("=" * 70)
     print(f"  Target: {root_domain}")
     if filtered_mode:
@@ -227,13 +231,13 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
             "subdomain_filter": full_subdomains if filtered_mode else [],
             "anonymous_mode": anonymous,
             "bruteforce_mode": bruteforce if not filtered_mode else False,
-            "modules_executed": []
+            "modules_executed": [],
         },
         "domain": root_domain,
         "whois": {},
         "subdomains": [],
         "subdomain_count": 0,
-        "dns": {}
+        "dns": {},
     }
 
     # Step 1: WHOIS lookup (always on root domain)
@@ -265,7 +269,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
 
         # Check if root domain should be included (via "." prefix)
         include_root = target_info.get("include_root_domain", False)
-        
+
         # Resolve root domain DNS if included
         domain_dns = {}
         if include_root:
@@ -283,7 +287,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
             # Skip root domain (already resolved above)
             if subdomain == root_domain:
                 continue
-                
+
             print(f"[*] Resolving: {subdomain}")
             subdomain_dns = dns_lookup(subdomain)
             subdomains_dns[subdomain] = subdomain_dns
@@ -298,7 +302,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
         combined_result["subdomain_count"] = len(full_subdomains)
         combined_result["dns"] = {
             "domain": domain_dns,  # Include root domain DNS if "." was in SUBDOMAIN_LIST
-            "subdomains": subdomains_dns
+            "subdomains": subdomains_dns,
         }
         combined_result["metadata"]["include_root_domain"] = include_root
 
@@ -312,7 +316,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
             anonymous=anonymous,
             bruteforce=bruteforce,
             resolve=True,
-            save_output=False
+            save_output=False,
         )
 
         combined_result["subdomains"] = recon_result.get("subdomains", [])
@@ -334,9 +338,12 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
         print("-" * 40)
         try:
             from graph_db import Neo4jClient
+
             with Neo4jClient() as graph_client:
                 if graph_client.verify_connection():
-                    stats = graph_client.update_graph_from_domain_discovery(combined_result, USER_ID, PROJECT_ID)
+                    stats = graph_client.update_graph_from_domain_discovery(
+                        combined_result, USER_ID, PROJECT_ID
+                    )
                     combined_result["metadata"]["graph_db_updated"] = True
                     combined_result["metadata"]["graph_db_stats"] = stats
                     print(f"[+] Graph database updated successfully")
@@ -355,7 +362,9 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
 
     # Step 3: Port scanning (fast port discovery)
     if "port_scan" in SCAN_MODULES:
-        combined_result = run_port_scan(combined_result, output_file=output_file, settings=_settings)
+        combined_result = run_port_scan(
+            combined_result, output_file=output_file, settings=_settings
+        )
         combined_result["metadata"]["modules_executed"].append("port_scan")
         save_recon_file(combined_result, output_file)
 
@@ -365,17 +374,28 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
             print("-" * 40)
             try:
                 from graph_db import Neo4jClient
+
                 with Neo4jClient() as graph_client:
                     if graph_client.verify_connection():
-                        port_stats = graph_client.update_graph_from_port_scan(combined_result, USER_ID, PROJECT_ID)
+                        port_stats = graph_client.update_graph_from_port_scan(
+                            combined_result, USER_ID, PROJECT_ID
+                        )
                         combined_result["metadata"]["graph_db_port_scan_updated"] = True
-                        combined_result["metadata"]["graph_db_port_scan_stats"] = port_stats
+                        combined_result["metadata"][
+                            "graph_db_port_scan_stats"
+                        ] = port_stats
                         print(f"[+] Graph database updated with port scan data")
                     else:
-                        print(f"[!] Could not connect to Neo4j - skipping port scan graph update")
-                        combined_result["metadata"]["graph_db_port_scan_updated"] = False
+                        print(
+                            f"[!] Could not connect to Neo4j - skipping port scan graph update"
+                        )
+                        combined_result["metadata"][
+                            "graph_db_port_scan_updated"
+                        ] = False
             except ImportError:
-                print(f"[!] Neo4j client not available - skipping port scan graph update")
+                print(
+                    f"[!] Neo4j client not available - skipping port scan graph update"
+                )
                 combined_result["metadata"]["graph_db_port_scan_updated"] = False
             except Exception as e:
                 print(f"[!] Port scan graph update failed: {e}")
@@ -386,7 +406,9 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
 
     # Step 4: HTTP probing (technology detection, live URL discovery)
     if "http_probe" in SCAN_MODULES:
-        combined_result = run_http_probe(combined_result, output_file=output_file, settings=_settings)
+        combined_result = run_http_probe(
+            combined_result, output_file=output_file, settings=_settings
+        )
         combined_result["metadata"]["modules_executed"].append("http_probe")
         save_recon_file(combined_result, output_file)
 
@@ -396,17 +418,30 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
             print("-" * 40)
             try:
                 from graph_db import Neo4jClient
+
                 with Neo4jClient() as graph_client:
                     if graph_client.verify_connection():
-                        http_stats = graph_client.update_graph_from_http_probe(combined_result, USER_ID, PROJECT_ID)
-                        combined_result["metadata"]["graph_db_http_probe_updated"] = True
-                        combined_result["metadata"]["graph_db_http_probe_stats"] = http_stats
+                        http_stats = graph_client.update_graph_from_http_probe(
+                            combined_result, USER_ID, PROJECT_ID
+                        )
+                        combined_result["metadata"][
+                            "graph_db_http_probe_updated"
+                        ] = True
+                        combined_result["metadata"][
+                            "graph_db_http_probe_stats"
+                        ] = http_stats
                         print(f"[+] Graph database updated with http probe data")
                     else:
-                        print(f"[!] Could not connect to Neo4j - skipping http probe graph update")
-                        combined_result["metadata"]["graph_db_http_probe_updated"] = False
+                        print(
+                            f"[!] Could not connect to Neo4j - skipping http probe graph update"
+                        )
+                        combined_result["metadata"][
+                            "graph_db_http_probe_updated"
+                        ] = False
             except ImportError:
-                print(f"[!] Neo4j client not available - skipping http probe graph update")
+                print(
+                    f"[!] Neo4j client not available - skipping http probe graph update"
+                )
                 combined_result["metadata"]["graph_db_http_probe_updated"] = False
             except Exception as e:
                 print(f"[!] HTTP probe graph update failed: {e}")
@@ -418,7 +453,7 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
     # Check if we should skip active scanning modules (resource_enum, vuln_scan)
     # These require live targets from http_probe to work
     skip_active_scans, skip_reason = should_skip_active_scans(combined_result)
-    
+
     if skip_active_scans:
         print(f"\n{'=' * 70}")
         print(f"[!] SKIPPING ACTIVE SCANS: {skip_reason}")
@@ -430,7 +465,9 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
     else:
         # Step 5: Resource enumeration (endpoint discovery & classification)
         if "resource_enum" in SCAN_MODULES:
-            combined_result = run_resource_enum(combined_result, output_file=output_file, settings=_settings)
+            combined_result = run_resource_enum(
+                combined_result, output_file=output_file, settings=_settings
+            )
             combined_result["metadata"]["modules_executed"].append("resource_enum")
             save_recon_file(combined_result, output_file)
 
@@ -440,33 +477,58 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
                 print("-" * 40)
                 try:
                     from graph_db import Neo4jClient
+
                     with Neo4jClient() as graph_client:
                         if graph_client.verify_connection():
-                            resource_stats = graph_client.update_graph_from_resource_enum(combined_result, USER_ID, PROJECT_ID)
-                            combined_result["metadata"]["graph_db_resource_enum_updated"] = True
-                            combined_result["metadata"]["graph_db_resource_enum_stats"] = resource_stats
-                            print(f"[+] Graph database updated with resource enumeration data")
+                            resource_stats = (
+                                graph_client.update_graph_from_resource_enum(
+                                    combined_result, USER_ID, PROJECT_ID
+                                )
+                            )
+                            combined_result["metadata"][
+                                "graph_db_resource_enum_updated"
+                            ] = True
+                            combined_result["metadata"][
+                                "graph_db_resource_enum_stats"
+                            ] = resource_stats
+                            print(
+                                f"[+] Graph database updated with resource enumeration data"
+                            )
                         else:
-                            print(f"[!] Could not connect to Neo4j - skipping resource enum graph update")
-                            combined_result["metadata"]["graph_db_resource_enum_updated"] = False
+                            print(
+                                f"[!] Could not connect to Neo4j - skipping resource enum graph update"
+                            )
+                            combined_result["metadata"][
+                                "graph_db_resource_enum_updated"
+                            ] = False
                 except ImportError:
-                    print(f"[!] Neo4j client not available - skipping resource enum graph update")
-                    combined_result["metadata"]["graph_db_resource_enum_updated"] = False
+                    print(
+                        f"[!] Neo4j client not available - skipping resource enum graph update"
+                    )
+                    combined_result["metadata"][
+                        "graph_db_resource_enum_updated"
+                    ] = False
                 except Exception as e:
                     print(f"[!] Resource enum graph update failed: {e}")
-                    combined_result["metadata"]["graph_db_resource_enum_updated"] = False
+                    combined_result["metadata"][
+                        "graph_db_resource_enum_updated"
+                    ] = False
                     combined_result["metadata"]["graph_db_resource_enum_error"] = str(e)
 
                 save_recon_file(combined_result, output_file)
 
         # Step 6: Vulnerability scanning (web application vulns) + MITRE enrichment
         if "vuln_scan" in SCAN_MODULES:
-            combined_result = run_vuln_scan(combined_result, output_file=output_file, settings=_settings)
+            combined_result = run_vuln_scan(
+                combined_result, output_file=output_file, settings=_settings
+            )
             combined_result["metadata"]["modules_executed"].append("vuln_scan")
             save_recon_file(combined_result, output_file)
 
             # Automatically run MITRE CWE/CAPEC enrichment after vuln_scan
-            combined_result = run_mitre_enrichment(combined_result, output_file=output_file, settings=_settings)
+            combined_result = run_mitre_enrichment(
+                combined_result, output_file=output_file, settings=_settings
+            )
             save_recon_file(combined_result, output_file)
 
             # Update Graph DB with vuln scan data
@@ -475,17 +537,30 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
                 print("-" * 40)
                 try:
                     from graph_db import Neo4jClient
+
                     with Neo4jClient() as graph_client:
                         if graph_client.verify_connection():
-                            vuln_stats = graph_client.update_graph_from_vuln_scan(combined_result, USER_ID, PROJECT_ID)
-                            combined_result["metadata"]["graph_db_vuln_scan_updated"] = True
-                            combined_result["metadata"]["graph_db_vuln_scan_stats"] = vuln_stats
+                            vuln_stats = graph_client.update_graph_from_vuln_scan(
+                                combined_result, USER_ID, PROJECT_ID
+                            )
+                            combined_result["metadata"][
+                                "graph_db_vuln_scan_updated"
+                            ] = True
+                            combined_result["metadata"][
+                                "graph_db_vuln_scan_stats"
+                            ] = vuln_stats
                             print(f"[+] Graph database updated with vuln scan data")
                         else:
-                            print(f"[!] Could not connect to Neo4j - skipping vuln scan graph update")
-                            combined_result["metadata"]["graph_db_vuln_scan_updated"] = False
+                            print(
+                                f"[!] Could not connect to Neo4j - skipping vuln scan graph update"
+                            )
+                            combined_result["metadata"][
+                                "graph_db_vuln_scan_updated"
+                            ] = False
                 except ImportError:
-                    print(f"[!] Neo4j client not available - skipping vuln scan graph update")
+                    print(
+                        f"[!] Neo4j client not available - skipping vuln scan graph update"
+                    )
                     combined_result["metadata"]["graph_db_vuln_scan_updated"] = False
                 except Exception as e:
                     print(f"[!] Vuln scan graph update failed: {e}")
@@ -501,12 +576,12 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
         print(f"[+] Mode: Filtered ({len(full_subdomains)} subdomain(s))")
     else:
         print(f"[+] Subdomains found: {combined_result['subdomain_count']}")
-    
+
     # Port scan stats
     if "port_scan" in SCAN_MODULES and "port_scan" in combined_result:
         port_summary = combined_result["port_scan"].get("summary", {})
         print(f"[+] Open ports: {port_summary.get('total_open_ports', 0)}")
-    
+
     # HTTP probe stats
     if "http_probe" in SCAN_MODULES and "http_probe" in combined_result:
         http_summary = combined_result["http_probe"].get("summary", {})
@@ -514,7 +589,9 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
         print(f"[+] Technologies: {http_summary.get('technology_count', 0)}")
 
     # Check if active scans were skipped
-    active_scans_skipped = combined_result.get("metadata", {}).get("active_scans_skipped", False)
+    active_scans_skipped = combined_result.get("metadata", {}).get(
+        "active_scans_skipped", False
+    )
 
     # Resource enumeration stats
     if active_scans_skipped:
@@ -530,13 +607,19 @@ def run_domain_recon(target: str, anonymous: bool = False, bruteforce: bool = Fa
         print(f"[!] Vuln scan: SKIPPED (no live targets)")
     elif "vuln_scan" in SCAN_MODULES and "vuln_scan" in combined_result:
         vuln_summary = combined_result["vuln_scan"].get("summary", {})
-        vuln_total = combined_result["vuln_scan"].get("vulnerabilities", {}).get("total", 0)
-        print(f"[+] Vuln findings: {vuln_summary.get('total_findings', 0)} ({vuln_total} vulnerabilities)")
+        vuln_total = (
+            combined_result["vuln_scan"].get("vulnerabilities", {}).get("total", 0)
+        )
+        print(
+            f"[+] Vuln findings: {vuln_summary.get('total_findings', 0)} ({vuln_total} vulnerabilities)"
+        )
 
         # MITRE enrichment stats (part of vuln_scan)
         mitre_meta = combined_result.get("metadata", {}).get("mitre_enrichment", {})
         if mitre_meta:
-            print(f"[+] MITRE enriched: {mitre_meta.get('total_cves_enriched', 0)}/{mitre_meta.get('total_cves_processed', 0)} CVEs")
+            print(
+                f"[+] MITRE enriched: {mitre_meta.get('total_cves_enriched', 0)}/{mitre_meta.get('total_cves_processed', 0)} CVEs"
+            )
 
     print(f"[+] Output saved: {output_file}")
     print(f"{'=' * 70}")
@@ -556,7 +639,7 @@ def main():
     """
     print("\n")
     print("╔" + "═" * 68 + "╗")
-    print("║" + " " * 20 + "RedAmon OSINT Framework" + " " * 25 + "║")
+    print("║" + " " * 20 + "parallax OSINT Framework" + " " * 25 + "║")
     print("║" + " " * 15 + "Automated Reconnaissance Pipeline" + " " * 18 + "║")
     print("╚" + "═" * 68 + "╝")
     print()
@@ -568,14 +651,14 @@ def main():
     # scan domains the user controls.
     if VERIFY_DOMAIN_OWNERSHIP:
         ownership_result = verify_domain_ownership(
-            TARGET_DOMAIN,
-            OWNERSHIP_TOKEN,
-            OWNERSHIP_TXT_PREFIX
+            TARGET_DOMAIN, OWNERSHIP_TOKEN, OWNERSHIP_TXT_PREFIX
         )
 
         if not ownership_result["verified"]:
             print(f"\n[!] SCAN ABORTED: Domain ownership verification failed!")
-            print(f"[!] Add TXT record: {ownership_result['record_name']} → \"{ownership_result['expected_value']}\"")
+            print(
+                f"[!] Add TXT record: {ownership_result['record_name']} → \"{ownership_result['expected_value']}\""
+            )
             print(f"[!] Set VERIFY_DOMAIN_OWNERSHIP = False in params.py to disable\n")
             return 1
 
@@ -589,8 +672,12 @@ def main():
     print("═" * 63)
     print("Configuration:")
     print(f"  TARGET_DOMAIN:     {TARGET_DOMAIN}")
-    print(f"  SUBDOMAIN_LIST:    {SUBDOMAIN_LIST if SUBDOMAIN_LIST else '[] (full discovery)'}")
-    print(f"  SCAN_MODULES:      {','.join(SCAN_MODULES) if isinstance(SCAN_MODULES, list) else SCAN_MODULES}")
+    print(
+        f"  SUBDOMAIN_LIST:    {SUBDOMAIN_LIST if SUBDOMAIN_LIST else '[] (full discovery)'}"
+    )
+    print(
+        f"  SCAN_MODULES:      {','.join(SCAN_MODULES) if isinstance(SCAN_MODULES, list) else SCAN_MODULES}"
+    )
     print(f"  USE_TOR_FOR_RECON: {USE_TOR_FOR_RECON}")
     print(f"  STEALTH_MODE:      {_settings.get('STEALTH_MODE', False)}")
     print(f"  UPDATE_GRAPH_DB:   {UPDATE_GRAPH_DB}")
@@ -603,7 +690,7 @@ def main():
         print(f"  MODE:              FULL DISCOVERY (all subdomains)")
     print("═" * 63)
 
-    if _settings.get('STEALTH_MODE', False):
+    if _settings.get("STEALTH_MODE", False):
         print()
         print("  ╔══════════════════════════════════════════════════════════╗")
         print("  ║  STEALTH MODE ACTIVE — passive/low-noise only           ║")
@@ -618,10 +705,13 @@ def main():
         print("[*] Clearing previous graph data for this project...")
         try:
             from graph_db import Neo4jClient
+
             with Neo4jClient() as graph_client:
                 if graph_client.verify_connection():
                     clear_stats = graph_client.clear_project_data(USER_ID, PROJECT_ID)
-                    print(f"[+] Previous data cleared: {clear_stats['nodes_deleted']} nodes removed\n")
+                    print(
+                        f"[+] Previous data cleared: {clear_stats['nodes_deleted']} nodes removed\n"
+                    )
                 else:
                     print("[!] Could not connect to Neo4j - skipping clear\n")
         except Exception as e:
@@ -631,6 +721,7 @@ def main():
     if USE_TOR_FOR_RECON:
         try:
             from recon.helpers.anonymity import print_anonymity_status
+
             print_anonymity_status()
         except ImportError:
             print("[!] Anonymity module not found, proceeding without Tor status check")
@@ -643,26 +734,31 @@ def main():
             TARGET_DOMAIN,
             anonymous=USE_TOR_FOR_RECON,
             bruteforce=USE_BRUTEFORCE_FOR_SUBDOMAINS,
-            target_info=target_info
+            target_info=target_info,
         )
     else:
         # Load existing recon file if domain_discovery not in modules
         if output_file.exists():
-            with open(output_file, 'r') as f:
+            with open(output_file, "r") as f:
                 domain_result = json.load(f)
             print(f"[*] Loaded existing recon file: {output_file}")
         else:
             print(f"[!] No existing recon file found: {output_file}")
             print(f"[!] Add 'domain_discovery' to SCAN_MODULES to create it first")
             return 1
-        
+
         # Run port_scan if in SCAN_MODULES (when domain_discovery is skipped)
         if "port_scan" in SCAN_MODULES:
-            domain_result = run_port_scan(domain_result, output_file=output_file, settings=_settings)
-            if "metadata" in domain_result and "modules_executed" in domain_result["metadata"]:
+            domain_result = run_port_scan(
+                domain_result, output_file=output_file, settings=_settings
+            )
+            if (
+                "metadata" in domain_result
+                and "modules_executed" in domain_result["metadata"]
+            ):
                 if "port_scan" not in domain_result["metadata"]["modules_executed"]:
                     domain_result["metadata"]["modules_executed"].append("port_scan")
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(domain_result, f, indent=2)
 
             # Update Graph DB with port scan data
@@ -671,33 +767,51 @@ def main():
                 print("-" * 40)
                 try:
                     from graph_db import Neo4jClient
+
                     with Neo4jClient() as graph_client:
                         if graph_client.verify_connection():
-                            port_stats = graph_client.update_graph_from_port_scan(domain_result, USER_ID, PROJECT_ID)
-                            domain_result["metadata"]["graph_db_port_scan_updated"] = True
-                            domain_result["metadata"]["graph_db_port_scan_stats"] = port_stats
+                            port_stats = graph_client.update_graph_from_port_scan(
+                                domain_result, USER_ID, PROJECT_ID
+                            )
+                            domain_result["metadata"][
+                                "graph_db_port_scan_updated"
+                            ] = True
+                            domain_result["metadata"][
+                                "graph_db_port_scan_stats"
+                            ] = port_stats
                             print(f"[+] Graph database updated with port scan data")
                         else:
-                            print(f"[!] Could not connect to Neo4j - skipping port scan graph update")
-                            domain_result["metadata"]["graph_db_port_scan_updated"] = False
+                            print(
+                                f"[!] Could not connect to Neo4j - skipping port scan graph update"
+                            )
+                            domain_result["metadata"][
+                                "graph_db_port_scan_updated"
+                            ] = False
                 except ImportError:
-                    print(f"[!] Neo4j client not available - skipping port scan graph update")
+                    print(
+                        f"[!] Neo4j client not available - skipping port scan graph update"
+                    )
                     domain_result["metadata"]["graph_db_port_scan_updated"] = False
                 except Exception as e:
                     print(f"[!] Port scan graph update failed: {e}")
                     domain_result["metadata"]["graph_db_port_scan_updated"] = False
                     domain_result["metadata"]["graph_db_port_scan_error"] = str(e)
 
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     json.dump(domain_result, f, indent=2)
-        
+
         # Run http_probe if in SCAN_MODULES (when domain_discovery is skipped)
         if "http_probe" in SCAN_MODULES:
-            domain_result = run_http_probe(domain_result, output_file=output_file, settings=_settings)
-            if "metadata" in domain_result and "modules_executed" in domain_result["metadata"]:
+            domain_result = run_http_probe(
+                domain_result, output_file=output_file, settings=_settings
+            )
+            if (
+                "metadata" in domain_result
+                and "modules_executed" in domain_result["metadata"]
+            ):
                 if "http_probe" not in domain_result["metadata"]["modules_executed"]:
                     domain_result["metadata"]["modules_executed"].append("http_probe")
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(domain_result, f, indent=2)
 
             # Update Graph DB with http probe data
@@ -706,30 +820,43 @@ def main():
                 print("-" * 40)
                 try:
                     from graph_db import Neo4jClient
+
                     with Neo4jClient() as graph_client:
                         if graph_client.verify_connection():
-                            http_stats = graph_client.update_graph_from_http_probe(domain_result, USER_ID, PROJECT_ID)
-                            domain_result["metadata"]["graph_db_http_probe_updated"] = True
-                            domain_result["metadata"]["graph_db_http_probe_stats"] = http_stats
+                            http_stats = graph_client.update_graph_from_http_probe(
+                                domain_result, USER_ID, PROJECT_ID
+                            )
+                            domain_result["metadata"][
+                                "graph_db_http_probe_updated"
+                            ] = True
+                            domain_result["metadata"][
+                                "graph_db_http_probe_stats"
+                            ] = http_stats
                             print(f"[+] Graph database updated with http probe data")
                         else:
-                            print(f"[!] Could not connect to Neo4j - skipping http probe graph update")
-                            domain_result["metadata"]["graph_db_http_probe_updated"] = False
+                            print(
+                                f"[!] Could not connect to Neo4j - skipping http probe graph update"
+                            )
+                            domain_result["metadata"][
+                                "graph_db_http_probe_updated"
+                            ] = False
                 except ImportError:
-                    print(f"[!] Neo4j client not available - skipping http probe graph update")
+                    print(
+                        f"[!] Neo4j client not available - skipping http probe graph update"
+                    )
                     domain_result["metadata"]["graph_db_http_probe_updated"] = False
                 except Exception as e:
                     print(f"[!] HTTP probe graph update failed: {e}")
                     domain_result["metadata"]["graph_db_http_probe_updated"] = False
                     domain_result["metadata"]["graph_db_http_probe_error"] = str(e)
 
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     json.dump(domain_result, f, indent=2)
 
         # Check if we should skip active scanning modules (resource_enum, vuln_scan)
         # These require live targets from http_probe to work
         skip_active_scans, skip_reason = should_skip_active_scans(domain_result)
-        
+
         if skip_active_scans:
             print(f"\n{'=' * 70}")
             print(f"[!] SKIPPING ACTIVE SCANS: {skip_reason}")
@@ -738,16 +865,26 @@ def main():
             if "metadata" in domain_result:
                 domain_result["metadata"]["active_scans_skipped"] = True
                 domain_result["metadata"]["active_scans_skip_reason"] = skip_reason
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(domain_result, f, indent=2)
         else:
             # Run resource_enum if in SCAN_MODULES (when domain_discovery is skipped)
             if "resource_enum" in SCAN_MODULES:
-                domain_result = run_resource_enum(domain_result, output_file=output_file, settings=_settings)
-                if "metadata" in domain_result and "modules_executed" in domain_result["metadata"]:
-                    if "resource_enum" not in domain_result["metadata"]["modules_executed"]:
-                        domain_result["metadata"]["modules_executed"].append("resource_enum")
-                with open(output_file, 'w') as f:
+                domain_result = run_resource_enum(
+                    domain_result, output_file=output_file, settings=_settings
+                )
+                if (
+                    "metadata" in domain_result
+                    and "modules_executed" in domain_result["metadata"]
+                ):
+                    if (
+                        "resource_enum"
+                        not in domain_result["metadata"]["modules_executed"]
+                    ):
+                        domain_result["metadata"]["modules_executed"].append(
+                            "resource_enum"
+                        )
+                with open(output_file, "w") as f:
                     json.dump(domain_result, f, indent=2)
 
                 # Update Graph DB with resource enumeration data
@@ -756,39 +893,71 @@ def main():
                     print("-" * 40)
                     try:
                         from graph_db import Neo4jClient
+
                         with Neo4jClient() as graph_client:
                             if graph_client.verify_connection():
-                                resource_stats = graph_client.update_graph_from_resource_enum(domain_result, USER_ID, PROJECT_ID)
-                                domain_result["metadata"]["graph_db_resource_enum_updated"] = True
-                                domain_result["metadata"]["graph_db_resource_enum_stats"] = resource_stats
-                                print(f"[+] Graph database updated with resource enumeration data")
+                                resource_stats = (
+                                    graph_client.update_graph_from_resource_enum(
+                                        domain_result, USER_ID, PROJECT_ID
+                                    )
+                                )
+                                domain_result["metadata"][
+                                    "graph_db_resource_enum_updated"
+                                ] = True
+                                domain_result["metadata"][
+                                    "graph_db_resource_enum_stats"
+                                ] = resource_stats
+                                print(
+                                    f"[+] Graph database updated with resource enumeration data"
+                                )
                             else:
-                                print(f"[!] Could not connect to Neo4j - skipping resource enum graph update")
-                                domain_result["metadata"]["graph_db_resource_enum_updated"] = False
+                                print(
+                                    f"[!] Could not connect to Neo4j - skipping resource enum graph update"
+                                )
+                                domain_result["metadata"][
+                                    "graph_db_resource_enum_updated"
+                                ] = False
                     except ImportError:
-                        print(f"[!] Neo4j client not available - skipping resource enum graph update")
-                        domain_result["metadata"]["graph_db_resource_enum_updated"] = False
+                        print(
+                            f"[!] Neo4j client not available - skipping resource enum graph update"
+                        )
+                        domain_result["metadata"][
+                            "graph_db_resource_enum_updated"
+                        ] = False
                     except Exception as e:
                         print(f"[!] Resource enum graph update failed: {e}")
-                        domain_result["metadata"]["graph_db_resource_enum_updated"] = False
-                        domain_result["metadata"]["graph_db_resource_enum_error"] = str(e)
+                        domain_result["metadata"][
+                            "graph_db_resource_enum_updated"
+                        ] = False
+                        domain_result["metadata"]["graph_db_resource_enum_error"] = str(
+                            e
+                        )
 
-                    with open(output_file, 'w') as f:
+                    with open(output_file, "w") as f:
                         json.dump(domain_result, f, indent=2)
 
             # Run vuln_scan if in SCAN_MODULES (when domain_discovery is skipped)
             # vuln_scan automatically includes MITRE CWE/CAPEC enrichment
             if "vuln_scan" in SCAN_MODULES:
-                domain_result = run_vuln_scan(domain_result, output_file=output_file, settings=_settings)
-                if "metadata" in domain_result and "modules_executed" in domain_result["metadata"]:
+                domain_result = run_vuln_scan(
+                    domain_result, output_file=output_file, settings=_settings
+                )
+                if (
+                    "metadata" in domain_result
+                    and "modules_executed" in domain_result["metadata"]
+                ):
                     if "vuln_scan" not in domain_result["metadata"]["modules_executed"]:
-                        domain_result["metadata"]["modules_executed"].append("vuln_scan")
-                with open(output_file, 'w') as f:
+                        domain_result["metadata"]["modules_executed"].append(
+                            "vuln_scan"
+                        )
+                with open(output_file, "w") as f:
                     json.dump(domain_result, f, indent=2)
 
                 # Automatically run MITRE CWE/CAPEC enrichment after vuln_scan
-                domain_result = run_mitre_enrichment(domain_result, output_file=output_file, settings=_settings)
-                with open(output_file, 'w') as f:
+                domain_result = run_mitre_enrichment(
+                    domain_result, output_file=output_file, settings=_settings
+                )
+                with open(output_file, "w") as f:
                     json.dump(domain_result, f, indent=2)
 
                 # Update Graph DB with vuln scan data
@@ -797,24 +966,37 @@ def main():
                     print("-" * 40)
                     try:
                         from graph_db import Neo4jClient
+
                         with Neo4jClient() as graph_client:
                             if graph_client.verify_connection():
-                                vuln_stats = graph_client.update_graph_from_vuln_scan(domain_result, USER_ID, PROJECT_ID)
-                                domain_result["metadata"]["graph_db_vuln_scan_updated"] = True
-                                domain_result["metadata"]["graph_db_vuln_scan_stats"] = vuln_stats
+                                vuln_stats = graph_client.update_graph_from_vuln_scan(
+                                    domain_result, USER_ID, PROJECT_ID
+                                )
+                                domain_result["metadata"][
+                                    "graph_db_vuln_scan_updated"
+                                ] = True
+                                domain_result["metadata"][
+                                    "graph_db_vuln_scan_stats"
+                                ] = vuln_stats
                                 print(f"[+] Graph database updated with vuln scan data")
                             else:
-                                print(f"[!] Could not connect to Neo4j - skipping vuln scan graph update")
-                                domain_result["metadata"]["graph_db_vuln_scan_updated"] = False
+                                print(
+                                    f"[!] Could not connect to Neo4j - skipping vuln scan graph update"
+                                )
+                                domain_result["metadata"][
+                                    "graph_db_vuln_scan_updated"
+                                ] = False
                     except ImportError:
-                        print(f"[!] Neo4j client not available - skipping vuln scan graph update")
+                        print(
+                            f"[!] Neo4j client not available - skipping vuln scan graph update"
+                        )
                         domain_result["metadata"]["graph_db_vuln_scan_updated"] = False
                     except Exception as e:
                         print(f"[!] Vuln scan graph update failed: {e}")
                         domain_result["metadata"]["graph_db_vuln_scan_updated"] = False
                         domain_result["metadata"]["graph_db_vuln_scan_error"] = str(e)
 
-                    with open(output_file, 'w') as f:
+                    with open(output_file, "w") as f:
                         json.dump(domain_result, f, indent=2)
 
     # Final summary
@@ -836,8 +1018,8 @@ def main():
     # Port scan stats
     if "port_scan" in SCAN_MODULES and "port_scan" in domain_result:
         port_summary = domain_result["port_scan"].get("summary", {})
-        ports = port_summary.get('total_open_ports', 0)
-        hosts = port_summary.get('hosts_with_open_ports', 0)
+        ports = port_summary.get("total_open_ports", 0)
+        hosts = port_summary.get("hosts_with_open_ports", 0)
         print(f"  Port Scan: {hosts} hosts, {ports} ports")
     elif "port_scan" not in SCAN_MODULES:
         print("  Port Scan: SKIPPED")
@@ -845,14 +1027,16 @@ def main():
     # HTTP probe stats
     if "http_probe" in SCAN_MODULES and "http_probe" in domain_result:
         http_summary = domain_result["http_probe"].get("summary", {})
-        live = http_summary.get('live_urls', 0)
-        techs = http_summary.get('technology_count', 0)
+        live = http_summary.get("live_urls", 0)
+        techs = http_summary.get("technology_count", 0)
         print(f"  HTTP Probe: {live} live URLs, {techs} technologies")
     elif "http_probe" not in SCAN_MODULES:
         print("  HTTP Probe: SKIPPED")
 
     # Check if active scans were skipped due to no live targets
-    active_scans_skipped = domain_result.get("metadata", {}).get("active_scans_skipped", False)
+    active_scans_skipped = domain_result.get("metadata", {}).get(
+        "active_scans_skipped", False
+    )
     skip_reason = domain_result.get("metadata", {}).get("active_scans_skip_reason", "")
 
     # Resource enumeration stats
@@ -860,9 +1044,9 @@ def main():
         print(f"  Resources: SKIPPED (no live targets)")
     elif "resource_enum" in SCAN_MODULES and "resource_enum" in domain_result:
         res_summary = domain_result["resource_enum"].get("summary", {})
-        endpoints = res_summary.get('total_endpoints', 0)
-        params = res_summary.get('total_parameters', 0)
-        forms = res_summary.get('total_forms', 0)
+        endpoints = res_summary.get("total_endpoints", 0)
+        params = res_summary.get("total_parameters", 0)
+        forms = res_summary.get("total_forms", 0)
         print(f"  Resources: {endpoints} endpoints, {params} params, {forms} forms")
     elif "resource_enum" not in SCAN_MODULES:
         print("  Resources: SKIPPED")
@@ -883,8 +1067,8 @@ def main():
         # MITRE enrichment stats (part of vuln_scan)
         mitre_meta = domain_result.get("metadata", {}).get("mitre_enrichment", {})
         if mitre_meta:
-            enriched = mitre_meta.get('total_cves_enriched', 0)
-            total = mitre_meta.get('total_cves_processed', 0)
+            enriched = mitre_meta.get("total_cves_enriched", 0)
+            total = mitre_meta.get("total_cves_processed", 0)
             print(f"  MITRE CWE/CAPEC: {enriched}/{total} CVEs enriched")
     elif "vuln_scan" not in SCAN_MODULES:
         print("  Vuln Scan: SKIPPED")

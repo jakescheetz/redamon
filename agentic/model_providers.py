@@ -1,5 +1,5 @@
 """
-Model provider discovery for RedAmon Agent.
+Model provider discovery for parallax Agent.
 
 Fetches available models from configured AI providers (OpenAI, Anthropic,
 OpenAI-compatible endpoints, OpenRouter, AWS Bedrock) and returns them in a
@@ -37,8 +37,9 @@ def invalidate_cache() -> None:
 # ---------------------------------------------------------------------------
 # Unified model schema
 # ---------------------------------------------------------------------------
-def _model(id: str, name: str, context_length: int | None = None,
-           description: str = "") -> dict:
+def _model(
+    id: str, name: str, context_length: int | None = None, description: str = ""
+) -> dict:
     return {
         "id": id,
         "name": name,
@@ -65,10 +66,24 @@ async def fetch_openai_models() -> list[dict]:
     # Keep only chat-capable models (gpt-*, o1-*, o3-*)
     chat_prefixes = ("gpt-", "o1-", "o3-", "o4-")
     # Exclude known non-chat suffixes
-    exclude_suffixes = ("-instruct", "-realtime", "-transcribe", "-tts", "-search",
-                        "-audio", "-mini-tts")
-    exclude_substrings = ("dall-e", "whisper", "embedding", "moderation", "davinci",
-                          "babbage", "curie")
+    exclude_suffixes = (
+        "-instruct",
+        "-realtime",
+        "-transcribe",
+        "-tts",
+        "-search",
+        "-audio",
+        "-mini-tts",
+    )
+    exclude_substrings = (
+        "dall-e",
+        "whisper",
+        "embedding",
+        "moderation",
+        "davinci",
+        "babbage",
+        "curie",
+    )
 
     models = []
     for m in data:
@@ -79,11 +94,13 @@ async def fetch_openai_models() -> list[dict]:
             continue
         if any(sub in mid for sub in exclude_substrings):
             continue
-        models.append(_model(
-            id=mid,
-            name=mid,
-            description="OpenAI",
-        ))
+        models.append(
+            _model(
+                id=mid,
+                name=mid,
+                description="OpenAI",
+            )
+        )
 
     # Sort: newest/largest first (reverse alphabetical is a rough proxy)
     models.sort(key=lambda m: m["id"], reverse=True)
@@ -112,11 +129,13 @@ async def fetch_anthropic_models() -> list[dict]:
     for m in data:
         mid = m.get("id", "")
         display_name = m.get("display_name", mid)
-        models.append(_model(
-            id=mid,
-            name=display_name,
-            description="Anthropic",
-        ))
+        models.append(
+            _model(
+                id=mid,
+                name=display_name,
+                description="Anthropic",
+            )
+        )
 
     return models
 
@@ -142,11 +161,13 @@ async def fetch_openai_compat_models() -> list[dict]:
         mid = m.get("id", "")
         if not mid:
             continue
-        models.append(_model(
-            id=f"openai_compat/{mid}",
-            name=mid,
-            description="OpenAI-Compatible",
-        ))
+        models.append(
+            _model(
+                id=f"openai_compat/{mid}",
+                name=mid,
+                description="OpenAI-Compatible",
+            )
+        )
 
     models.sort(key=lambda m: m["id"])
     return models
@@ -187,12 +208,14 @@ async def fetch_openrouter_models() -> list[dict]:
         except (ValueError, TypeError):
             price_desc = ""
 
-        models.append(_model(
-            id=f"openrouter/{mid}",
-            name=name,
-            context_length=ctx,
-            description=price_desc,
-        ))
+        models.append(
+            _model(
+                id=f"openrouter/{mid}",
+                name=name,
+                context_length=ctx,
+                description=price_desc,
+            )
+        )
 
     return models
 
@@ -206,6 +229,7 @@ async def fetch_bedrock_models() -> list[dict]:
 
     def _list_models() -> list[dict]:
         import boto3
+
         region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
         client = boto3.client("bedrock", region_name=region)
         response = client.list_foundation_models(
@@ -235,11 +259,13 @@ async def fetch_bedrock_models() -> list[dict]:
             if not streaming:
                 continue
 
-            results.append(_model(
-                id=f"bedrock/{mid}",
-                name=f"{name} ({provider})",
-                description=f"AWS Bedrock — {provider}",
-            ))
+            results.append(
+                _model(
+                    id=f"bedrock/{mid}",
+                    name=f"{name} ({provider})",
+                    description=f"AWS Bedrock — {provider}",
+                )
+            )
 
         return results
 
@@ -295,6 +321,8 @@ async def fetch_all_models() -> dict[str, list[dict]]:
     _cache_ts = time.time()
 
     total = sum(len(v) for v in results.values())
-    logger.info(f"Fetched {total} models from {len(results)} providers (cached for {CACHE_TTL}s)")
+    logger.info(
+        f"Fetched {total} models from {len(results)} providers (cached for {CACHE_TTL}s)"
+    )
 
     return results

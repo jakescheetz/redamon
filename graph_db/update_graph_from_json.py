@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RedAmon - Graph Database Update Script
+parallax - Graph Database Update Script
 =======================================
 Standalone script to update Neo4j graph database from recon and GVM JSON files.
 
@@ -46,7 +46,9 @@ from graph_db import Neo4jClient
 #   - "github_hunt"      : Updates GithubHunt, GithubRepository, GithubFinding nodes
 #
 # Set to list of modules to run, or empty list [] to run ALL modules
-UPDATE_MODULES = []  # Empty = run all, or specify: ["domain_discovery", "port_scan", "http_probe", "resource_enum", "vuln_scan", "gvm_scan", "github_hunt"]
+UPDATE_MODULES = (
+    []
+)  # Empty = run all, or specify: ["domain_discovery", "port_scan", "http_probe", "resource_enum", "vuln_scan", "gvm_scan", "github_hunt"]
 
 # Path to recon JSON file (None = auto-detect from TARGET_DOMAIN)
 RECON_JSON_PATH = None  # Example: "/path/to/recon_vulnweb.com.json"
@@ -77,7 +79,15 @@ UPDATE_FUNCTION_MAP = {
 }
 
 # Ordered execution (dependencies: domain_discovery should run first, github_hunt last)
-UPDATE_ORDER = ["domain_discovery", "port_scan", "http_probe", "resource_enum", "vuln_scan", "gvm_scan", "github_hunt"]
+UPDATE_ORDER = [
+    "domain_discovery",
+    "port_scan",
+    "http_probe",
+    "resource_enum",
+    "vuln_scan",
+    "gvm_scan",
+    "github_hunt",
+]
 
 
 def load_recon_json(json_path: Path) -> dict:
@@ -85,7 +95,7 @@ def load_recon_json(json_path: Path) -> dict:
     if not json_path.exists():
         raise FileNotFoundError(f"Recon JSON file not found: {json_path}")
 
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         return json.load(f)
 
 
@@ -112,7 +122,7 @@ def load_gvm_json(json_path: Path) -> dict:
     if not json_path.exists():
         return None  # GVM scan is optional
 
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         return json.load(f)
 
 
@@ -122,7 +132,12 @@ def get_github_hunt_file_path(project_id: str) -> Path:
     Args:
         project_id: Project ID used in the filename
     """
-    return PROJECT_ROOT / "github_secret_hunt" / "output" / f"github_hunt_{project_id}.json"
+    return (
+        PROJECT_ROOT
+        / "github_secret_hunt"
+        / "output"
+        / f"github_hunt_{project_id}.json"
+    )
 
 
 def load_github_hunt_json(json_path: Path) -> dict:
@@ -130,7 +145,7 @@ def load_github_hunt_json(json_path: Path) -> dict:
     if not json_path.exists():
         return None  # GitHub Hunt is optional
 
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         return json.load(f)
 
 
@@ -140,7 +155,7 @@ def run_graph_updates(
     project_id: str,
     modules: list = None,
     gvm_data: dict = None,
-    github_hunt_data: dict = None
+    github_hunt_data: dict = None,
 ) -> dict:
     """
     Run graph database updates for specified modules.
@@ -161,7 +176,7 @@ def run_graph_updates(
         "user_id": user_id,
         "project_id": project_id,
         "modules": {},
-        "errors": []
+        "errors": [],
     }
 
     # Determine which modules to run
@@ -172,7 +187,7 @@ def run_graph_updates(
         modules_to_run = [m for m in UPDATE_ORDER if m in modules]
 
     print("\n" + "=" * 70)
-    print("           RedAmon - Graph Database Update Script")
+    print("           parallax - Graph Database Update Script")
     print("=" * 70)
     print(f"  User ID: {user_id}")
     print(f"  Project ID: {project_id}")
@@ -196,7 +211,9 @@ def run_graph_updates(
     if github_hunt_data and github_hunt_data.get("findings"):
         available_data.append("github_hunt")
 
-    print(f"[*] Data available: {', '.join(available_data) if available_data else 'None'}")
+    print(
+        f"[*] Data available: {', '.join(available_data) if available_data else 'None'}"
+    )
     print()
 
     # Connect to Neo4j and run updates
@@ -211,7 +228,10 @@ def run_graph_updates(
             for module in modules_to_run:
                 if module not in available_data:
                     print(f"[!] Skipping {module}: No data available in JSON")
-                    results["modules"][module] = {"skipped": True, "reason": "No data in JSON"}
+                    results["modules"][module] = {
+                        "skipped": True,
+                        "reason": "No data in JSON",
+                    }
                     continue
 
                 function_name = UPDATE_FUNCTION_MAP.get(module)
@@ -237,19 +257,13 @@ def run_graph_updates(
                         stats = update_func(github_hunt_data, user_id, project_id)
                     else:
                         stats = update_func(recon_data, user_id, project_id)
-                    results["modules"][module] = {
-                        "success": True,
-                        "stats": stats
-                    }
+                    results["modules"][module] = {"success": True, "stats": stats}
                     print(f"[+] {module} completed successfully")
                     print()
                 except Exception as e:
                     error_msg = f"{module} failed: {str(e)}"
                     print(f"[!] {error_msg}")
-                    results["modules"][module] = {
-                        "success": False,
-                        "error": str(e)
-                    }
+                    results["modules"][module] = {"success": False, "error": str(e)}
                     results["errors"].append(error_msg)
                     print()
 
@@ -322,7 +336,9 @@ def main():
         metadata = recon_data.get("metadata", {})
         print(f"[*] Target: {metadata.get('root_domain', 'unknown')}")
         print(f"[*] Scan timestamp: {metadata.get('scan_timestamp', 'unknown')}")
-        print(f"[*] Modules executed: {', '.join(metadata.get('modules_executed', []))}")
+        print(
+            f"[*] Modules executed: {', '.join(metadata.get('modules_executed', []))}"
+        )
 
     except FileNotFoundError as e:
         print(f"[!] Error: {e}")
@@ -346,7 +362,9 @@ def main():
             if gvm_data:
                 gvm_metadata = gvm_data.get("metadata", {})
                 print(f"[+] Loaded GVM JSON successfully")
-                print(f"[*] GVM scan timestamp: {gvm_metadata.get('scan_timestamp', 'unknown')}")
+                print(
+                    f"[*] GVM scan timestamp: {gvm_metadata.get('scan_timestamp', 'unknown')}"
+                )
                 scan_count = len(gvm_data.get("scans", []))
                 print(f"[*] GVM scans: {scan_count}")
         except json.JSONDecodeError as e:
@@ -368,7 +386,9 @@ def main():
             github_hunt_data = load_github_hunt_json(github_hunt_path)
             if github_hunt_data:
                 print(f"[+] Loaded GitHub Hunt JSON successfully")
-                print(f"[*] GitHub Hunt target: {github_hunt_data.get('target', 'unknown')}")
+                print(
+                    f"[*] GitHub Hunt target: {github_hunt_data.get('target', 'unknown')}"
+                )
                 findings_count = len(github_hunt_data.get("findings", []))
                 print(f"[*] GitHub Hunt findings: {findings_count}")
         except json.JSONDecodeError as e:
@@ -384,7 +404,7 @@ def main():
         project_id=project_id,
         gvm_data=gvm_data,
         github_hunt_data=github_hunt_data,
-        modules=UPDATE_MODULES if UPDATE_MODULES else None
+        modules=UPDATE_MODULES if UPDATE_MODULES else None,
     )
 
     # Print summary

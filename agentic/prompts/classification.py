@@ -1,10 +1,9 @@
 """
-RedAmon Attack Path Classification Prompt
+parallax Attack Path Classification Prompt
 
 LLM-based classification of user intent to select the appropriate attack path and phase.
 Determines both the attack methodology AND the required phase (informational/exploitation).
 """
-
 
 ATTACK_PATH_CLASSIFICATION_PROMPT = """You are classifying a penetration testing request to determine:
 1. The required PHASE (informational vs exploitation)

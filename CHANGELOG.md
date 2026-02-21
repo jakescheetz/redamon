@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Rebrand to Parallax** — Product and company name rebranded from RedAmon to Parallax. Concept: utilizing agentic AI to see the target's environment from angles that would otherwise not be possible. All user-facing strings, Docker service/container/network names, default config (Postgres, theme/storage keys, export filenames, TXT record prefix), and documentation updated accordingly.
+- **Rebrand to Parallax** — Product and company name rebranded from parallax to Parallax. Concept: utilizing agentic AI to see the target's environment from angles that would otherwise not be possible. All user-facing strings, Docker service/container/network names, default config (Postgres, theme/storage keys, export filenames, TXT record prefix), and documentation updated accordingly.
 
 ---
 
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **GVM Vulnerability Scanning** — full end-to-end integration of Greenbone Vulnerability Management (GVM/OpenVAS) into the RedAmon pipeline:
+- **GVM Vulnerability Scanning** — full end-to-end integration of Greenbone Vulnerability Management (GVM/OpenVAS) into the parallax pipeline:
   - Python scanner module (`gvm_scan/`) with `GVMScanner` class wrapping the GMP protocol for headless API-based scanning
   - Orchestrator endpoints (`/gvm/{id}/start`, `/gvm/{id}/status`, `/gvm/{id}/stop`, `/gvm/{id}/logs`) with SSE log streaming
   - Webapp API routes, `useGvmStatus` polling hook, `useGvmSSE` streaming hook, toolbar buttons, and log drawer on the Graph page
@@ -126,7 +126,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings Source of Truth** — migrated all recon and agent settings from hardcoded `params.py` to PostgreSQL via Prisma ORM, fetched at runtime via webapp API
 - **Recon Pipeline Improvements** — multi-level improvements across all recon modules for reliability and accuracy
 - **Orchestrator Model Selection** — fixed model selection logic in the agent orchestrator
-- **Frontend Usability** — unified RedAmon primary crimson color (#d32f2f), styled message containers with ghost icons and gradient backgrounds, improved markdown heading and list spacing
+- **Frontend Usability** — unified parallax primary crimson color (#d32f2f), styled message containers with ghost icons and gradient backgrounds, improved markdown heading and list spacing
 - **Environment Configuration** — added root `.env.example` with all required keys; forwarded NVD_API_KEY and Neo4j credentials from recon-orchestrator to spawned containers
 - **Webapp Header** — replaced Crosshair icon with custom logo.png image, bumped logo text size
 

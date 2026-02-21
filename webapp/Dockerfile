@@ -1,5 +1,5 @@
 # ============================================
-# RedAmon Web Application - Production Dockerfile
+# parallax Web Application - Production Dockerfile
 # Multi-stage build for optimized production image
 # ============================================
 

@@ -1,5 +1,5 @@
 """
-RedAmon - Vulnerability Scanner Module
+parallax - Vulnerability Scanner Module
 ======================================
 Template-based vulnerability scanning.
 Enriches reconnaissance data with comprehensive web application vulnerability detection:
@@ -63,11 +63,13 @@ SEVERITY_COLORS = {
     "medium": "🟡",
     "low": "🔵",
     "info": "⚪",
-    "unknown": "⚫"
+    "unknown": "⚫",
 }
 
 
-def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = None) -> dict:
+def run_vuln_scan(
+    recon_data: dict, output_file: Path = None, settings: dict = None
+) -> dict:
     """
     Run nuclei scan on all URLs derived from recon data.
 
@@ -80,7 +82,7 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
         Updated recon_data with nuclei results added
     """
     print("\n" + "=" * 70)
-    print("         RedAmon - Nuclei Vulnerability Scanner")
+    print("         parallax - Nuclei Vulnerability Scanner")
     print("=" * 70)
 
     # Use passed settings or empty dict as fallback
@@ -88,92 +90,128 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
         settings = {}
 
     # Extract settings from passed dict
-    NUCLEI_SEVERITY = settings.get('NUCLEI_SEVERITY', ['critical', 'high', 'medium', 'low'])
-    NUCLEI_TEMPLATES = settings.get('NUCLEI_TEMPLATES', [])
-    NUCLEI_EXCLUDE_TEMPLATES = settings.get('NUCLEI_EXCLUDE_TEMPLATES', [])
-    NUCLEI_RATE_LIMIT = settings.get('NUCLEI_RATE_LIMIT', 100)
-    NUCLEI_BULK_SIZE = settings.get('NUCLEI_BULK_SIZE', 25)
-    NUCLEI_CONCURRENCY = settings.get('NUCLEI_CONCURRENCY', 25)
-    NUCLEI_TIMEOUT = settings.get('NUCLEI_TIMEOUT', 10)
-    NUCLEI_RETRIES = settings.get('NUCLEI_RETRIES', 1)
-    NUCLEI_TAGS = settings.get('NUCLEI_TAGS', [])
-    NUCLEI_EXCLUDE_TAGS = settings.get('NUCLEI_EXCLUDE_TAGS', [])
-    NUCLEI_DAST_MODE = settings.get('NUCLEI_DAST_MODE', True)
-    NUCLEI_NEW_TEMPLATES_ONLY = settings.get('NUCLEI_NEW_TEMPLATES_ONLY', False)
-    NUCLEI_CUSTOM_TEMPLATES = settings.get('NUCLEI_CUSTOM_TEMPLATES', [])
-    NUCLEI_HEADLESS = settings.get('NUCLEI_HEADLESS', False)
-    NUCLEI_SYSTEM_RESOLVERS = settings.get('NUCLEI_SYSTEM_RESOLVERS', True)
-    NUCLEI_FOLLOW_REDIRECTS = settings.get('NUCLEI_FOLLOW_REDIRECTS', True)
-    NUCLEI_MAX_REDIRECTS = settings.get('NUCLEI_MAX_REDIRECTS', 10)
-    NUCLEI_SCAN_ALL_IPS = settings.get('NUCLEI_SCAN_ALL_IPS', False)
-    NUCLEI_INTERACTSH = settings.get('NUCLEI_INTERACTSH', True)
-    NUCLEI_DOCKER_IMAGE = settings.get('NUCLEI_DOCKER_IMAGE', 'projectdiscovery/nuclei:latest')
-    USE_TOR_FOR_RECON = settings.get('USE_TOR_FOR_RECON', False)
-    KATANA_DEPTH = settings.get('KATANA_DEPTH', 2)
-    NUCLEI_AUTO_UPDATE_TEMPLATES = settings.get('NUCLEI_AUTO_UPDATE_TEMPLATES', True)
-    CVE_LOOKUP_ENABLED = settings.get('CVE_LOOKUP_ENABLED', True)
-    CVE_LOOKUP_SOURCE = settings.get('CVE_LOOKUP_SOURCE', 'nvd')
-    CVE_LOOKUP_MAX_CVES = settings.get('CVE_LOOKUP_MAX_CVES', 20)
-    CVE_LOOKUP_MIN_CVSS = settings.get('CVE_LOOKUP_MIN_CVSS', 0.0)
-    VULNERS_API_KEY = settings.get('VULNERS_API_KEY', '')
-    SECURITY_CHECK_ENABLED = settings.get('SECURITY_CHECK_ENABLED', True)
-    SECURITY_CHECK_DIRECT_IP_HTTP = settings.get('SECURITY_CHECK_DIRECT_IP_HTTP', True)
-    SECURITY_CHECK_DIRECT_IP_HTTPS = settings.get('SECURITY_CHECK_DIRECT_IP_HTTPS', True)
-    SECURITY_CHECK_IP_API_EXPOSED = settings.get('SECURITY_CHECK_IP_API_EXPOSED', True)
-    SECURITY_CHECK_WAF_BYPASS = settings.get('SECURITY_CHECK_WAF_BYPASS', True)
-    SECURITY_CHECK_TLS_EXPIRING_SOON = settings.get('SECURITY_CHECK_TLS_EXPIRING_SOON', True)
-    SECURITY_CHECK_TLS_EXPIRY_DAYS = settings.get('SECURITY_CHECK_TLS_EXPIRY_DAYS', 30)
-    SECURITY_CHECK_MISSING_REFERRER_POLICY = settings.get('SECURITY_CHECK_MISSING_REFERRER_POLICY', True)
-    SECURITY_CHECK_MISSING_PERMISSIONS_POLICY = settings.get('SECURITY_CHECK_MISSING_PERMISSIONS_POLICY', True)
-    SECURITY_CHECK_MISSING_COOP = settings.get('SECURITY_CHECK_MISSING_COOP', True)
-    SECURITY_CHECK_MISSING_CORP = settings.get('SECURITY_CHECK_MISSING_CORP', True)
-    SECURITY_CHECK_MISSING_COEP = settings.get('SECURITY_CHECK_MISSING_COEP', True)
-    SECURITY_CHECK_CACHE_CONTROL_MISSING = settings.get('SECURITY_CHECK_CACHE_CONTROL_MISSING', True)
-    SECURITY_CHECK_LOGIN_NO_HTTPS = settings.get('SECURITY_CHECK_LOGIN_NO_HTTPS', True)
-    SECURITY_CHECK_SESSION_NO_SECURE = settings.get('SECURITY_CHECK_SESSION_NO_SECURE', True)
-    SECURITY_CHECK_SESSION_NO_HTTPONLY = settings.get('SECURITY_CHECK_SESSION_NO_HTTPONLY', True)
-    SECURITY_CHECK_BASIC_AUTH_NO_TLS = settings.get('SECURITY_CHECK_BASIC_AUTH_NO_TLS', True)
-    SECURITY_CHECK_SPF_MISSING = settings.get('SECURITY_CHECK_SPF_MISSING', True)
-    SECURITY_CHECK_DMARC_MISSING = settings.get('SECURITY_CHECK_DMARC_MISSING', True)
-    SECURITY_CHECK_DNSSEC_MISSING = settings.get('SECURITY_CHECK_DNSSEC_MISSING', True)
-    SECURITY_CHECK_ZONE_TRANSFER = settings.get('SECURITY_CHECK_ZONE_TRANSFER', True)
-    SECURITY_CHECK_ADMIN_PORT_EXPOSED = settings.get('SECURITY_CHECK_ADMIN_PORT_EXPOSED', True)
-    SECURITY_CHECK_DATABASE_EXPOSED = settings.get('SECURITY_CHECK_DATABASE_EXPOSED', True)
-    SECURITY_CHECK_REDIS_NO_AUTH = settings.get('SECURITY_CHECK_REDIS_NO_AUTH', True)
-    SECURITY_CHECK_KUBERNETES_API_EXPOSED = settings.get('SECURITY_CHECK_KUBERNETES_API_EXPOSED', True)
-    SECURITY_CHECK_SMTP_OPEN_RELAY = settings.get('SECURITY_CHECK_SMTP_OPEN_RELAY', True)
-    SECURITY_CHECK_CSP_UNSAFE_INLINE = settings.get('SECURITY_CHECK_CSP_UNSAFE_INLINE', True)
-    SECURITY_CHECK_INSECURE_FORM_ACTION = settings.get('SECURITY_CHECK_INSECURE_FORM_ACTION', True)
-    SECURITY_CHECK_NO_RATE_LIMITING = settings.get('SECURITY_CHECK_NO_RATE_LIMITING', True)
-    SECURITY_CHECK_TIMEOUT = settings.get('SECURITY_CHECK_TIMEOUT', 10)
-    SECURITY_CHECK_MAX_WORKERS = settings.get('SECURITY_CHECK_MAX_WORKERS', 10)
+    NUCLEI_SEVERITY = settings.get(
+        "NUCLEI_SEVERITY", ["critical", "high", "medium", "low"]
+    )
+    NUCLEI_TEMPLATES = settings.get("NUCLEI_TEMPLATES", [])
+    NUCLEI_EXCLUDE_TEMPLATES = settings.get("NUCLEI_EXCLUDE_TEMPLATES", [])
+    NUCLEI_RATE_LIMIT = settings.get("NUCLEI_RATE_LIMIT", 100)
+    NUCLEI_BULK_SIZE = settings.get("NUCLEI_BULK_SIZE", 25)
+    NUCLEI_CONCURRENCY = settings.get("NUCLEI_CONCURRENCY", 25)
+    NUCLEI_TIMEOUT = settings.get("NUCLEI_TIMEOUT", 10)
+    NUCLEI_RETRIES = settings.get("NUCLEI_RETRIES", 1)
+    NUCLEI_TAGS = settings.get("NUCLEI_TAGS", [])
+    NUCLEI_EXCLUDE_TAGS = settings.get("NUCLEI_EXCLUDE_TAGS", [])
+    NUCLEI_DAST_MODE = settings.get("NUCLEI_DAST_MODE", True)
+    NUCLEI_NEW_TEMPLATES_ONLY = settings.get("NUCLEI_NEW_TEMPLATES_ONLY", False)
+    NUCLEI_CUSTOM_TEMPLATES = settings.get("NUCLEI_CUSTOM_TEMPLATES", [])
+    NUCLEI_HEADLESS = settings.get("NUCLEI_HEADLESS", False)
+    NUCLEI_SYSTEM_RESOLVERS = settings.get("NUCLEI_SYSTEM_RESOLVERS", True)
+    NUCLEI_FOLLOW_REDIRECTS = settings.get("NUCLEI_FOLLOW_REDIRECTS", True)
+    NUCLEI_MAX_REDIRECTS = settings.get("NUCLEI_MAX_REDIRECTS", 10)
+    NUCLEI_SCAN_ALL_IPS = settings.get("NUCLEI_SCAN_ALL_IPS", False)
+    NUCLEI_INTERACTSH = settings.get("NUCLEI_INTERACTSH", True)
+    NUCLEI_DOCKER_IMAGE = settings.get(
+        "NUCLEI_DOCKER_IMAGE", "projectdiscovery/nuclei:latest"
+    )
+    USE_TOR_FOR_RECON = settings.get("USE_TOR_FOR_RECON", False)
+    KATANA_DEPTH = settings.get("KATANA_DEPTH", 2)
+    NUCLEI_AUTO_UPDATE_TEMPLATES = settings.get("NUCLEI_AUTO_UPDATE_TEMPLATES", True)
+    CVE_LOOKUP_ENABLED = settings.get("CVE_LOOKUP_ENABLED", True)
+    CVE_LOOKUP_SOURCE = settings.get("CVE_LOOKUP_SOURCE", "nvd")
+    CVE_LOOKUP_MAX_CVES = settings.get("CVE_LOOKUP_MAX_CVES", 20)
+    CVE_LOOKUP_MIN_CVSS = settings.get("CVE_LOOKUP_MIN_CVSS", 0.0)
+    VULNERS_API_KEY = settings.get("VULNERS_API_KEY", "")
+    SECURITY_CHECK_ENABLED = settings.get("SECURITY_CHECK_ENABLED", True)
+    SECURITY_CHECK_DIRECT_IP_HTTP = settings.get("SECURITY_CHECK_DIRECT_IP_HTTP", True)
+    SECURITY_CHECK_DIRECT_IP_HTTPS = settings.get(
+        "SECURITY_CHECK_DIRECT_IP_HTTPS", True
+    )
+    SECURITY_CHECK_IP_API_EXPOSED = settings.get("SECURITY_CHECK_IP_API_EXPOSED", True)
+    SECURITY_CHECK_WAF_BYPASS = settings.get("SECURITY_CHECK_WAF_BYPASS", True)
+    SECURITY_CHECK_TLS_EXPIRING_SOON = settings.get(
+        "SECURITY_CHECK_TLS_EXPIRING_SOON", True
+    )
+    SECURITY_CHECK_TLS_EXPIRY_DAYS = settings.get("SECURITY_CHECK_TLS_EXPIRY_DAYS", 30)
+    SECURITY_CHECK_MISSING_REFERRER_POLICY = settings.get(
+        "SECURITY_CHECK_MISSING_REFERRER_POLICY", True
+    )
+    SECURITY_CHECK_MISSING_PERMISSIONS_POLICY = settings.get(
+        "SECURITY_CHECK_MISSING_PERMISSIONS_POLICY", True
+    )
+    SECURITY_CHECK_MISSING_COOP = settings.get("SECURITY_CHECK_MISSING_COOP", True)
+    SECURITY_CHECK_MISSING_CORP = settings.get("SECURITY_CHECK_MISSING_CORP", True)
+    SECURITY_CHECK_MISSING_COEP = settings.get("SECURITY_CHECK_MISSING_COEP", True)
+    SECURITY_CHECK_CACHE_CONTROL_MISSING = settings.get(
+        "SECURITY_CHECK_CACHE_CONTROL_MISSING", True
+    )
+    SECURITY_CHECK_LOGIN_NO_HTTPS = settings.get("SECURITY_CHECK_LOGIN_NO_HTTPS", True)
+    SECURITY_CHECK_SESSION_NO_SECURE = settings.get(
+        "SECURITY_CHECK_SESSION_NO_SECURE", True
+    )
+    SECURITY_CHECK_SESSION_NO_HTTPONLY = settings.get(
+        "SECURITY_CHECK_SESSION_NO_HTTPONLY", True
+    )
+    SECURITY_CHECK_BASIC_AUTH_NO_TLS = settings.get(
+        "SECURITY_CHECK_BASIC_AUTH_NO_TLS", True
+    )
+    SECURITY_CHECK_SPF_MISSING = settings.get("SECURITY_CHECK_SPF_MISSING", True)
+    SECURITY_CHECK_DMARC_MISSING = settings.get("SECURITY_CHECK_DMARC_MISSING", True)
+    SECURITY_CHECK_DNSSEC_MISSING = settings.get("SECURITY_CHECK_DNSSEC_MISSING", True)
+    SECURITY_CHECK_ZONE_TRANSFER = settings.get("SECURITY_CHECK_ZONE_TRANSFER", True)
+    SECURITY_CHECK_ADMIN_PORT_EXPOSED = settings.get(
+        "SECURITY_CHECK_ADMIN_PORT_EXPOSED", True
+    )
+    SECURITY_CHECK_DATABASE_EXPOSED = settings.get(
+        "SECURITY_CHECK_DATABASE_EXPOSED", True
+    )
+    SECURITY_CHECK_REDIS_NO_AUTH = settings.get("SECURITY_CHECK_REDIS_NO_AUTH", True)
+    SECURITY_CHECK_KUBERNETES_API_EXPOSED = settings.get(
+        "SECURITY_CHECK_KUBERNETES_API_EXPOSED", True
+    )
+    SECURITY_CHECK_SMTP_OPEN_RELAY = settings.get(
+        "SECURITY_CHECK_SMTP_OPEN_RELAY", True
+    )
+    SECURITY_CHECK_CSP_UNSAFE_INLINE = settings.get(
+        "SECURITY_CHECK_CSP_UNSAFE_INLINE", True
+    )
+    SECURITY_CHECK_INSECURE_FORM_ACTION = settings.get(
+        "SECURITY_CHECK_INSECURE_FORM_ACTION", True
+    )
+    SECURITY_CHECK_NO_RATE_LIMITING = settings.get(
+        "SECURITY_CHECK_NO_RATE_LIMITING", True
+    )
+    SECURITY_CHECK_TIMEOUT = settings.get("SECURITY_CHECK_TIMEOUT", 10)
+    SECURITY_CHECK_MAX_WORKERS = settings.get("SECURITY_CHECK_MAX_WORKERS", 10)
 
     # Docker mode is required
     if not is_docker_installed():
         print("[!] Docker not found. Please install Docker to use Nuclei scanner.")
         print("[!] Skipping nuclei scan.")
         return recon_data
-    
+
     if not is_docker_running():
-        print("[!] Docker daemon is not running. Start it with: sudo systemctl start docker")
+        print(
+            "[!] Docker daemon is not running. Start it with: sudo systemctl start docker"
+        )
         print("[!] Skipping nuclei scan.")
         return recon_data
-    
+
     # Pull image if needed (will skip if already present)
     pull_nuclei_docker_image(NUCLEI_DOCKER_IMAGE)
-    
+
     # Ensure templates volume exists and has templates
     if not ensure_templates_volume(NUCLEI_DOCKER_IMAGE, NUCLEI_AUTO_UPDATE_TEMPLATES):
         print("[!] Could not setup nuclei templates. Skipping scan.")
         return recon_data
-    
+
     print(f"  Execution Mode: DOCKER ({NUCLEI_DOCKER_IMAGE})")
     nuclei_version = f"Docker: {NUCLEI_DOCKER_IMAGE}"
     template_count = 8000  # Approximate, Docker image includes templates
-    
+
     print(f"  Nuclei Version: {nuclei_version}")
     print(f"  Templates Available: ~{template_count}")
-    
+
     # Check Tor status
     use_proxy = False
     if USE_TOR_FOR_RECON:
@@ -183,17 +221,19 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
         else:
             print("  [!] USE_TOR_FOR_RECON enabled but Tor not running")
             print("  [!] Falling back to direct scanning")
-    
+
     # Extract targets
     ips, hostnames, ip_to_hostnames = extract_targets_from_recon(recon_data)
-    
+
     if not hostnames and not ips:
         print("[!] No targets found in recon data")
         return recon_data
-    
+
     # Build target URLs using httpx/naabu data if available
-    target_urls = build_target_urls(hostnames, ips, recon_data, scan_all_ips=NUCLEI_SCAN_ALL_IPS)
-    
+    target_urls = build_target_urls(
+        hostnames, ips, recon_data, scan_all_ips=NUCLEI_SCAN_ALL_IPS
+    )
+
     # For DAST mode, we need URLs with parameters from resource_enum
     dast_urls = []
     if NUCLEI_DAST_MODE:
@@ -204,21 +244,29 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
         if resource_enum_data:
             discovered_urls = resource_enum_data.get("discovered_urls", [])
             # Filter for URLs with parameters
-            dast_urls = [url for url in discovered_urls if '?' in url and '=' in url]
+            dast_urls = [url for url in discovered_urls if "?" in url and "=" in url]
             if dast_urls:
-                print(f"  [*] Using {len(dast_urls)} URLs with parameters from resource_enum")
+                print(
+                    f"  [*] Using {len(dast_urls)} URLs with parameters from resource_enum"
+                )
             else:
-                print(f"  [!] No URLs with parameters found in resource_enum - DAST scan may not find vulnerabilities")
+                print(
+                    f"  [!] No URLs with parameters found in resource_enum - DAST scan may not find vulnerabilities"
+                )
         else:
-            print(f"  [!] resource_enum not found - run resource_enum before vuln_scan for DAST mode")
-    
+            print(
+                f"  [!] resource_enum not found - run resource_enum before vuln_scan for DAST mode"
+            )
+
     print(f"  Unique Hostnames: {len(hostnames)}")
     print(f"  Unique IPs: {len(ips)}")
     print(f"  Base URLs: {len(target_urls)}")
     if NUCLEI_DAST_MODE and dast_urls:
         print(f"  DAST URLs (with params): {len(dast_urls)}")
     print(f"  Scan IPs: {'YES' if NUCLEI_SCAN_ALL_IPS else 'NO (hostnames only)'}")
-    print(f"  Severity Filter: {', '.join(NUCLEI_SEVERITY) if NUCLEI_SEVERITY else 'ALL'}")
+    print(
+        f"  Severity Filter: {', '.join(NUCLEI_SEVERITY) if NUCLEI_SEVERITY else 'ALL'}"
+    )
     print(f"  Rate Limit: {NUCLEI_RATE_LIMIT} req/s")
     print(f"  Bulk Size: {NUCLEI_BULK_SIZE}")
     print(f"  Concurrency: {NUCLEI_CONCURRENCY}")
@@ -246,48 +294,67 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
     # Security checks summary
     print(f"  Security Checks: {SECURITY_CHECK_ENABLED}")
     if SECURITY_CHECK_ENABLED:
-        sec_checks_count = sum(1 for v in [
-            SECURITY_CHECK_DIRECT_IP_HTTP, SECURITY_CHECK_DIRECT_IP_HTTPS,
-            SECURITY_CHECK_IP_API_EXPOSED, SECURITY_CHECK_WAF_BYPASS,
-            SECURITY_CHECK_TLS_EXPIRING_SOON, SECURITY_CHECK_MISSING_REFERRER_POLICY,
-            SECURITY_CHECK_MISSING_PERMISSIONS_POLICY, SECURITY_CHECK_MISSING_COOP,
-            SECURITY_CHECK_MISSING_CORP, SECURITY_CHECK_MISSING_COEP,
-            SECURITY_CHECK_CACHE_CONTROL_MISSING, SECURITY_CHECK_LOGIN_NO_HTTPS,
-            SECURITY_CHECK_SESSION_NO_SECURE, SECURITY_CHECK_SESSION_NO_HTTPONLY,
-            SECURITY_CHECK_BASIC_AUTH_NO_TLS, SECURITY_CHECK_SPF_MISSING,
-            SECURITY_CHECK_DMARC_MISSING, SECURITY_CHECK_DNSSEC_MISSING,
-            SECURITY_CHECK_ZONE_TRANSFER, SECURITY_CHECK_ADMIN_PORT_EXPOSED,
-            SECURITY_CHECK_DATABASE_EXPOSED, SECURITY_CHECK_REDIS_NO_AUTH,
-            SECURITY_CHECK_KUBERNETES_API_EXPOSED, SECURITY_CHECK_SMTP_OPEN_RELAY,
-            SECURITY_CHECK_CSP_UNSAFE_INLINE, SECURITY_CHECK_INSECURE_FORM_ACTION,
-            SECURITY_CHECK_NO_RATE_LIMITING,
-        ] if v)
+        sec_checks_count = sum(
+            1
+            for v in [
+                SECURITY_CHECK_DIRECT_IP_HTTP,
+                SECURITY_CHECK_DIRECT_IP_HTTPS,
+                SECURITY_CHECK_IP_API_EXPOSED,
+                SECURITY_CHECK_WAF_BYPASS,
+                SECURITY_CHECK_TLS_EXPIRING_SOON,
+                SECURITY_CHECK_MISSING_REFERRER_POLICY,
+                SECURITY_CHECK_MISSING_PERMISSIONS_POLICY,
+                SECURITY_CHECK_MISSING_COOP,
+                SECURITY_CHECK_MISSING_CORP,
+                SECURITY_CHECK_MISSING_COEP,
+                SECURITY_CHECK_CACHE_CONTROL_MISSING,
+                SECURITY_CHECK_LOGIN_NO_HTTPS,
+                SECURITY_CHECK_SESSION_NO_SECURE,
+                SECURITY_CHECK_SESSION_NO_HTTPONLY,
+                SECURITY_CHECK_BASIC_AUTH_NO_TLS,
+                SECURITY_CHECK_SPF_MISSING,
+                SECURITY_CHECK_DMARC_MISSING,
+                SECURITY_CHECK_DNSSEC_MISSING,
+                SECURITY_CHECK_ZONE_TRANSFER,
+                SECURITY_CHECK_ADMIN_PORT_EXPOSED,
+                SECURITY_CHECK_DATABASE_EXPOSED,
+                SECURITY_CHECK_REDIS_NO_AUTH,
+                SECURITY_CHECK_KUBERNETES_API_EXPOSED,
+                SECURITY_CHECK_SMTP_OPEN_RELAY,
+                SECURITY_CHECK_CSP_UNSAFE_INLINE,
+                SECURITY_CHECK_INSECURE_FORM_ACTION,
+                SECURITY_CHECK_NO_RATE_LIMITING,
+            ]
+            if v
+        )
         print(f"    Active checks: {sec_checks_count}/27")
         print(f"    Timeout: {SECURITY_CHECK_TIMEOUT}s")
         print(f"    Max workers: {SECURITY_CHECK_MAX_WORKERS}")
     print("=" * 70 + "\n")
-    
+
     # Create a temporary directory for nuclei files
-    # Use /tmp/redamon to avoid spaces in paths (snap Docker issue)
-    nuclei_temp_dir = Path("/tmp/redamon/.nuclei_temp")
+    # Use /tmp/parallax to avoid spaces in paths (snap Docker issue)
+    nuclei_temp_dir = Path("/tmp/parallax/.nuclei_temp")
     nuclei_temp_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Create targets file
     # For DAST mode with discovered URLs, use those; otherwise use base URLs
     scan_urls = target_urls
     if NUCLEI_DAST_MODE and dast_urls:
         # Combine DAST URLs with base URLs for comprehensive coverage
         scan_urls = list(set(target_urls + dast_urls))
-        print(f"[*] DAST scan will test {len(dast_urls)} URLs with parameters + {len(target_urls)} base URLs")
-    
+        print(
+            f"[*] DAST scan will test {len(dast_urls)} URLs with parameters + {len(target_urls)} base URLs"
+        )
+
     targets_file = str(nuclei_temp_dir / "targets.txt")
-    with open(targets_file, 'w') as f:
+    with open(targets_file, "w") as f:
         for url in scan_urls:
             f.write(url + "\n")
-    
+
     # Output file path
     nuclei_output_file = str(nuclei_temp_dir / "nuclei_output.jsonl")
-    
+
     try:
         # Build and run nuclei command
         cmd = build_nuclei_command(
@@ -314,70 +381,73 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
             max_redirects=NUCLEI_MAX_REDIRECTS,
             interactsh=NUCLEI_INTERACTSH,
         )
-        
+
         print(f"[*] Running nuclei scan [DOCKER]...")
         print(f"[*] Command: {' '.join(cmd[:12])}...")
-        
+
         # Run nuclei
         start_time = datetime.now()
-        
+
         process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        
+
         # Monitor progress
         stdout, stderr = process.communicate()
-        
+
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
-        
+
         if process.returncode != 0 and stderr:
             # Filter out common non-error messages
-            error_lines = [l for l in stderr.split('\n') if l and 'WRN' not in l and 'INF' not in l]
+            error_lines = [
+                l for l in stderr.split("\n") if l and "WRN" not in l and "INF" not in l
+            ]
             if error_lines:
                 print(f"[!] Nuclei warnings: {error_lines[0][:100]}")
-        
+
         # Parse results and filter false positives
         findings = []
         false_positives_filtered = []
-        
+
         if Path(nuclei_output_file).exists():
-            with open(nuclei_output_file, 'r') as f:
+            with open(nuclei_output_file, "r") as f:
                 for line in f:
                     line = line.strip()
                     if line:
                         try:
                             raw_finding = json.loads(line)
-                            
+
                             # Check for false positives before parsing
                             is_fp, fp_reason = is_false_positive(raw_finding)
                             if is_fp:
                                 # Log the filtered false positive
                                 template_id = raw_finding.get("template-id", "unknown")
                                 matched_at = raw_finding.get("matched-at", "unknown")
-                                false_positives_filtered.append({
-                                    "template_id": template_id,
-                                    "matched_at": matched_at,
-                                    "reason": fp_reason
-                                })
+                                false_positives_filtered.append(
+                                    {
+                                        "template_id": template_id,
+                                        "matched_at": matched_at,
+                                        "reason": fp_reason,
+                                    }
+                                )
                                 continue  # Skip this finding
-                            
+
                             parsed = parse_nuclei_finding(raw_finding)
                             findings.append(parsed)
                         except json.JSONDecodeError:
                             continue
-        
+
         # Log filtered false positives
         if false_positives_filtered:
-            print(f"    [*] Filtered {len(false_positives_filtered)} false positive(s):")
+            print(
+                f"    [*] Filtered {len(false_positives_filtered)} false positive(s):"
+            )
             for fp in false_positives_filtered[:5]:  # Show first 5
                 print(f"        - {fp['template_id']}: {fp['reason'][:60]}...")
             if len(false_positives_filtered) > 5:
                 print(f"        ... and {len(false_positives_filtered) - 5} more")
-        
+
         # Organize results
         nuclei_results = {
             "scan_metadata": {
@@ -426,34 +496,42 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
             "all_cves": [],
             "by_category": {},
             "by_template": {},
-            "false_positives": false_positives_filtered if false_positives_filtered else [],
+            "false_positives": (
+                false_positives_filtered if false_positives_filtered else []
+            ),
         }
-        
+
         # Process findings
         all_cves = []
-        
+
         for finding in findings:
             severity = finding["severity"]
             target = finding["target"]
             template_id = finding["template_id"]
             category = finding["category"]
-            
+
             # Count by severity
             if severity in nuclei_results["summary"]:
                 nuclei_results["summary"][severity] += 1
             else:
                 nuclei_results["summary"]["unknown"] += 1
-            
+
             # Group by target
             if target not in nuclei_results["by_target"]:
                 nuclei_results["by_target"][target] = {
                     "findings": [],
-                    "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+                    "severity_counts": {
+                        "critical": 0,
+                        "high": 0,
+                        "medium": 0,
+                        "low": 0,
+                        "info": 0,
+                    },
                 }
             nuclei_results["by_target"][target]["findings"].append(finding)
             if severity in nuclei_results["by_target"][target]["severity_counts"]:
                 nuclei_results["by_target"][target]["severity_counts"][severity] += 1
-            
+
             # Add to severity-based vulnerability list
             finding_summary = {
                 "template_id": template_id,
@@ -464,32 +542,32 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
                 "cves": [c["id"] for c in finding["cves"]],
                 "cvss": finding["cvss_score"],
             }
-            
+
             if severity in nuclei_results["vulnerabilities"]:
                 nuclei_results["vulnerabilities"][severity] += 1
             else:
                 nuclei_results["vulnerabilities"]["unknown"] += 1
-            
+
             # Collect CVEs
             all_cves.extend(finding["cves"])
-            
+
             # Group by category
             if category not in nuclei_results["by_category"]:
                 nuclei_results["by_category"][category] = []
             nuclei_results["by_category"][category].append(finding_summary)
-            
+
             # Group by template
             if template_id not in nuclei_results["by_template"]:
                 nuclei_results["by_template"][template_id] = {
                     "name": finding["name"],
                     "severity": severity,
                     "findings_count": 0,
-                    "targets": []
+                    "targets": [],
                 }
             nuclei_results["by_template"][template_id]["findings_count"] += 1
             if target not in nuclei_results["by_template"][template_id]["targets"]:
                 nuclei_results["by_template"][template_id]["targets"].append(target)
-        
+
         # Deduplicate and sort CVEs
         seen_cves = set()
         unique_cves = []
@@ -499,16 +577,18 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
                 unique_cves.append(cve)
         unique_cves.sort(key=lambda x: x.get("cvss") or 0, reverse=True)
         nuclei_results["all_cves"] = unique_cves
-        
+
         # Add to recon data
         recon_data["vuln_scan"] = nuclei_results
-        
+
         # Save incrementally if output file provided
         if output_file:
-            with open(output_file, 'w') as f:
+            with open(output_file, "w") as f:
                 json.dump(recon_data, f, indent=2)
-            fix_file_ownership(output_file)  # Ensure correct ownership when running under sudo
-        
+            fix_file_ownership(
+                output_file
+            )  # Ensure correct ownership when running under sudo
+
         # Print summary
         print(f"\n{'=' * 70}")
         print(f"[+] NUCLEI SCAN COMPLETE")
@@ -518,65 +598,69 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
             print(f"[+] Anonymous mode: YES (via Tor)")
         print(f"[+] URLs scanned: {len(target_urls)}")
         print(f"[+] Total findings: {len(findings)}")
-        
+
         # Vulnerability summary
         summary = nuclei_results["summary"]
         vuln_total = summary["total_findings"]
 
         if vuln_total > 0:
             print(f"\n[+] VULNERABILITY SUMMARY:")
-            if summary['critical'] > 0:
+            if summary["critical"] > 0:
                 print(f"    🔴 CRITICAL: {summary['critical']}")
-            if summary['high'] > 0:
+            if summary["high"] > 0:
                 print(f"    🟠 HIGH: {summary['high']}")
-            if summary['medium'] > 0:
+            if summary["medium"] > 0:
                 print(f"    🟡 MEDIUM: {summary['medium']}")
-            if summary['low'] > 0:
+            if summary["low"] > 0:
                 print(f"    🔵 LOW: {summary['low']}")
-        
-        if summary['info'] > 0:
+
+        if summary["info"] > 0:
             print(f"    ⚪ INFO: {summary['info']}")
-        
+
         # CVE summary
         cve_count = len(unique_cves)
         if cve_count > 0:
             print(f"\n[+] CVEs FOUND: {cve_count}")
             for cve in unique_cves[:5]:
-                cvss_str = f"CVSS {cve['cvss']}" if cve.get('cvss') else "CVSS N/A"
+                cvss_str = f"CVSS {cve['cvss']}" if cve.get("cvss") else "CVSS N/A"
                 print(f"    - {cve['id']} ({cvss_str})")
             if cve_count > 5:
                 print(f"    ... and {cve_count - 5} more")
-        
+
         # Top affected targets
         if nuclei_results["by_target"]:
             print(f"\n[+] FINDINGS BY TARGET:")
             sorted_targets = sorted(
                 nuclei_results["by_target"].items(),
                 key=lambda x: len(x[1]["findings"]),
-                reverse=True
+                reverse=True,
             )[:5]
             for target, data in sorted_targets:
                 counts = data["severity_counts"]
-                count_str = ", ".join([
-                    f"{SEVERITY_COLORS.get(s, '')}{counts[s]}" 
-                    for s in ["critical", "high", "medium", "low", "info"] 
-                    if counts.get(s, 0) > 0
-                ])
-                print(f"    - {target[:50]}: {len(data['findings'])} findings ({count_str})")
-        
+                count_str = ", ".join(
+                    [
+                        f"{SEVERITY_COLORS.get(s, '')}{counts[s]}"
+                        for s in ["critical", "high", "medium", "low", "info"]
+                        if counts.get(s, 0) > 0
+                    ]
+                )
+                print(
+                    f"    - {target[:50]}: {len(data['findings'])} findings ({count_str})"
+                )
+
         # Top categories
         if nuclei_results["by_category"]:
             print(f"\n[+] TOP VULNERABILITY CATEGORIES:")
             sorted_cats = sorted(
                 nuclei_results["by_category"].items(),
                 key=lambda x: len(x[1]),
-                reverse=True
+                reverse=True,
             )[:5]
             for cat, findings_list in sorted_cats:
                 print(f"    - {cat}: {len(findings_list)} findings")
-        
+
         print(f"{'=' * 70}")
-        
+
         # Run CVE lookup for detected technologies (like Nmap's vulners)
         if CVE_LOOKUP_ENABLED and recon_data.get("http_probe"):
             cve_results = run_cve_lookup(
@@ -591,14 +675,16 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
 
             # Save with CVE data
             if output_file:
-                with open(output_file, 'w') as f:
+                with open(output_file, "w") as f:
                     json.dump(recon_data, f, indent=2)
                 fix_file_ownership(output_file)
 
         # Run custom security checks (Direct IP Access, TLS/SSL, Security Headers)
         # Skip entirely if global switch is disabled
         if not SECURITY_CHECK_ENABLED:
-            print(f"\n[*] Custom security checks disabled (SECURITY_CHECK_ENABLED=False)")
+            print(
+                f"\n[*] Custom security checks disabled (SECURITY_CHECK_ENABLED=False)"
+            )
         else:
             security_checks_enabled = {
                 # Direct IP Access checks (unique - not covered by Nuclei)
@@ -645,18 +731,22 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
                     enabled_checks=security_checks_enabled,
                     timeout=SECURITY_CHECK_TIMEOUT,
                     tls_expiry_days=SECURITY_CHECK_TLS_EXPIRY_DAYS,
-                    max_workers=SECURITY_CHECK_MAX_WORKERS
+                    max_workers=SECURITY_CHECK_MAX_WORKERS,
                 )
 
                 # Merge security checks into vuln_scan results
                 if "vuln_scan" in recon_data:
-                    recon_data["vuln_scan"]["security_checks"] = security_results.get("security_checks", {})
+                    recon_data["vuln_scan"]["security_checks"] = security_results.get(
+                        "security_checks", {}
+                    )
                 else:
-                    recon_data["vuln_scan"] = {"security_checks": security_results.get("security_checks", {})}
+                    recon_data["vuln_scan"] = {
+                        "security_checks": security_results.get("security_checks", {})
+                    }
 
                 # Save with security check data
                 if output_file:
-                    with open(output_file, 'w') as f:
+                    with open(output_file, "w") as f:
                         json.dump(recon_data, f, indent=2)
                     fix_file_ownership(output_file)
 
@@ -667,22 +757,44 @@ def run_vuln_scan(recon_data: dict, output_file: Path = None, settings: dict = N
             Path(targets_file).unlink(missing_ok=True)
         except PermissionError:
             # File owned by root (from Docker), use docker to remove it
-            subprocess.run(["docker", "run", "--rm", "-v", f"{nuclei_temp_dir}:/cleanup", 
-                          "alpine", "rm", "-f", f"/cleanup/{Path(targets_file).name}"],
-                         capture_output=True)
-        
+            subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{nuclei_temp_dir}:/cleanup",
+                    "alpine",
+                    "rm",
+                    "-f",
+                    f"/cleanup/{Path(targets_file).name}",
+                ],
+                capture_output=True,
+            )
+
         try:
             Path(nuclei_output_file).unlink(missing_ok=True)
         except PermissionError:
-            subprocess.run(["docker", "run", "--rm", "-v", f"{nuclei_temp_dir}:/cleanup",
-                          "alpine", "rm", "-f", f"/cleanup/{Path(nuclei_output_file).name}"],
-                         capture_output=True)
-        
+            subprocess.run(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{nuclei_temp_dir}:/cleanup",
+                    "alpine",
+                    "rm",
+                    "-f",
+                    f"/cleanup/{Path(nuclei_output_file).name}",
+                ],
+                capture_output=True,
+            )
+
         try:
             nuclei_temp_dir.rmdir()  # Only removes if empty
         except Exception:
             pass
-    
+
     return recon_data
 
 
@@ -698,20 +810,20 @@ def enrich_recon_file(recon_file: Path) -> dict:
     """
     # Load settings for standalone usage
     from recon.project_settings import get_settings
+
     settings = get_settings()
 
     # Load existing data
-    with open(recon_file, 'r') as f:
+    with open(recon_file, "r") as f:
         recon_data = json.load(f)
 
     # Run nuclei scan
     enriched_data = run_vuln_scan(recon_data, output_file=recon_file, settings=settings)
 
     # Save enriched data
-    with open(recon_file, 'w') as f:
+    with open(recon_file, "w") as f:
         json.dump(enriched_data, f, indent=2)
 
     print(f"[+] Enriched data saved to: {recon_file}")
 
     return enriched_data
-

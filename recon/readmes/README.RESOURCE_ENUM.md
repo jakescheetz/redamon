@@ -1,10 +1,10 @@
-# RedAmon - Resource Enumeration Module
+# parallax - Resource Enumeration Module
 
 ## Complete Technical Documentation
 
 > **Module:** `recon/resource_enum.py`
 > **Purpose:** Endpoint discovery, classification, and parameter extraction
-> **Author:** RedAmon Security Suite
+> **Author:** parallax Security Suite
 
 ---
 
@@ -394,7 +394,7 @@ Kiterunner provides API endpoint bruteforcing using real Swagger/OpenAPI specifi
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `KITERUNNER_ENABLED` | `bool` | `True` | Enable/disable Kiterunner discovery |
-| (Binary auto-download) | - | `~/.redamon/tools/kiterunner/kr` | Auto-downloaded from GitHub releases |
+| (Binary auto-download) | - | `~/.parallax/tools/kiterunner/kr` | Auto-downloaded from GitHub releases |
 | `KITERUNNER_WORDLIST` | `str` | `"apiroutes-251227"` | Wordlist (354k+ API routes) |
 | `KITERUNNER_RATE_LIMIT` | `int` | `100` | Requests per second |
 | `KITERUNNER_CONNECTIONS` | `int` | `100` | Concurrent connections |
@@ -626,7 +626,7 @@ KITERUNNER_SCAN_TIMEOUT = 600
       },
 
       "kiterunner_enabled": true,
-      "kiterunner_binary_path": "~/.redamon/tools/kiterunner/kr",
+      "kiterunner_binary_path": "~/.parallax/tools/kiterunner/kr",
       "kiterunner_wordlist": "apiroutes-251227",
       "kiterunner_endpoints_found": 45,
       "kiterunner_stats": {
@@ -1212,12 +1212,12 @@ docker run --rm \
   example.com
 ```
 
-Run Kiterunner manually (binary auto-downloads to ~/.redamon/tools/kiterunner/):
+Run Kiterunner manually (binary auto-downloads to ~/.parallax/tools/kiterunner/):
 
 ```bash
 # Binary location after first run
 # Use -A flag for auto-downloaded wordlists
-~/.redamon/tools/kiterunner/kr scan https://example.com \
+~/.parallax/tools/kiterunner/kr scan https://example.com \
   -A apiroutes-251227:20000 \
   -x 50 \
   -j 25 \
@@ -1262,7 +1262,7 @@ KITERUNNER_THREADS = 20
 | Docker | Container runtime for Katana, GAU, and httpx |
 | `projectdiscovery/katana:latest` | Katana Docker image (auto-pulled) |
 | `sxcurity/gau:latest` | GAU Docker image (auto-pulled) |
-| Kiterunner binary | Auto-downloaded from GitHub releases to `~/.redamon/tools/kiterunner/` |
+| Kiterunner binary | Auto-downloaded from GitHub releases to `~/.parallax/tools/kiterunner/` |
 | `projectdiscovery/httpx:latest` | httpx Docker image for URL verification (auto-pulled) |
 | Python 3.8+ | Script runtime |
 | `html.parser` | Built-in HTML form parsing |
@@ -1288,4 +1288,4 @@ KITERUNNER_THREADS = 20
 
 ---
 
-*Documentation generated for RedAmon v1.0 - Resource Enumeration Module*
+*Documentation generated for parallax v1.0 - Resource Enumeration Module*
