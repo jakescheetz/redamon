@@ -774,7 +774,7 @@ export function AIAssistantDrawer({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `redamon-session-${timestamp}.md`
+    a.download = `parallax-session-${timestamp}.md`
     a.click()
     URL.revokeObjectURL(url)
   }, [chatItems, currentPhase, iterationCount, modelName, todoList])
@@ -1242,7 +1242,7 @@ export function AIAssistantDrawer({
         {chatItems.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
-              <img src="/logo.png" alt="RedAmon" width={72} height={72} style={{ objectFit: 'contain' }} />
+              <img src="/logo.png" alt="Parallax" width={72} height={72} style={{ objectFit: 'contain' }} />
             </div>
             <h3 className={styles.emptyTitle}>How can I help you?</h3>
             <p className={styles.emptyDescription}>

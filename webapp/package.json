@@ -1,7 +1,7 @@
 {
-  "name": "redamon-webapp",
+  "name": "parallax-webapp",
   "version": "1.0.0",
-  "description": "RedAmon Web Application - Security Reconnaissance Dashboard",
+  "description": "Parallax Web Application - Security Reconnaissance Dashboard",
   "private": true,
   "scripts": {
     "dev": "next dev",

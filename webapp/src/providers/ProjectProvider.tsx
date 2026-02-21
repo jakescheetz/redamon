@@ -27,8 +27,8 @@ interface ProjectContextValue {
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
-const STORAGE_KEY_PROJECT = 'redamon-current-project'
-const STORAGE_KEY_USER = 'redamon-current-user'
+const STORAGE_KEY_PROJECT = 'parallax-current-project'
+const STORAGE_KEY_USER = 'parallax-current-user'
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
   const [currentProject, setCurrentProjectState] = useState<ProjectSummary | null>(null)

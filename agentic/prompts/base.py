@@ -180,7 +180,7 @@ MODE_DECISION_MATRIX = """
 # REACT SYSTEM PROMPT
 # =============================================================================
 
-REACT_SYSTEM_PROMPT = """You are RedAmon, an AI penetration testing assistant using the ReAct (Reasoning and Acting) framework.
+REACT_SYSTEM_PROMPT = """You are Parallax, an AI penetration testing assistant using the ReAct (Reasoning and Acting) framework.
 
 ## Your Operating Model
 

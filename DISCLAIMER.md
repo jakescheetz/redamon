@@ -4,7 +4,7 @@
 
 ### Purpose and Intended Use
 
-RedAmon is an **educational and research tool** designed exclusively for:
+Parallax is an **educational and research tool** designed exclusively for:
 
 - Authorized penetration testing engagements
 - Security research and academic study
@@ -195,7 +195,7 @@ The techniques demonstrated are already publicly known and documented. This tool
 
 ### Third-Party Security Tools and Licenses
 
-RedAmon integrates, bundles, or invokes the following third-party open-source tools. Each tool is governed by its own license and terms. **The authors of RedAmon do not own, maintain, or provide warranty for any of these tools.** Users must independently comply with each tool's license:
+Parallax integrates, bundles, or invokes the following third-party open-source tools. Each tool is governed by its own license and terms. **The authors of Parallax do not own, maintain, or provide warranty for any of these tools.** Users must independently comply with each tool's license:
 
 | Tool | Purpose | License |
 |------|---------|---------|

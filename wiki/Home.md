@@ -1,8 +1,8 @@
-# RedAmon Wiki
+# Parallax Wiki
 
-Welcome to the **RedAmon** user guide — a comprehensive, step-by-step reference for getting started with and mastering every feature of the RedAmon AI-powered red team framework.
+Welcome to the **Parallax** user guide — a comprehensive, step-by-step reference for getting started with and mastering every feature of the Parallax AI-powered red team framework.
 
-> **New here?** Start with [Getting Started](1.-Getting-Started) to install and launch RedAmon, then follow the guide sequentially.
+> **New here?** Start with [Getting Started](1.-Getting-Started) to install and launch Parallax, then follow the guide sequentially.
 
 ---
 
@@ -26,9 +26,9 @@ Welcome to the **RedAmon** user guide — a comprehensive, step-by-step referenc
 
 ---
 
-## What is RedAmon?
+## What is Parallax?
 
-RedAmon is an AI-powered agentic red team framework that automates offensive security operations — from reconnaissance to exploitation to post-exploitation — with zero human intervention. Everything runs inside Docker containers: no security tools needed on your host machine.
+Parallax is an AI-powered agentic red team framework that uses agentic AI to see your target's environment from angles that would otherwise not be possible — automating offensive security from reconnaissance through exploitation to post-exploitation, with zero human intervention. Everything runs inside Docker containers: no security tools needed on your host machine.
 
 **Key capabilities:**
 

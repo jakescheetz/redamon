@@ -38,11 +38,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-RECON_PATH = os.getenv("RECON_PATH", "/home/samuele/Progetti didattici/RedAmon/recon")
+RECON_PATH = os.getenv("RECON_PATH", "./recon")
 RECON_IMAGE = os.getenv("RECON_IMAGE", "redamon-recon:latest")
-GVM_SCAN_PATH = os.getenv("GVM_SCAN_PATH", "/home/samuele/Progetti didattici/RedAmon/gvm_scan")
+GVM_SCAN_PATH = os.getenv("GVM_SCAN_PATH", "./gvm_scan")
 GVM_IMAGE = os.getenv("GVM_IMAGE", "redamon-vuln-scanner:latest")
-GITHUB_HUNT_PATH = os.getenv("GITHUB_HUNT_PATH", "/home/samuele/Progetti didattici/RedAmon/github_secret_hunt")
+GITHUB_HUNT_PATH = os.getenv("GITHUB_HUNT_PATH", "./github_secret_hunt")
 GITHUB_HUNT_IMAGE = os.getenv("GITHUB_HUNT_IMAGE", "redamon-github-hunter:latest")
 VERSION = "1.0.0"
 
@@ -62,7 +62,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="RedAmon Recon Orchestrator",
+    title="Parallax Recon Orchestrator",
     description="Container orchestration service for recon processes",
     version=VERSION,
     lifespan=lifespan,

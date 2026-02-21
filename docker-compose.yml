@@ -1,5 +1,5 @@
 # =============================================================================
-# RedAmon - Unified Docker Compose
+# Parallax - Unified Docker Compose
 # =============================================================================
 # Start:  docker compose up -d
 # Stop:   docker compose down
@@ -19,27 +19,27 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: redamon-postgres
+    container_name: parallax-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-redamon}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-redamon_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-redamon}
+      POSTGRES_USER: ${POSTGRES_USER:-parallax}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-parallax_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-parallax}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-redamon} -d ${POSTGRES_DB:-redamon}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parallax} -d ${POSTGRES_DB:-parallax}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - redamon
+      - parallax
 
   neo4j:
     image: neo4j:5.26-community
-    container_name: redamon-neo4j
+    container_name: parallax-neo4j
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme123}
       NEO4J_PLUGINS: '["apoc"]'
@@ -61,7 +61,7 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      - redamon
+      - parallax
 
   # ===========================================================================
   # GVM / OpenVAS — Vulnerability Scanner Stack
@@ -72,7 +72,7 @@ services:
 
   gvm-vt:
     image: registry.community.greenbone.net/community/vulnerability-tests
-    container_name: redamon-gvm-vt
+    container_name: parallax-gvm-vt
     environment:
       FEED_RELEASE: "24.10"
     volumes:
@@ -80,25 +80,25 @@ services:
 
   gvm-notus-data:
     image: registry.community.greenbone.net/community/notus-data
-    container_name: redamon-gvm-notus-data
+    container_name: parallax-gvm-notus-data
     volumes:
       - notus_data:/mnt
 
   gvm-scap-data:
     image: registry.community.greenbone.net/community/scap-data
-    container_name: redamon-gvm-scap-data
+    container_name: parallax-gvm-scap-data
     volumes:
       - scap_data:/mnt
 
   gvm-cert-bund-data:
     image: registry.community.greenbone.net/community/cert-bund-data
-    container_name: redamon-gvm-cert-data
+    container_name: parallax-gvm-cert-data
     volumes:
       - cert_data:/mnt
 
   gvm-dfn-cert-data:
     image: registry.community.greenbone.net/community/dfn-cert-data
-    container_name: redamon-gvm-dfn-cert
+    container_name: parallax-gvm-dfn-cert
     volumes:
       - cert_data:/mnt
     depends_on:
@@ -106,7 +106,7 @@ services:
 
   gvm-data-objects:
     image: registry.community.greenbone.net/community/data-objects
-    container_name: redamon-gvm-data-objects
+    container_name: parallax-gvm-data-objects
     environment:
       FEED_RELEASE: "24.10"
     volumes:
@@ -114,7 +114,7 @@ services:
 
   gvm-report-formats:
     image: registry.community.greenbone.net/community/report-formats
-    container_name: redamon-gvm-report-formats
+    container_name: parallax-gvm-report-formats
     environment:
       FEED_RELEASE: "24.10"
     volumes:
@@ -124,7 +124,7 @@ services:
 
   gvm-gpg-data:
     image: registry.community.greenbone.net/community/gpg-data
-    container_name: redamon-gvm-gpg-data
+    container_name: parallax-gvm-gpg-data
     volumes:
       - gpg_data:/mnt
 
@@ -132,14 +132,14 @@ services:
 
   gvm-redis:
     image: registry.community.greenbone.net/community/redis-server
-    container_name: redamon-gvm-redis
+    container_name: parallax-gvm-redis
     restart: on-failure
     volumes:
       - gvm_redis_socket:/run/redis/
 
   gvm-postgres:
     image: registry.community.greenbone.net/community/pg-gvm:stable
-    container_name: redamon-gvm-postgres
+    container_name: parallax-gvm-postgres
     restart: on-failure
     volumes:
       - gvm_psql_data:/var/lib/postgresql
@@ -147,7 +147,7 @@ services:
 
   gvmd:
     image: registry.community.greenbone.net/community/gvmd:stable
-    container_name: redamon-gvm-gvmd
+    container_name: parallax-gvm-gvmd
     restart: on-failure
     volumes:
       - gvmd_data:/var/lib/gvm
@@ -175,7 +175,7 @@ services:
 
   gvm-ospd:
     image: registry.community.greenbone.net/community/ospd-openvas:stable
-    container_name: redamon-gvm-ospd
+    container_name: parallax-gvm-ospd
     restart: on-failure
     cap_add:
       - NET_ADMIN
@@ -207,21 +207,21 @@ services:
       context: .
       dockerfile: recon/Dockerfile
       network: host
-    image: redamon-recon:latest
+    image: parallax-recon:latest
     profiles: ["tools"]
 
   vuln-scanner:
     build:
       context: .
       dockerfile: gvm_scan/Dockerfile
-    image: redamon-vuln-scanner:latest
+    image: parallax-vuln-scanner:latest
     profiles: ["tools"]
 
   github-secret-hunter:
     build:
       context: .
       dockerfile: github_secret_hunt/Dockerfile
-    image: redamon-github-hunter:latest
+    image: parallax-github-hunter:latest
     profiles: ["tools"]
 
   # ===========================================================================
@@ -230,7 +230,7 @@ services:
 
   recon-orchestrator:
     build: ./recon_orchestrator
-    container_name: redamon-recon-orchestrator
+    container_name: parallax-recon-orchestrator
     ports:
       - "${RECON_ORCH_PORT:-8010}:8010"
     volumes:
@@ -244,11 +244,11 @@ services:
       - ./github_secret_hunt/output:/app/github_secret_hunt/output:rw
     environment:
       RECON_PATH: ${PWD}/recon
-      RECON_IMAGE: redamon-recon:latest
+      RECON_IMAGE: parallax-recon:latest
       GVM_SCAN_PATH: ${PWD}/gvm_scan
-      GVM_IMAGE: redamon-vuln-scanner:latest
+      GVM_IMAGE: parallax-vuln-scanner:latest
       GITHUB_HUNT_PATH: ${PWD}/github_secret_hunt
-      GITHUB_HUNT_IMAGE: redamon-github-hunter:latest
+      GITHUB_HUNT_IMAGE: parallax-github-hunter:latest
       # Forwarded to spawned recon containers (host network, so localhost)
       NVD_API_KEY: ${NVD_API_KEY:-}
       NEO4J_URI: bolt://localhost:7687
@@ -266,14 +266,14 @@ services:
       retries: 3
       start_period: 10s
     networks:
-      - redamon
+      - parallax
 
   kali-sandbox:
     build:
       context: ./mcp
       dockerfile: kali-sandbox/Dockerfile
       network: host
-    container_name: redamon-kali
+    container_name: parallax-kali
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -316,12 +316,12 @@ services:
       retries: 3
       start_period: 180s
     networks:
-      redamon:
+      parallax:
       pentest-net:
 
   agent:
     build: ./agentic
-    container_name: redamon-agent
+    container_name: parallax-agent
     ports:
       - "${AGENT_PORT:-8090}:8080"
     environment:
@@ -369,7 +369,7 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - redamon
+      - parallax
 
   # ===========================================================================
   # Frontend
@@ -377,12 +377,12 @@ services:
 
   webapp:
     build: ./webapp
-    container_name: redamon-webapp
+    container_name: parallax-webapp
     ports:
       - "${WEBAPP_PORT:-3000}:3000"
     environment:
       # PostgreSQL (Prisma)
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-redamon}:${POSTGRES_PASSWORD:-redamon_secret}@postgres:5432/${POSTGRES_DB:-redamon}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-parallax}:${POSTGRES_PASSWORD:-parallax_secret}@postgres:5432/${POSTGRES_DB:-parallax}"
       # Neo4j (server-side graph queries)
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USER: neo4j
@@ -414,15 +414,15 @@ services:
       retries: 3
       start_period: 40s
     networks:
-      - redamon
+      - parallax
 
 # =============================================================================
 # Networks
 # =============================================================================
 
 networks:
-  redamon:
-    name: redamon-network
+  parallax:
+    name: parallax-network
     driver: bridge
   pentest-net:
     driver: bridge
@@ -442,26 +442,26 @@ volumes:
   neo4j_plugins:
   # GVM volumes (names must match container_manager.py references)
   vt_data:
-    name: redamon_vt_data
+    name: parallax_vt_data
   notus_data:
-    name: redamon_notus_data
+    name: parallax_notus_data
   scap_data:
-    name: redamon_scap_data
+    name: parallax_scap_data
   cert_data:
-    name: redamon_cert_data
+    name: parallax_cert_data
   data_objects:
-    name: redamon_data_objects
+    name: parallax_data_objects
   gpg_data:
-    name: redamon_gpg_data
+    name: parallax_gpg_data
   gvm_redis_socket:
-    name: redamon_gvm_redis_socket
+    name: parallax_gvm_redis_socket
   gvm_psql_data:
-    name: redamon_gvm_psql_data
+    name: parallax_gvm_psql_data
   gvm_psql_socket:
-    name: redamon_gvm_psql_socket
+    name: parallax_gvm_psql_socket
   gvmd_data:
-    name: redamon_gvmd_data
+    name: parallax_gvmd_data
   gvmd_socket:
-    name: redamon_gvmd_socket
+    name: parallax_gvmd_socket
   ospd_socket:
-    name: redamon_ospd_socket
+    name: parallax_ospd_socket

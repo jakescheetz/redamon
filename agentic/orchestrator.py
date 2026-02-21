@@ -249,7 +249,7 @@ class AgentOrchestrator:
                 temperature=0,
                 default_headers={
                     "HTTP-Referer": "https://redamon.dev",
-                    "X-Title": "RedAmon Agent",
+                    "X-Title": "Parallax Agent",
                 },
             )
 

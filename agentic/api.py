@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
     """
     global orchestrator, ws_manager
 
-    logger.info("Starting RedAmon Agent API...")
+    logger.info("Starting Parallax Agent API...")
 
     # Initialize orchestrator
     orchestrator = AgentOrchestrator()
@@ -50,17 +50,17 @@ async def lifespan(app: FastAPI):
     # Initialize WebSocket manager
     ws_manager = WebSocketManager()
 
-    logger.info("RedAmon Agent API ready (WebSocket)")
+    logger.info("Parallax Agent API ready (WebSocket)")
 
     yield
 
-    logger.info("Shutting down RedAmon Agent API...")
+    logger.info("Shutting down Parallax Agent API...")
     if orchestrator:
         await orchestrator.close()
 
 
 app = FastAPI(
-    title="RedAmon Agent API",
+    title="Parallax Agent API",
     description="WebSocket API for real-time agent communication with phase tracking, MCP tools, and Neo4j integration",
     version="3.0.0",
     lifespan=lifespan

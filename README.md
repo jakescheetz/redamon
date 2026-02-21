@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="assets/logo.png" alt="RedAmon Logo" width="120"/>
+  <img src="assets/logo.png" alt="Parallax Logo" width="120"/>
   <br/>
-  <img src="assets/title.svg" alt="RedAmon" width="340"/>
+  <img src="assets/title.svg" alt="Parallax" width="340"/>
 </p>
 
-<h3 align="center">Unmask the hidden before the world does.</h3>
+<h3 align="center">See your target from angles that would otherwise be impossible.</h3>
 
 <p align="center">
-  An AI-powered agentic red team framework that automates offensive security operations, from reconnaissance to exploitation to post-exploitation, with zero human intervention.
+  Parallax is an AI-powered agentic red team framework that uses agentic AI to view your target's environment from perspectives that would otherwise not be possible — automating offensive security from reconnaissance through exploitation to post-exploitation, with zero human intervention.
 </p>
 
 <p align="center">
@@ -34,7 +34,7 @@
 > **LEGAL DISCLAIMER**: This tool is intended for **authorized security testing**, **educational purposes**, and **research only**. Never use this system to scan, probe, or attack any system you do not own or have explicit written permission to test. Unauthorized access is **illegal** and punishable by law. By using this tool, you accept **full responsibility** for your actions. **[Read Full Disclaimer](DISCLAIMER.md)**
 
 <p align="center">
-  <img src="assets/agent.gif" alt="RedAmon Agent Demo" width="100%"/>
+  <img src="assets/agent.gif" alt="Parallax Agent Demo" width="100%"/>
 </p>
 
 ---
@@ -167,7 +167,7 @@ docker compose restart kali-sandbox       # MCP tool servers
 
 No rebuild needed — just restart.
 
-> If you need to update RedAmon to a new version, see [Updating to a New Version](#updating-to-a-new-version).
+> If you need to update Parallax to a new version, see [Updating to a New Version](#updating-to-a-new-version).
 
 ---
 
@@ -216,7 +216,7 @@ No rebuild needed — just restart.
 
 ## Overview
 
-RedAmon is a modular, containerized penetration testing framework that chains automated reconnaissance, AI-driven exploitation, and graph-powered intelligence into a single, end-to-end offensive security pipeline. Every component runs inside Docker — no tools installed on your host — and communicates through well-defined APIs so each layer can evolve independently.
+Parallax is a modular, containerized penetration testing framework that chains automated reconnaissance, AI-driven exploitation, and graph-powered intelligence into a single, end-to-end offensive security pipeline. Every component runs inside Docker — no tools installed on your host — and communicates through well-defined APIs so each layer can evolve independently.
 
 The platform is built around four pillars:
 
@@ -234,7 +234,7 @@ The platform is built around four pillars:
 The recon pipeline is a fully automated, six-phase scanning engine that runs inside a Kali Linux container. Given a single root domain (or a specific subdomain list), it progressively builds a complete picture of the target's external attack surface. Each phase feeds its output into the next, and the final result is both a structured JSON file and a populated Neo4j graph.
 
 <p align="center">
-  <img src="assets/recon.gif" alt="RedAmon Reconnaissance Pipeline" width="100%"/>
+  <img src="assets/recon.gif" alt="Parallax Reconnaissance Pipeline" width="100%"/>
 </p>
 
 #### Phase 1 — Domain Discovery
@@ -342,7 +342,7 @@ The key difference between "fast" and "very deep" profiles is how they use prior
 
 > **Note:** The first GVM startup requires a one-time feed synchronization that takes ~30 minutes. Subsequent starts are instant.
 
-#### Integration with RedAmon
+#### Integration with Parallax
 
 GVM findings are stored as Vulnerability nodes (`source="gvm"`) in Neo4j, linked to IP and Subdomain nodes via `HAS_VULNERABILITY` relationships, with associated CVE nodes. This means the AI agent can reason about both web-layer vulnerabilities (from Nuclei) and network-layer vulnerabilities (from GVM) in a single unified graph.
 
@@ -376,7 +376,7 @@ The agent progresses through three distinct operational phases, each with differ
 When an exploit succeeds, the agent automatically creates an **Exploit node** in the Neo4j graph — recording the attack type, target IP, port, CVE IDs, Metasploit module used, payload, session ID, and any credentials discovered. This node is linked to the targeted IP, the exploited CVE, and the entry port, making every successful compromise a permanent, queryable part of the attack surface graph.
 
 <p align="center">
-  <img src="assets/exploit.gif" alt="RedAmon Exploitation Demo" width="100%"/>
+  <img src="assets/exploit.gif" alt="Parallax Exploitation Demo" width="100%"/>
 </p>
 
 **Post-Exploitation Phase** — After a successful exploit, the agent can optionally transition to post-exploitation (if enabled). In statefull mode (Meterpreter), it runs interactive commands — enumeration, lateral movement, data exfiltration. In stateless mode, it re-runs exploits with different command payloads. This phase also requires user approval.
@@ -489,7 +489,7 @@ For full details on all 10 attack path categories, the intent router architectur
 
 ### AI Model Providers
 
-RedAmon supports **five AI providers** out of the box, giving you access to **400+ language models** through a single, unified interface. The model selector in the project settings **dynamically fetches** available models from each configured provider — no hardcoded lists, no manual updates. When a provider releases a new model, it appears automatically.
+Parallax supports **five AI providers** out of the box, giving you access to **400+ language models** through a single, unified interface. The model selector in the project settings **dynamically fetches** available models from each configured provider — no hardcoded lists, no manual updates. When a provider releases a new model, it appears automatically.
 
 | Provider | Models | Pricing | API Key Required |
 |----------|--------|---------|-----------------|
@@ -506,7 +506,7 @@ RedAmon supports **five AI providers** out of the box, giving you access to **40
 3. **Searchable model selector** — The project settings UI presents a searchable dropdown grouped by provider. Each model shows its name, context window size, and pricing info. Type to filter across all providers instantly.
 4. **Provider prefix convention** — Models are stored with a provider prefix (`openai_compat/`, `openrouter/`, `bedrock/`) so the agent knows which SDK to use at runtime. OpenAI and Anthropic models are detected by name pattern (no prefix needed). Existing projects continue to work unchanged.
 
-> **Note (OpenAI-Compatible):** RedAmon does not automatically validate chat capability for models returned by your compatible backend. If the backend exposes embedding/audio/image models, select a chat model manually.
+> **Note (OpenAI-Compatible):** Parallax does not automatically validate chat capability for models returned by your compatible backend. If the backend exposes embedding/audio/image models, select a chat model manually.
 
 #### Provider Setup
 
@@ -536,7 +536,7 @@ AWS_DEFAULT_REGION=us-east-1        # Recommended: us-east-1 (N. Virginia) has t
 
 #### OpenAI-Compatible Provider
 
-Any backend that exposes the standard `/v1/chat/completions` and `/v1/models` endpoints works out of the box with RedAmon. Set `OPENAI_COMPAT_BASE_URL` in your `.env` and matching models appear in the project settings dropdown automatically.
+Any backend that exposes the standard `/v1/chat/completions` and `/v1/models` endpoints works out of the box with Parallax. Set `OPENAI_COMPAT_BASE_URL` in your `.env` and matching models appear in the project settings dropdown automatically.
 
 The agent container already includes `host.docker.internal` resolution, so local servers running on your host machine are reachable from Docker.
 
@@ -577,13 +577,13 @@ The agent container already includes `host.docker.internal` resolution, so local
 | [Mistral AI](https://mistral.ai/) | Mistral / Mixtral models via OpenAI-compatible endpoint |
 | [Perplexity](https://www.perplexity.ai/) | Sonar models via OpenAI-compatible API |
 
-> **Note:** RedAmon fetches all models from your compatible endpoint, including non-chat models (embeddings, audio, image). Make sure to select a **chat-capable** model in project settings.
+> **Note:** Parallax fetches all models from your compatible endpoint, including non-chat models (embeddings, audio, image). Make sure to select a **chat-capable** model in project settings.
 
 ---
 
 ### Attack Surface Graph
 
-The Neo4j graph database is the **single source of truth** for every finding in RedAmon. It stores the complete topology of the target's attack surface as an interconnected knowledge graph, enabling both visual exploration in the webapp and intelligent querying by the AI agent.
+The Neo4j graph database is the **single source of truth** for every finding in Parallax. It stores the complete topology of the target's attack surface as an interconnected knowledge graph, enabling both visual exploration in the webapp and intelligent querying by the AI agent.
 
 #### Node Types
 
@@ -689,10 +689,10 @@ All queries are automatically scoped to the current user and project via regex-b
 
 ### Project Settings
 
-Every project in RedAmon has **180+ configurable parameters** across 11 setting categories that control the behavior of each reconnaissance module and the AI agent. These settings are managed through the webapp's project form UI, stored in PostgreSQL via Prisma ORM, and fetched by the recon container and agent at runtime.
+Every project in Parallax has **180+ configurable parameters** across 11 setting categories that control the behavior of each reconnaissance module and the AI agent. These settings are managed through the webapp's project form UI, stored in PostgreSQL via Prisma ORM, and fetched by the recon container and agent at runtime.
 
 <p align="center">
-  <img src="assets/new_project.gif" alt="RedAmon Project Settings" width="100%"/>
+  <img src="assets/new_project.gif" alt="Parallax Project Settings" width="100%"/>
 </p>
 
 | Category | Key Settings |
@@ -711,7 +711,7 @@ Every project in RedAmon has **180+ configurable parameters** across 11 setting 
 
 > **Full parameter reference:** See the **[Project Settings Reference](https://github.com/samugit83/redamon/wiki/9.-Project-Settings-Reference)** in the Wiki for all 180+ parameters with defaults and descriptions.
 >
-> **Complete user guide:** See the **[RedAmon Wiki](https://github.com/samugit83/redamon/wiki)** for step-by-step instructions on creating users, projects, running scans, and using the AI agent.
+> **Complete user guide:** See the **[Parallax Wiki](https://github.com/samugit83/redamon/wiki)** for step-by-step instructions on creating users, projects, running scans, and using the AI agent.
 
 ---
 
@@ -1314,7 +1314,7 @@ Standalone module that scans GitHub repositories, gists, and commit history for 
 
 > **Status: Under Development** — Guinea pig environments are provided as reference configurations but are not yet fully integrated into the automated pipeline.
 
-Intentionally vulnerable Docker containers for safe, isolated testing. These environments let you validate the full RedAmon pipeline — from reconnaissance to exploitation — without touching any external system.
+Intentionally vulnerable Docker containers for safe, isolated testing. These environments let you validate the full Parallax pipeline — from reconnaissance to exploitation — without touching any external system.
 
 | Environment | Vulnerability | Description |
 |-------------|--------------|-------------|
@@ -1475,7 +1475,7 @@ These containers are designed to be deployed alongside the main stack so the AI 
 
 ## Data Export & Import
 
-RedAmon supports full project backup and restore through the web interface. Each export produces a portable ZIP archive containing all project data, which can be imported on any RedAmon instance.
+Parallax supports full project backup and restore through the web interface. Each export produces a portable ZIP archive containing all project data, which can be imported on any Parallax instance.
 
 ### What's Included in an Export
 
@@ -1509,7 +1509,7 @@ RedAmon supports full project backup and restore through the web interface. Each
 
 ## Updating to a New Version
 
-When updating RedAmon to a new version, all Docker images and volumes are rebuilt from scratch. Follow these steps to preserve your data across updates.
+When updating Parallax to a new version, all Docker images and volumes are rebuilt from scratch. Follow these steps to preserve your data across updates.
 
 > **Warning**: Step 4 removes all database volumes. Any data not exported will be permanently lost.
 

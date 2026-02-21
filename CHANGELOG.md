@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **Rebrand to Parallax** — Product and company name rebranded from RedAmon to Parallax. Concept: utilizing agentic AI to see the target's environment from angles that would otherwise not be possible. All user-facing strings, Docker service/container/network names, default config (Postgres, theme/storage keys, export filenames, TXT record prefix), and documentation updated accordingly.
+
+---
+
 ## [1.3.0] - 2026-02-19
 
 ### Added

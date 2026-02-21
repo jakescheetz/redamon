@@ -1,6 +1,6 @@
-# Contributing to RedAmon
+# Contributing to Parallax
 
-Thank you for your interest in contributing to RedAmon! This document provides guidelines and instructions to help you get started.
+Thank you for your interest in contributing to Parallax! This document provides guidelines and instructions to help you get started.
 
 ## Table of Contents
 
@@ -46,7 +46,7 @@ Harassment, trolling, or abusive behavior of any kind will not be tolerated.
 
 ## Legal and Ethical Responsibilities
 
-RedAmon is a security assessment framework. **All contributors must adhere to ethical and legal standards.**
+Parallax is a security assessment framework. **All contributors must adhere to ethical and legal standards.**
 
 Before contributing, read the [DISCLAIMER.md](DISCLAIMER.md) in full. Key points:
 
@@ -131,10 +131,10 @@ docker compose restart recon-orchestrator
 
 ## Project Architecture
 
-RedAmon is a modular, multi-service architecture. Each component lives in its own directory with its own Dockerfile:
+Parallax is a modular, multi-service architecture. Each component lives in its own directory with its own Dockerfile:
 
 ```
-RedAmon/
+Parallax/
 ├── recon/                # OSINT & scanning pipeline (Kali-based)
 ├── recon_orchestrator/   # Container lifecycle manager (FastAPI)
 ├── agentic/              # AI agent orchestrator (LangGraph + FastAPI)

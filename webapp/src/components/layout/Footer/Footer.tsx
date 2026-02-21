@@ -9,7 +9,7 @@ export function Footer() {
     <footer className={styles.footer}>
       <div className={styles.content}>
         <span className={styles.copyright}>
-          © {currentYear} RedAmon. All rights reserved.
+          © {currentYear} Parallax. All rights reserved.
         </span>
         <span className={styles.version}>v1.3.0</span>
       </div>

@@ -131,3 +131,7 @@ cai/
 
 # Claude Code config
 .claude/
+
+# Cursor Code Config and Plans
+.cursor/
+.cursor/plans/
