@@ -1,18 +1,43 @@
 /**
  * Global Styles
  * Base element styles using design tokens
+ * Deep Space theme: very dark background + subtle gradient, optional starfield
  */
 
 /* Root element - applies theme to entire document */
 html {
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  overscroll-behavior-y: none;
 }
 
 body {
+  /* Subtle gradient (not pure black) — space feel */
   background-color: var(--bg-primary);
+  background-image: linear-gradient(180deg, var(--bg-primary) 0%, #0a0f1a 50%, var(--bg-primary) 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
   transition: background-color var(--transition-slow), color var(--transition-slow);
+  position: relative;
+  min-height: 100vh;
+  overscroll-behavior-y: none;
+}
+
+/* Faint starfield texture (3–5% opacity) — only in dark theme */
+[data-theme="dark"] body::before,
+:root:not([data-theme="light"]) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image: radial-gradient(circle at 20px 30px, rgba(255, 255, 255, 0.9) 1px, transparent 1px),
+    radial-gradient(circle at 60px 80px, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    radial-gradient(circle at 100px 20px, rgba(255, 255, 255, 0.7) 1px, transparent 1px),
+    radial-gradient(circle at 140px 120px, rgba(255, 255, 255, 0.6) 1px, transparent 1px),
+    radial-gradient(circle at 180px 50px, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+  background-size: 200px 150px;
 }
 
 /* Links */

@@ -1,10 +1,5 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import '@/styles/index.css'
-import { QueryProvider } from '@/providers/QueryProvider'
-import { ProjectProvider } from '@/providers/ProjectProvider'
-import { ToastProvider } from '@/components/ui'
-import { AppLayout } from '@/components/layout'
 
 export const metadata: Metadata = {
   title: 'Parallax - Security Reconnaissance Dashboard',
@@ -41,17 +36,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
-        <QueryProvider>
-          <Suspense fallback={null}>
-            <ProjectProvider>
-              <ToastProvider>
-                <AppLayout>{children}</AppLayout>
-              </ToastProvider>
-            </ProjectProvider>
-          </Suspense>
-        </QueryProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

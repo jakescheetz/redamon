@@ -192,15 +192,18 @@
   font-weight: var(--font-semibold);
   cursor: pointer;
   transition: var(--transition-all);
+  box-shadow: none;
 }
 
 .primaryButton:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+  box-shadow: var(--glow-primary);
 }
 
 .primaryButton:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
+  box-shadow: var(--glow-primary);
 }
 
 .primaryButton:disabled {

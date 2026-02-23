@@ -139,7 +139,15 @@ docker compose --profile tools down --rmi local --volumes --remove-orphans
 
 ### Development Mode
 
-For active development with **Next.js fast refresh** (no rebuild on every change):
+**Important:** If you run **only** `docker compose up -d` (without the dev override below), the webapp is served from a **pre-built image**. Any changes you make to the webapp source will **not** appear until you rebuild the image and recreate the container. Docker often reuses cached layers, so if you still see the old app after a normal rebuild, do a **clean rebuild** and force the container to be recreated:
+
+```bash
+docker compose build webapp --no-cache && docker compose up -d --force-recreate webapp
+```
+
+Then hard-refresh the browser (Cmd+Shift+R or Ctrl+Shift+R) or open the app in an incognito/private window to avoid cached HTML or JS. If you prefer not to use `--no-cache` every time, you can try first: `docker compose build webapp && docker compose up -d`.
+
+For active development with **Next.js fast refresh** (no rebuild on every change), use the **dev override** so the webapp source is volume-mounted:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
@@ -152,7 +160,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres ne
 
 The first command starts **all** services including GVM/OpenVAS (which requires a ~30 min feed sync on first run). The second command starts only the core services, skipping GVM entirely — useful when you don't need network-level vulnerability scanning and want a faster, lighter stack.
 
-Both commands swap the production webapp image for a dev container with your source code volume-mounted. Every file save triggers instant hot-reload in the browser.
+Both commands swap the production webapp image for a dev container with your source code volume-mounted. Every file save triggers instant hot-reload in the browser. If you still see an old version after switching to dev mode, restart the webapp once: `docker compose restart webapp`.
 
 **Refreshing Python services after code changes:**
 

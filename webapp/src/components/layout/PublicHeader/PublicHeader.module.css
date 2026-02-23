@@ -1,0 +1,92 @@
+/* Public header: fixed glass bar so it always stays at top */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: var(--space-3) var(--space-6);
+  pointer-events: none;
+}
+
+.headerBar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-5);
+  background: rgba(14, 22, 48, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  transition: background var(--transition-default), border-color var(--transition-default), box-shadow var(--transition-default);
+}
+
+.headerBar:hover {
+  background: rgba(14, 22, 48, 0.65);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.25);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--color-theme-text);
+  transition: opacity var(--transition-fast);
+}
+
+.logo:hover {
+  opacity: 0.9;
+}
+
+.logoImg {
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.3));
+}
+
+.logoText {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.navLink {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-theme-text-muted);
+  text-decoration: none;
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.navLink:hover {
+  color: var(--color-cyan-primary);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.navLinkActive {
+  color: var(--color-cyan-primary);
+  background: rgba(34, 211, 238, 0.1);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+

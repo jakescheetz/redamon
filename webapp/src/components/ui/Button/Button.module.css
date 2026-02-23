@@ -1,0 +1,149 @@
+/* Reusable Button — pill-shaped, soft hover, composable across app */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  transition:
+    background var(--transition-default),
+    color var(--transition-default),
+    border-color var(--transition-default),
+    box-shadow var(--transition-default),
+    transform var(--transition-default);
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Sizes ── */
+
+.size_sm {
+  font-size: var(--text-xs);
+  padding: var(--space-1-5) var(--space-3);
+}
+
+.size_md {
+  font-size: var(--text-sm);
+  padding: var(--space-2) var(--space-5);
+}
+
+.size_lg {
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-6);
+}
+
+/* ── Variant: Primary ── */
+
+.variant_primary,
+.variant_primary:link,
+.variant_primary:visited {
+  background: var(--color-cyan-primary);
+  color: var(--color-space-bg);
+  border-color: transparent;
+}
+
+.variant_primary:hover:not(:disabled) {
+  color: var(--color-space-bg);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(34, 211, 238, 0.25),
+    0 0 0 1px rgba(34, 211, 238, 0.15);
+}
+
+.variant_primary:active:not(:disabled) {
+  transform: translateY(0);
+  color: var(--color-space-bg);
+  background: var(--color-cyan-primary-hover);
+}
+
+/* ── Variant: Secondary ── */
+
+.variant_secondary,
+.variant_secondary:link,
+.variant_secondary:visited {
+  background: transparent;
+  color: var(--color-theme-text);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.variant_secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: var(--color-cyan-primary);
+  background: rgba(34, 211, 238, 0.06);
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.08);
+}
+
+.variant_secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ── Variant: Ghost ── */
+
+.variant_ghost,
+.variant_ghost:link,
+.variant_ghost:visited {
+  background: transparent;
+  color: var(--color-theme-text-muted);
+  border-color: transparent;
+}
+
+.variant_ghost:hover:not(:disabled) {
+  color: var(--color-cyan-primary);
+  background: rgba(34, 211, 238, 0.06);
+}
+
+/* ── Variant: Outline ── */
+
+.variant_outline,
+.variant_outline:link,
+.variant_outline:visited {
+  background: transparent;
+  color: var(--color-theme-text);
+  border-color: var(--color-space-border-strong);
+}
+
+.variant_outline:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--color-cyan-primary);
+  color: var(--color-cyan-primary);
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+}
+
+.variant_outline:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ── Utilities ── */
+
+.fullWidth {
+  width: 100%;
+}
+
+.iconRight {
+  flex-direction: row-reverse;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}

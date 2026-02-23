@@ -6,60 +6,60 @@
 
 :root {
   /* ═══════════════════════════════════════════════════════════════════════════
-     BACKGROUNDS
+     BACKGROUNDS (Deep Space)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --bg-primary: var(--color-gray-950);      /* Main app background */
-  --bg-secondary: var(--color-gray-900);    /* Cards, panels */
-  --bg-tertiary: var(--color-gray-850);     /* Nested elements */
-  --bg-quaternary: var(--color-gray-700);   /* Deep nested elements */
-  --bg-elevated: var(--color-gray-800);     /* Modals, dropdowns */
-  --bg-hover: var(--color-gray-800);        /* Hover states */
-  --bg-active: var(--color-gray-700);       /* Active/pressed states */
-  --bg-input: var(--color-gray-900);        /* Input fields */
-  --bg-overlay: rgba(0, 0, 0, 0.5);         /* Modal overlays */
+  --bg-primary: var(--color-space-bg);
+  --bg-secondary: var(--color-space-surface);
+  --bg-tertiary: var(--color-space-surface-elevated);
+  --bg-quaternary: var(--color-space-surface-nested);
+  --bg-elevated: var(--color-space-surface-elevated);
+  --bg-hover: var(--color-space-surface-elevated);
+  --bg-active: var(--color-space-surface-nested);
+  --bg-input: var(--color-space-surface);
+  --bg-overlay: rgba(7, 10, 18, 0.85);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      TEXT
      ═══════════════════════════════════════════════════════════════════════════ */
-  --text-primary: var(--color-gray-50);     /* Main text */
-  --text-secondary: var(--color-gray-400);  /* Secondary/muted text */
-  --text-tertiary: var(--color-gray-500);   /* Disabled, placeholders */
-  --text-inverse: var(--color-gray-950);    /* Text on light backgrounds */
-  --text-on-accent: var(--color-white);     /* Text on colored backgrounds */
+  --text-primary: var(--color-theme-text);
+  --text-secondary: var(--color-theme-text-muted);
+  --text-tertiary: var(--color-theme-text-dim);
+  --text-inverse: var(--color-space-bg);
+  --text-on-accent: var(--color-space-bg);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      BORDERS
      ═══════════════════════════════════════════════════════════════════════════ */
-  --border-default: var(--color-gray-800);  /* Default borders */
-  --border-subtle: var(--color-gray-850);   /* Subtle dividers */
-  --border-strong: var(--color-gray-700);   /* Emphasized borders */
-  --border-focus: var(--color-blue-500);    /* Focus rings */
+  --border-default: var(--color-space-border);
+  --border-subtle: rgba(30, 58, 138, 0.35);
+  --border-strong: var(--color-space-border-strong);
+  --border-focus: var(--color-cyan-primary);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     ACCENT / BRAND (Crimson Red - Primary, Blue - Secondary)
+     ACCENT / BRAND (Cyan = CTAs/links, Violet = highlights/graphs)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --accent-primary: var(--color-crimson-500);
-  --accent-primary-hover: var(--color-crimson-600);
-  --accent-primary-active: var(--color-crimson-700);
-  --accent-primary-subtle: var(--color-crimson-900);
+  --accent-primary: var(--color-cyan-primary);
+  --accent-primary-hover: var(--color-cyan-primary-hover);
+  --accent-primary-active: var(--color-cyan-primary-active);
+  --accent-primary-subtle: var(--color-cyan-subtle);
 
-  --accent-secondary: var(--color-blue-500);
-  --accent-secondary-hover: var(--color-blue-600);
-  --accent-secondary-active: var(--color-blue-700);
-  --accent-secondary-subtle: var(--color-blue-900);
+  --accent-secondary: var(--color-violet-secondary);
+  --accent-secondary-hover: var(--color-violet-secondary-hover);
+  --accent-secondary-active: var(--color-violet-secondary-active);
+  --accent-secondary-subtle: var(--color-violet-subtle);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     STATUS COLORS
+     STATUS COLORS (green = passing/secure, amber = warning)
      ═══════════════════════════════════════════════════════════════════════════ */
-  /* Success */
-  --status-success: var(--color-green-500);
-  --status-success-bg: var(--color-green-900);
-  --status-success-text: var(--color-green-400);
+  /* Success / Secure */
+  --status-success: var(--color-signal-green);
+  --status-success-bg: var(--color-signal-green-subtle);
+  --status-success-text: var(--color-signal-green);
 
   /* Warning */
-  --status-warning: var(--color-amber-500);
-  --status-warning-bg: var(--color-amber-900);
-  --status-warning-text: var(--color-amber-400);
+  --status-warning: var(--color-amber-warning);
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-warning-text: var(--color-amber-warning);
 
   /* Error */
   --status-error: var(--color-red-500);
@@ -67,9 +67,9 @@
   --status-error-text: var(--color-red-400);
 
   /* Info */
-  --status-info: var(--color-blue-500);
-  --status-info-bg: var(--color-blue-900);
-  --status-info-text: var(--color-blue-400);
+  --status-info: var(--color-cyan-primary);
+  --status-info-bg: var(--color-cyan-subtle);
+  --status-info-text: var(--color-cyan-primary);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      GRAPH NODE COLORS (Security-focused hierarchy)
@@ -125,27 +125,27 @@
   --severity-cve-unknown: var(--color-gray-500);
 
   /* ═══════════════════════════════════════════════════════════════════════════
-     GRAPH SPECIFIC
+     GRAPH SPECIFIC (violet for highlights)
      ═══════════════════════════════════════════════════════════════════════════ */
-  --graph-bg: var(--color-gray-950);
-  --graph-label-color: var(--color-white);
-  --graph-link-default: var(--color-gray-400);
-  --graph-link-highlight: var(--color-blue-400);
-  --graph-selection-ring: var(--color-green-500);
+  --graph-bg: var(--color-space-bg);
+  --graph-label-color: var(--color-theme-text);
+  --graph-link-default: var(--color-theme-text-dim);
+  --graph-link-highlight: var(--color-violet-secondary);
+  --graph-selection-ring: var(--color-signal-green);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      INTERACTIVE ELEMENTS
      ═══════════════════════════════════════════════════════════════════════════ */
-  --toggle-bg: var(--color-gray-700);
+  --toggle-bg: var(--color-space-surface-nested);
   --toggle-bg-active: var(--accent-secondary);
-  --toggle-knob: var(--color-gray-500);
-  --toggle-knob-active: var(--color-white);
+  --toggle-knob: var(--color-theme-text-dim);
+  --toggle-knob-active: var(--color-theme-text);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      DRAWER / PANELS
      ═══════════════════════════════════════════════════════════════════════════ */
   --drawer-bg: var(--bg-secondary);
   --drawer-header-bg: var(--bg-primary);
-  --drawer-section-info: var(--color-blue-500);
-  --drawer-section-properties: var(--color-violet-500);
+  --drawer-section-info: var(--color-cyan-primary);
+  --drawer-section-properties: var(--color-violet-secondary);
 }

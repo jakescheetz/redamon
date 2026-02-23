@@ -35,7 +35,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-3) var(--space-4);
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-primary) 40%, var(--color-crimson-800) 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-primary) 40%, var(--color-violet-subtle) 100%);
   border-bottom: 1px solid var(--border-default);
   flex-shrink: 0;
 }
@@ -53,9 +53,9 @@
   width: 32px;
   height: 32px;
   background: transparent;
-  border: 1px solid #d32f2f; /* Parallax primary crimson */
+  border: 1px solid var(--accent-primary);
   border-radius: var(--radius-lg);
-  color: #d32f2f;
+  color: var(--accent-primary);
 }
 
 .headerText {
@@ -328,8 +328,8 @@
 }
 
 .messageAssistant .messageIcon {
-  border-color: #d32f2f; /* Parallax primary crimson */
-  color: #d32f2f;
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .messageContent {
@@ -666,10 +666,10 @@
   display: inline-flex;
   align-items: center;
   padding: 1px 6px;
-  background: rgba(211, 47, 47, 0.12);
-  border: 1px solid rgba(211, 47, 47, 0.3);
+  background: var(--color-cyan-subtle);
+  border: 1px solid rgba(34, 211, 238, 0.35);
   border-radius: var(--radius-sm);
-  color: #d32f2f;
+  color: var(--accent-primary);
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
@@ -681,10 +681,10 @@
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  background: rgba(211, 47, 47, 0.1);
-  border: 1px solid rgba(211, 47, 47, 0.25);
+  background: var(--color-cyan-subtle);
+  border: 1px solid rgba(34, 211, 238, 0.25);
   border-radius: var(--radius-md);
-  color: #d32f2f;
+  color: var(--accent-primary);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -693,8 +693,8 @@
 }
 
 .reportDownloadButton:hover {
-  background: rgba(211, 47, 47, 0.2);
-  border-color: rgba(211, 47, 47, 0.5);
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
 }
 
 .reportDownloadButton:active {

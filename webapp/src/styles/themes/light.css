@@ -56,8 +56,12 @@
   --status-info-bg: var(--color-blue-100);
   --status-info-text: var(--color-blue-700);
 
-  /* Accent adjustments for better contrast on light */
-  --accent-primary-subtle: var(--color-blue-100);
+  /* Accents — same cyan/violet as dark for consistency */
+  --accent-primary: var(--color-cyan-primary);
+  --accent-primary-hover: var(--color-cyan-primary-hover);
+  --accent-secondary: var(--color-violet-secondary);
+  --accent-primary-subtle: rgba(34, 211, 238, 0.12);
+  --text-on-accent: var(--color-space-bg);
 
   color-scheme: light;
 }
@@ -115,7 +119,11 @@
     --status-info-bg: var(--color-blue-100);
     --status-info-text: var(--color-blue-700);
 
-    --accent-primary-subtle: var(--color-blue-100);
+    --accent-primary: var(--color-cyan-primary);
+    --accent-primary-hover: var(--color-cyan-primary-hover);
+    --accent-secondary: var(--color-violet-secondary);
+    --accent-primary-subtle: rgba(34, 211, 238, 0.12);
+    --text-on-accent: var(--color-space-bg);
 
     color-scheme: light;
   }

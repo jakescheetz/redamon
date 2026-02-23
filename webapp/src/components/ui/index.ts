@@ -1,6 +1,7 @@
 // UI Components
 // Reusable components with behavior (state, accessibility, keyboard handling)
 
+export { Button } from './Button'
 export { Toggle } from './Toggle'
 export { Modal } from './Modal'
 export { Tooltip } from './Tooltip'

@@ -1,54 +1,53 @@
 /**
- * Dark Theme
- * Default theme - these values are already set in semantic.css
- * This file exists for explicit dark mode application via data-theme="dark"
+ * Dark Theme — Deep Space + Neon Signal
+ * Default theme; semantic.css already uses space/cyan/violet tokens
  */
 
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg-primary: var(--color-gray-950);
-  --bg-secondary: var(--color-gray-900);
-  --bg-tertiary: var(--color-gray-850);
-  --bg-quaternary: var(--color-gray-700);
-  --bg-elevated: var(--color-gray-800);
-  --bg-hover: var(--color-gray-800);
-  --bg-active: var(--color-gray-700);
-  --bg-input: var(--color-gray-900);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+  /* Backgrounds (space) */
+  --bg-primary: var(--color-space-bg);
+  --bg-secondary: var(--color-space-surface);
+  --bg-tertiary: var(--color-space-surface-elevated);
+  --bg-quaternary: var(--color-space-surface-nested);
+  --bg-elevated: var(--color-space-surface-elevated);
+  --bg-hover: var(--color-space-surface-elevated);
+  --bg-active: var(--color-space-surface-nested);
+  --bg-input: var(--color-space-surface);
+  --bg-overlay: rgba(7, 10, 18, 0.85);
 
   /* Text */
-  --text-primary: var(--color-gray-50);
-  --text-secondary: var(--color-gray-400);
-  --text-tertiary: var(--color-gray-500);
-  --text-inverse: var(--color-gray-950);
+  --text-primary: var(--color-theme-text);
+  --text-secondary: var(--color-theme-text-muted);
+  --text-tertiary: var(--color-theme-text-dim);
+  --text-inverse: var(--color-space-bg);
 
   /* Borders */
-  --border-default: var(--color-gray-800);
-  --border-subtle: var(--color-gray-850);
-  --border-strong: var(--color-gray-700);
+  --border-default: var(--color-space-border);
+  --border-subtle: rgba(30, 58, 138, 0.35);
+  --border-strong: var(--color-space-border-strong);
 
-  /* Shadows - darker for dark theme */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-default: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-default: 0 1px 3px 0 rgba(0, 0, 0, 0.45), 0 1px 2px -1px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.45), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
 
   /* Toggle */
-  --toggle-bg: var(--color-gray-700);
-  --toggle-knob: var(--color-gray-500);
+  --toggle-bg: var(--color-space-surface-nested);
+  --toggle-knob: var(--color-theme-text-dim);
 
   /* Graph */
-  --graph-bg: var(--color-gray-950);
+  --graph-bg: var(--color-space-bg);
 
   /* Drawer */
   --drawer-bg: var(--bg-secondary);
   --drawer-header-bg: var(--bg-primary);
 
   /* Status backgrounds */
-  --status-success-bg: var(--color-green-900);
-  --status-warning-bg: var(--color-amber-900);
+  --status-success-bg: var(--color-signal-green-subtle);
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
   --status-error-bg: var(--color-red-900);
-  --status-info-bg: var(--color-blue-900);
+  --status-info-bg: var(--color-cyan-subtle);
 
   color-scheme: dark;
 }

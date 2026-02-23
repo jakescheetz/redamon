@@ -1,0 +1,91 @@
+/* SpaceScene: illustrated SVG planet + CSS shooting star comets */
+
+.sceneContainer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── SVG Planet ── */
+
+.planet {
+  position: absolute;
+  top: 10%;
+  right: 4%;
+  width: 240px;
+  height: 210px;
+  opacity: 0.85;
+  animation: planetFloat 12s ease-in-out infinite;
+}
+
+@media (max-width: 900px) {
+  .planet {
+    width: 160px;
+    height: 140px;
+    top: 6%;
+    right: 2%;
+    opacity: 0.6;
+  }
+}
+
+@keyframes planetFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-8px) rotate(3deg); }
+}
+
+/* ── Comet streaks ── */
+
+.comet {
+  position: absolute;
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 40%,
+    rgba(34, 211, 238, 0.8) 100%
+  );
+  border-radius: 9999px;
+  opacity: 0;
+  transform: rotate(-35deg);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.comet1 {
+  top: 12%;
+  left: -120px;
+  width: 100px;
+  animation: cometStreak 6s 1s infinite;
+}
+
+.comet2 {
+  top: 35%;
+  left: -140px;
+  width: 140px;
+  animation: cometStreak 7s 3.5s infinite;
+}
+
+.comet3 {
+  top: 58%;
+  left: -80px;
+  width: 80px;
+  animation: cometStreak 5s 6s infinite;
+}
+
+.comet4 {
+  top: 78%;
+  left: -110px;
+  width: 110px;
+  animation: cometStreak 8s 9s infinite;
+}
+
+@keyframes cometStreak {
+  0%   { opacity: 0;   transform: rotate(-35deg) translateX(0); }
+  5%   { opacity: 0.4; }
+  30%  { opacity: 0.5; }
+  60%  { opacity: 0.3; }
+  100% { opacity: 0;   transform: rotate(-35deg) translateX(calc(100vw + 200px)); }
+}

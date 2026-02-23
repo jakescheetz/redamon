@@ -18,11 +18,14 @@
   /* Inner shadows */
   --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
 
-  /* Glow effects for security indicators */
+  /* Glow effects — primary (cyan) only on primary actions */
+  --glow-primary: 0 0 20px rgba(34, 211, 238, 0.45);
+  --glow-primary-subtle: 0 0 12px rgba(34, 211, 238, 0.25);
+  /* Security indicators */
   --glow-critical: 0 0 20px rgba(255, 51, 51, 0.4);
   --glow-high: 0 0 15px rgba(239, 68, 68, 0.3);
-  --glow-success: 0 0 10px rgba(34, 197, 94, 0.3);
-  --glow-info: 0 0 10px rgba(59, 130, 246, 0.3);
+  --glow-success: 0 0 10px rgba(52, 211, 153, 0.35);
+  --glow-info: 0 0 10px rgba(34, 211, 238, 0.3);
 
   /* ═══════════════════════════════════════════════════════════════════════════
      TRANSITIONS
