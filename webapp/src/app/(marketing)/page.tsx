@@ -1,5 +1,6 @@
 import { Network, Bot, Shield, Crosshair, Workflow, Database } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { OrbitAnimation } from '@/components/marketing/OrbitAnimation'
 import styles from './page.module.css'
 
 const heroSteps = [
@@ -110,6 +111,8 @@ export default function LandingPage() {
           </Button>
         </p>
       </section>
+
+      <OrbitAnimation />
 
       <section className={styles.whySection} aria-labelledby="why-heading">
         <div className={styles.whyWrap}>

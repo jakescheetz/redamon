@@ -21,7 +21,7 @@ export function KiterunnerSection({ data, updateField }: KiterunnerSectionProps)
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Zap size={16} />
+          <Zap size={16} className={styles.sectionTitleIcon} />
           Kiterunner API Discovery
         </h2>
         <ChevronDown

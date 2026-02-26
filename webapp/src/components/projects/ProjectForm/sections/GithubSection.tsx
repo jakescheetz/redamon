@@ -23,7 +23,7 @@ export function GithubSection({ data, updateField }: GithubSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Github size={16} />
+          <Github size={16} className={styles.sectionTitleIcon} />
           GitHub Secret Hunting
         </h2>
         <ChevronDown

@@ -21,7 +21,7 @@ export function GvmScanSection({ data, updateField }: GvmScanSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Shield size={16} />
+          <Shield size={16} className={styles.sectionTitleIcon} />
           GVM Vulnerability Scan
         </h2>
         <ChevronDown

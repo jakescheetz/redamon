@@ -20,7 +20,7 @@ export function SecurityChecksSection({ data, updateField }: SecurityChecksSecti
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <ShieldCheck size={16} />
+          <ShieldCheck size={16} className={styles.sectionTitleIcon} />
           Security Checks
         </h2>
         <ChevronDown

@@ -20,7 +20,7 @@ export function MitreSection({ data, updateField }: MitreSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Network size={16} />
+          <Network size={16} className={styles.sectionTitleIcon} />
           MITRE ATT&CK / CWE / CAPEC
         </h2>
         <ChevronDown

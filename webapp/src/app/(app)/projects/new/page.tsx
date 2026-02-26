@@ -44,8 +44,14 @@ export default function NewProjectPage() {
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.message}>
-          <p>Loading...</p>
+        <div className={styles.loading}>
+          <div className={styles.loadingOrbit}>
+            <div className={styles.loadingStar} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+          </div>
+          <span className={styles.loadingText}>Loading...</span>
         </div>
       </div>
     )

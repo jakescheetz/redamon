@@ -63,6 +63,7 @@ export function Toggle({
   const switchClasses = [
     styles.switch,
     size === 'small' && styles.switchSmall,
+    checked && styles.switchActive,
     disabled && styles.switchDisabled,
   ]
     .filter(Boolean)

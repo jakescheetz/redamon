@@ -1,7 +1,25 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Save, X, Loader2, AlertTriangle, Download } from 'lucide-react'
+import {
+  Save,
+  X,
+  Loader2,
+  AlertTriangle,
+  Download,
+  Target,
+  Layers,
+  Radio,
+  Globe,
+  FolderSearch,
+  Bug,
+  FileSearch,
+  ShieldCheck,
+  ScanLine,
+  Plug,
+  Bot,
+  Swords,
+} from 'lucide-react'
 import type { Project } from '@prisma/client'
 import styles from './ProjectForm.module.css'
 
@@ -47,17 +65,17 @@ interface ProjectFormProps {
 }
 
 const TABS = [
-  { id: 'target', label: 'Target & Modules' },
-  { id: 'port', label: 'Port Scanning' },
-  { id: 'http', label: 'HTTP Probing' },
-  { id: 'resource', label: 'Resource Enumeration' },
-  { id: 'vuln', label: 'Vulnerability Scanning' },
-  { id: 'cve', label: 'CVE & MITRE' },
-  { id: 'security', label: 'Security Checks' },
-  { id: 'gvm', label: 'GVM Scan' },
-  { id: 'integrations', label: 'Integrations' },
-  { id: 'agent', label: 'Agent Behaviour' },
-  { id: 'attack', label: 'Attack Paths' },
+  { id: 'target', label: 'Target & Modules', icon: Target },
+  { id: 'port', label: 'Port Scanning', icon: Radio },
+  { id: 'http', label: 'HTTP Probing', icon: Globe },
+  { id: 'resource', label: 'Resource Enumeration', icon: FolderSearch },
+  { id: 'vuln', label: 'Vulnerability Scanning', icon: Bug },
+  { id: 'cve', label: 'CVE & MITRE', icon: FileSearch },
+  { id: 'security', label: 'Security Checks', icon: ShieldCheck },
+  { id: 'gvm', label: 'GVM Scan', icon: ScanLine },
+  { id: 'integrations', label: 'Integrations', icon: Plug },
+  { id: 'agent', label: 'Agent Behaviour', icon: Bot },
+  { id: 'attack', label: 'Attack Paths', icon: Swords },
 ] as const
 
 type TabId = typeof TABS[number]['id']
@@ -263,22 +281,31 @@ export function ProjectForm({
 
       {isLoadingDefaults ? (
         <div className={styles.loadingContainer}>
-          <Loader2 size={24} className={styles.spinner} />
-          <p>Loading configuration defaults...</p>
+          <div className={styles.loadingOrbit}>
+            <div className={styles.loadingStar} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+          </div>
+          <span className={styles.loadingText}>Initializing configuration...</span>
         </div>
       ) : (
         <>
           <div className={styles.tabs}>
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`tab ${activeTab === tab.id ? 'tabActive' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
+            {TABS.map(tab => {
+              const Icon = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <span className={styles.tabIcon}><Icon size={13} /></span>
+                  {tab.label}
+                </button>
+              )
+            })}
           </div>
 
           <div className={styles.content}>

@@ -14,12 +14,19 @@ interface ScanModulesSectionProps {
   updateField: <K extends keyof FormData>(field: K, value: FormData[K]) => void
 }
 
-const SCAN_MODULE_OPTIONS = [
-  { id: 'domain_discovery', label: 'Domain Discovery', description: 'Subdomain enumeration', indent: 0 },
-  { id: 'port_scan', label: 'Port Scanning', description: 'Naabu port scanner', indent: 1 },
-  { id: 'http_probe', label: 'HTTP Probing', description: 'httpx HTTP analysis', indent: 2 },
-  { id: 'resource_enum', label: 'Resource Enumeration', description: 'Katana, GAU, Kiterunner', indent: 3 },
-  { id: 'vuln_scan', label: 'Vulnerability Scanning', description: 'Nuclei vulnerability scanner', indent: 3 },
+interface ModuleNode {
+  id: string
+  label: string
+  description: string
+  depth: number
+}
+
+const SCAN_MODULE_OPTIONS: ModuleNode[] = [
+  { id: 'domain_discovery', label: 'Domain Discovery', description: 'Subdomain enumeration', depth: 0 },
+  { id: 'port_scan', label: 'Port Scanning', description: 'Naabu port scanner', depth: 1 },
+  { id: 'http_probe', label: 'HTTP Probing', description: 'httpx HTTP analysis', depth: 2 },
+  { id: 'resource_enum', label: 'Resource Enumeration', description: 'Katana, GAU, Kiterunner', depth: 3 },
+  { id: 'vuln_scan', label: 'Vulnerability Scanning', description: 'Nuclei vulnerability scanner', depth: 3 },
 ]
 
 // Module dependency tree: child → parent
@@ -50,6 +57,55 @@ function isParentEnabled(moduleId: string, enabledModules: string[]): boolean {
   return isParentEnabled(parent, enabledModules)
 }
 
+// Get children of a given module
+function getChildren(parentId: string | null): string[] {
+  return Object.entries(MODULE_DEPENDENCIES)
+    .filter(([, p]) => p === parentId)
+    .map(([id]) => id)
+}
+
+// Walk up ancestor chain to find ancestor at a specific depth
+function getAncestorAtDepth(moduleId: string, targetDepth: number): string | null {
+  const module = SCAN_MODULE_OPTIONS.find(m => m.id === moduleId)
+  if (!module) return null
+  if (module.depth === targetDepth) return moduleId
+  const parent = MODULE_DEPENDENCIES[moduleId]
+  if (parent === null) return null
+  return getAncestorAtDepth(parent, targetDepth)
+}
+
+type GuideType = 'empty' | 'line' | 'branch' | 'branch-last'
+
+function getTreeGuides(moduleId: string): GuideType[] {
+  const module = SCAN_MODULE_OPTIONS.find(m => m.id === moduleId)
+  if (!module || module.depth === 0) return []
+
+  const guides: GuideType[] = []
+  const parent = MODULE_DEPENDENCIES[moduleId]
+  const siblings = getChildren(parent)
+  const isLastChild = siblings[siblings.length - 1] === moduleId
+
+  for (let col = 0; col < module.depth; col++) {
+    if (col === module.depth - 1) {
+      // Branch connector at the innermost column
+      guides.push(isLastChild ? 'branch-last' : 'branch')
+    } else {
+      // For outer columns, check if the ancestor at col+1 has more siblings below
+      const ancestor = getAncestorAtDepth(moduleId, col + 1)
+      if (ancestor) {
+        const ancestorParent = MODULE_DEPENDENCIES[ancestor]
+        const ancestorSiblings = getChildren(ancestorParent)
+        const ancestorIsLast = ancestorSiblings[ancestorSiblings.length - 1] === ancestor
+        guides.push(ancestorIsLast ? 'empty' : 'line')
+      } else {
+        guides.push('empty')
+      }
+    }
+  }
+
+  return guides
+}
+
 export function ScanModulesSection({ data, updateField }: ScanModulesSectionProps) {
   const [isOpen, setIsOpen] = useState(true)
 
@@ -78,7 +134,7 @@ export function ScanModulesSection({ data, updateField }: ScanModulesSectionProp
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Layers size={16} />
+          <Layers size={16} className={styles.sectionTitleIcon} />
           Scan Modules
         </h2>
         <ChevronDown
@@ -93,41 +149,51 @@ export function ScanModulesSection({ data, updateField }: ScanModulesSectionProp
             Control the reconnaissance pipeline by enabling or disabling specific modules. Each module builds upon the results of its parent, creating a comprehensive attack surface map from domain discovery through vulnerability detection.
           </p>
           <div className={styles.subSection}>
-            <h3 className={styles.subSectionTitle}>Enabled Modules</h3>
-            <p className={styles.fieldHint} style={{ marginBottom: '0.75rem' }}>
-              Modules have dependencies: disabling a parent disables all children
+            <h3 className={styles.subSectionTitle}>Pipeline Modules</h3>
+            <p className={styles.fieldHint} style={{ marginBottom: '0.5rem' }}>
+              Modules have dependencies — disabling a parent disables all children
             </p>
-            {SCAN_MODULE_OPTIONS.map(module => {
-              const isEnabled = data.scanModules.includes(module.id)
-              const parentEnabled = isParentEnabled(module.id, data.scanModules)
-              const isDisabledByParent = !parentEnabled && !isEnabled
+            <div className={styles.treeContainer}>
+              {SCAN_MODULE_OPTIONS.map(module => {
+                const isEnabled = data.scanModules.includes(module.id)
+                const parentEnabled = isParentEnabled(module.id, data.scanModules)
+                const isDisabledByParent = !parentEnabled && !isEnabled
+                const guides = getTreeGuides(module.id)
 
-              return (
-                <div
-                  key={module.id}
-                  className={styles.toggleRow}
-                  style={{
-                    paddingLeft: `${module.indent * 1.25}rem`,
-                    opacity: isDisabledByParent ? 0.5 : 1,
-                  }}
-                >
-                  <div>
-                    <span className={styles.toggleLabel}>
-                      {module.indent > 0 && '└ '}
-                      {module.label}
-                    </span>
-                    <p className={styles.toggleDescription}>
-                      {module.description}
-                      {isDisabledByParent && ' (requires parent module)'}
-                    </p>
+                return (
+                  <div
+                    key={module.id}
+                    className={`${styles.treeItem} ${isDisabledByParent ? styles.treeItemDisabled : ''}`}
+                  >
+                    <div className={styles.treeItemContent}>
+                      {guides.length > 0 && (
+                        <div className={styles.treeIndent}>
+                          {guides.map((guide, i) => (
+                            <div key={i} className={styles.treeGuide}>
+                              {guide === 'line' && <div className={styles.treeGuideLine} />}
+                              {guide === 'branch' && <div className={styles.treeBranchContinue} />}
+                              {guide === 'branch-last' && <div className={styles.treeBranchLast} />}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <span className={`${styles.treeNode} ${isEnabled ? styles.treeNodeActive : ''}`} />
+                      <div className={styles.treeLabel}>
+                        <span className={styles.treeLabelName}>{module.label}</span>
+                        <span className={styles.treeLabelDesc}>
+                          {module.description}
+                          {isDisabledByParent && ' (requires parent module)'}
+                        </span>
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={isEnabled}
+                      onChange={() => toggleModule(module.id)}
+                    />
                   </div>
-                  <Toggle
-                    checked={isEnabled}
-                    onChange={() => toggleModule(module.id)}
-                  />
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
 
           <div className={styles.subSection}>

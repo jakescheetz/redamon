@@ -45,7 +45,15 @@ export default function ProjectSettingsPage() {
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>Loading project settings...</div>
+        <div className={styles.loading}>
+          <div className={styles.loadingOrbit}>
+            <div className={styles.loadingStar} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+          </div>
+          <span className={styles.loadingText}>Loading project settings...</span>
+        </div>
       </div>
     )
   }

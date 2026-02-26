@@ -35,7 +35,7 @@ export function HydraSection({ data, updateField }: HydraSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <KeyRound size={16} />
+          <KeyRound size={16} className={styles.sectionTitleIcon} />
           Hydra Brute Force
         </h2>
         <ChevronDown

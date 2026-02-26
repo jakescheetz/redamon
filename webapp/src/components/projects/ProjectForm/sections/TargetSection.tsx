@@ -60,7 +60,7 @@ export function TargetSection({ data, updateField, mode = 'create' }: TargetSect
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Target size={16} />
+          <Target size={16} className={styles.sectionTitleIcon} />
           Target Configuration
         </h2>
         <ChevronDown

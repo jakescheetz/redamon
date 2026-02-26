@@ -21,7 +21,7 @@ export function CveLookupSection({ data, updateField }: CveLookupSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Database size={16} />
+          <Database size={16} className={styles.sectionTitleIcon} />
           CVE Lookup
         </h2>
         <ChevronDown

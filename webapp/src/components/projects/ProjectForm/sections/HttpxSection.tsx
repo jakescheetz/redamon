@@ -21,7 +21,7 @@ export function HttpxSection({ data, updateField }: HttpxSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Globe size={16} />
+          <Globe size={16} className={styles.sectionTitleIcon} />
           httpx HTTP Probing
         </h2>
         <ChevronDown
@@ -455,16 +455,6 @@ export function HttpxSection({ data, updateField }: HttpxSectionProps) {
                     onChange={(checked) => updateField('wappalyzerAutoUpdate', checked)}
                   />
                 </div>
-                <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>NPM Version</label>
-                  <input
-                    type="text"
-                    className="textInput"
-                    value={data.wappalyzerNpmVersion}
-                    disabled
-                  />
-                  <span className={styles.fieldHint}>Wappalyzer package version for tech database</span>
-                </div>
               </>
             )}
           </div>
@@ -519,16 +509,6 @@ export function HttpxSection({ data, updateField }: HttpxSectionProps) {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Docker Image</label>
-            <input
-              type="text"
-              className="textInput"
-              value={data.httpxDockerImage}
-              disabled
-            />
           </div>
         </div>
       )}

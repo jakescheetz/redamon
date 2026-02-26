@@ -21,7 +21,7 @@ export function NaabuSection({ data, updateField }: NaabuSectionProps) {
     <div className={styles.section}>
       <div className={styles.sectionHeader} onClick={() => setIsOpen(!isOpen)}>
         <h2 className={styles.sectionTitle}>
-          <Radio size={16} />
+          <Radio size={16} className={styles.sectionTitleIcon} />
           Naabu Port Scanner
         </h2>
         <ChevronDown
@@ -180,16 +180,6 @@ export function NaabuSection({ data, updateField }: NaabuSectionProps) {
                 onChange={(checked) => updateField('naabuPassiveMode', checked)}
               />
             </div>
-          </div>
-
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Docker Image</label>
-            <input
-              type="text"
-              className="textInput"
-              value={data.naabuDockerImage}
-              disabled
-            />
           </div>
         </div>
       )}

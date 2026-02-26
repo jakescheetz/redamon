@@ -52,15 +52,15 @@ export function NucleiSection({ data, updateField }: NucleiSectionProps) {
             <TimeEstimate estimate="Critical only: ~70% faster than all severities" />
             <div className={styles.checkboxGroup}>
               {SEVERITY_OPTIONS.map(severity => (
-                <label key={severity} className="checkboxLabel">
-                  <input
-                    type="checkbox"
-                    className="checkbox"
-                    checked={data.nucleiSeverity.includes(severity)}
-                    onChange={() => toggleSeverity(severity)}
-                  />
+                <button
+                  key={severity}
+                  type="button"
+                  className={`${styles.chip} ${data.nucleiSeverity.includes(severity) ? styles.chipActive : ''}`}
+                  onClick={() => toggleSeverity(severity)}
+                >
+                  <span className={styles.chipDot} />
                   {severity.charAt(0).toUpperCase() + severity.slice(1)}
-                </label>
+                </button>
               ))}
             </div>
           </div>
@@ -296,16 +296,6 @@ export function NucleiSection({ data, updateField }: NucleiSectionProps) {
                 onChange={(checked) => updateField('nucleiScanAllIps', checked)}
               />
             </div>
-          </div>
-
-          <div className={styles.fieldGroup}>
-            <label className={styles.fieldLabel}>Docker Image</label>
-            <input
-              type="text"
-              className="textInput"
-              value={data.nucleiDockerImage}
-              disabled
-            />
           </div>
         </div>
       )}

@@ -65,15 +65,15 @@ export function GauSection({ data, updateField }: GauSectionProps) {
                 <p className={styles.fieldHint} style={{ marginBottom: '0.5rem' }}>Data sources to query for archived URLs</p>
                 <div className={styles.checkboxGroup}>
                   {PROVIDER_OPTIONS.map(provider => (
-                    <label key={provider} className="checkboxLabel">
-                      <input
-                        type="checkbox"
-                        className="checkbox"
-                        checked={data.gauProviders.includes(provider)}
-                        onChange={() => toggleProvider(provider)}
-                      />
-                      {provider}
-                    </label>
+                    <button
+                      key={provider}
+                      type="button"
+                      className={`${styles.chip} ${data.gauProviders.includes(provider) ? styles.chipActive : ''}`}
+                      onClick={() => toggleProvider(provider)}
+                    >
+                      <span className={styles.chipDot} />
+                      {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -209,15 +209,6 @@ export function GauSection({ data, updateField }: GauSectionProps) {
                         />
                         <span className={styles.fieldHint}>Concurrent verification threads</span>
                       </div>
-                      <div className={styles.fieldGroup}>
-                        <label className={styles.fieldLabel}>Verify Docker Image</label>
-                        <input
-                          type="text"
-                          className="textInput"
-                          value={data.gauVerifyDockerImage}
-                          disabled
-                        />
-                      </div>
                     </div>
 
                     <div className={styles.fieldGroup}>
@@ -294,16 +285,6 @@ export function GauSection({ data, updateField }: GauSectionProps) {
                     </div>
                   </>
                 )}
-              </div>
-
-              <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Docker Image</label>
-                <input
-                  type="text"
-                  className="textInput"
-                  value={data.gauDockerImage}
-                  disabled
-                />
               </div>
             </>
           )}

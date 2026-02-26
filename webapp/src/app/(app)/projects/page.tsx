@@ -66,7 +66,15 @@ export default function ProjectsPage() {
       </div>
 
       {projectsLoading ? (
-        <div className={styles.loading}>Loading...</div>
+        <div className={styles.loading}>
+          <div className={styles.loadingOrbit}>
+            <div className={styles.loadingStar} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+            <div className={styles.loadingRing} />
+          </div>
+          <span className={styles.loadingText}>Loading projects...</span>
+        </div>
       ) : projects && projects.length > 0 ? (
         <div className={styles.grid}>
           {projects.map((project) => (
