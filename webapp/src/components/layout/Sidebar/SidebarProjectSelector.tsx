@@ -1,30 +1,58 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, usePathname } from 'next/navigation'
-import { ChevronDown, FolderOpen, Plus, Settings } from 'lucide-react'
+import { ChevronRight, FolderOpen, Plus, Settings } from 'lucide-react'
 import { useProject } from '@/providers/ProjectProvider'
 import { useProjects, type ProjectListItem } from '@/hooks/useProjects'
-import styles from './ProjectSelector.module.css'
+import styles from './SidebarProjectSelector.module.css'
 
-export function ProjectSelector() {
+interface SidebarProjectSelectorProps {
+  isCollapsed: boolean
+}
+
+export function SidebarProjectSelector({ isCollapsed }: SidebarProjectSelectorProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 })
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { currentProject, setCurrentProject, isLoading } = useProject()
   const { data: projects } = useProjects()
 
-  // Close dropdown when clicking outside
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    const dropdownHeight = 320
+    let top = rect.top
+    // If dropdown would go off the bottom, anchor to bottom of viewport
+    if (top + dropdownHeight > window.innerHeight) {
+      top = window.innerHeight - dropdownHeight - 8
+    }
+    setDropdownPos({
+      top: Math.max(8, top),
+      left: rect.right + 8,
+    })
+  }, [])
+
   useEffect(() => {
+    if (!isOpen) return
+    updatePosition()
+
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (
+        triggerRef.current && !triggerRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
         setIsOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  }, [isOpen, updatePosition])
 
   const handleSelectProject = (project: ProjectListItem) => {
     setCurrentProject({
@@ -37,8 +65,6 @@ export function ProjectSelector() {
       updatedAt: project.updatedAt
     })
     setIsOpen(false)
-
-    // If on a project settings page, navigate to the new project's settings
     if (pathname.match(/\/projects\/[^/]+\/settings/)) {
       router.push(`/projects/${project.id}/settings`)
     }
@@ -62,33 +88,38 @@ export function ProjectSelector() {
     setIsOpen(false)
   }
 
-  return (
-    <div className={styles.container} ref={dropdownRef}>
-      <div className={styles.triggerGroup}>
-        <button
-          className={styles.trigger}
-          onClick={() => setIsOpen(!isOpen)}
-          title="Select Project"
-        >
-          <FolderOpen size={14} />
-          <span className={styles.projectName}>
-            {currentProject?.name || 'No Project'}
-          </span>
-          <ChevronDown size={12} className={isOpen ? styles.iconOpen : ''} />
-        </button>
-        {currentProject && (
-          <button
-            className={styles.settingsIconButton}
-            onClick={handleSettings}
-            title="Project Settings"
-          >
-            <Settings size={13} />
-          </button>
-        )}
-      </div>
+  const handleToggle = () => {
+    if (!isOpen) {
+      updatePosition()
+    }
+    setIsOpen(!isOpen)
+  }
 
-      {isOpen && (
-        <div className={styles.dropdown}>
+  return (
+    <div className={styles.container}>
+      <button
+        ref={triggerRef}
+        className={`${styles.trigger} ${isCollapsed ? styles.triggerCollapsed : ''}`}
+        onClick={handleToggle}
+        title={isCollapsed ? (currentProject?.name || 'Select Project') : undefined}
+      >
+        <FolderOpen size={16} className={styles.triggerIcon} />
+        {!isCollapsed && (
+          <>
+            <span className={styles.projectName}>
+              {currentProject?.name || 'No Project'}
+            </span>
+            <ChevronRight size={12} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`} />
+          </>
+        )}
+      </button>
+
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          className={styles.dropdown}
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+        >
           <div className={styles.header}>
             <span className={styles.headerTitle}>Projects</span>
             {currentProject && (
@@ -104,9 +135,7 @@ export function ProjectSelector() {
 
           <div className={styles.list}>
             {isLoading ? (
-              <div className={styles.empty}>
-                Loading...
-              </div>
+              <div className={styles.empty}>Loading...</div>
             ) : projects && projects.length > 0 ? (
               projects.map((project) => (
                 <button
@@ -121,9 +150,7 @@ export function ProjectSelector() {
                 </button>
               ))
             ) : (
-              <div className={styles.empty}>
-                No projects yet
-              </div>
+              <div className={styles.empty}>No projects yet</div>
             )}
           </div>
 
@@ -136,10 +163,9 @@ export function ProjectSelector() {
               View All
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
 }
-
-export default ProjectSelector

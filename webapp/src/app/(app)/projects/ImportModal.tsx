@@ -21,12 +21,11 @@ interface ImportResult {
 
 interface ImportModalProps {
   isOpen: boolean
-  userId: string
   onClose: () => void
   onSuccess: () => void
 }
 
-export function ImportModal({ isOpen, userId, onClose, onSuccess }: ImportModalProps) {
+export function ImportModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [status, setStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -54,7 +53,7 @@ export function ImportModal({ isOpen, userId, onClose, onSuccess }: ImportModalP
       const formData = new FormData()
       formData.append('file', file)
 
-      const res = await fetch(`/api/projects/import?userId=${userId}`, {
+      const res = await fetch('/api/projects/import', {
         method: 'POST',
         body: formData,
       })
@@ -123,7 +122,7 @@ export function ImportModal({ isOpen, userId, onClose, onSuccess }: ImportModalP
                 />
               </div>
               <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
-                The project will be created under the currently selected user.
+                The project will be imported under your account.
               </p>
             </div>
             <div className={styles.modalActions}>

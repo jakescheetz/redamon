@@ -1,0 +1,360 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Sidebar — collapsible nav with glassmorphic dark-theme treatment
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: var(--sidebar-width-expanded);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-default);
+  overflow: visible;
+  white-space: nowrap;
+  transition: width var(--transition-slow);
+  position: relative;
+  z-index: 50;
+}
+
+.sidebarCollapsed {
+  width: var(--sidebar-width-collapsed);
+}
+
+/* Inner wrapper clips text during collapse but allows edge pill to escape */
+.inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Glassmorphic treatment — dark theme only */
+[data-theme="dark"] .sidebar,
+:root:not([data-theme="light"]) .sidebar {
+  background: rgba(14, 22, 48, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Starfield texture */
+[data-theme="dark"] .sidebar::before,
+:root:not([data-theme="light"]) .sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: radial-gradient(circle at 15px 30px, rgba(255, 255, 255, 0.9) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 45px 80px, rgba(255, 255, 255, 0.7) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 80px 55px, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 120px 120px, rgba(255, 255, 255, 0.6) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 200px 200px, rgba(255, 255, 255, 0.4) 0.5px, transparent 0.5px);
+  background-size: 240px 240px;
+}
+
+/* ── Collapse toggle — small circle on sidebar edge ──────────────────── */
+
+.edgePill {
+  position: absolute;
+  top: 50%;
+  right: -13px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  z-index: 51;
+  transition: color var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.edgePill:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .edgePill,
+:root:not([data-theme="light"]) .edgePill {
+  background: rgba(14, 22, 48, 0.9);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .edgePill:hover,
+:root:not([data-theme="light"]) .edgePill:hover {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.3);
+  color: var(--accent-primary);
+}
+
+/* ── Logo ─────────────────────────────────────────────────────────────── */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-4) var(--space-3);
+  text-decoration: none;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.logoImg {
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .logoImg,
+:root:not([data-theme="light"]) .logoImg {
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.35));
+}
+
+.logoText {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  letter-spacing: var(--tracking-tight);
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+  overflow: hidden;
+}
+
+.sidebarCollapsed .logoText {
+  opacity: 0;
+  width: 0;
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────── */
+
+.divider {
+  height: 1px;
+  margin: var(--space-1) var(--space-3);
+  background: var(--border-default);
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .divider,
+:root:not([data-theme="light"]) .divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Navigation ───────────────────────────────────────────────────────── */
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-2) var(--space-2);
+  flex-shrink: 0;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1-5) var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  position: relative;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+.navItem:hover:not(.navItemDisabled) {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+[data-theme="dark"] .navItem:hover:not(.navItemDisabled),
+:root:not([data-theme="light"]) .navItem:hover:not(.navItemDisabled) {
+  background: rgba(34, 211, 238, 0.06);
+}
+
+.navItemActive {
+  color: var(--accent-primary);
+  background: var(--bg-active);
+}
+
+[data-theme="dark"] .navItemActive,
+:root:not([data-theme="light"]) .navItemActive {
+  background: rgba(34, 211, 238, 0.08);
+}
+
+/* Cyan left-edge indicator for active item */
+.navItemActive::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent-primary);
+  box-shadow: var(--glow-primary-subtle);
+}
+
+.navItemDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.navLabel {
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebarCollapsed .navLabel {
+  opacity: 0;
+  width: 0;
+}
+
+.badge {
+  font-size: 9px;
+  padding: var(--space-0-5) var(--space-1);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebarCollapsed .badge {
+  opacity: 0;
+  width: 0;
+  padding: 0;
+  border: none;
+}
+
+/* ── Project Selector section ─────────────────────────────────────────── */
+
+.projectSection {
+  padding: var(--space-2) var(--space-2);
+  flex-shrink: 0;
+}
+
+/* ── Spacer ───────────────────────────────────────────────────────────── */
+
+.spacer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Footer info ──────────────────────────────────────────────────────── */
+
+.footerInfo {
+  padding: var(--space-2) var(--space-3);
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebarCollapsed .footerInfo {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+}
+
+.footerText {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* ── User section ─────────────────────────────────────────────────────── */
+
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  padding: var(--space-2-5) var(--space-3);
+  margin: 0 var(--space-2) var(--space-2);
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  transition: background var(--transition-fast);
+  cursor: default;
+}
+
+.userSection:hover {
+  background: var(--bg-hover);
+}
+
+[data-theme="dark"] .userSection,
+:root:not([data-theme="light"]) .userSection {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .userSection:hover,
+:root:not([data-theme="light"]) .userSection:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebarCollapsed .userSection {
+  justify-content: center;
+  padding: var(--space-2);
+  margin: 0 var(--space-1) var(--space-2);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+  min-width: 0;
+}
+
+.sidebarCollapsed .userInfo {
+  opacity: 0;
+  width: 0;
+}
+
+.userName {
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userEmail {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

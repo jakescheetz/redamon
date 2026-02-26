@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 import { getSession } from '@/app/api/graph/neo4j'
 import { existsSync, createReadStream } from 'fs'
 import path from 'path'
@@ -57,8 +58,14 @@ function serializeProperties(props: Record<string, unknown>): Record<string, unk
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
+
+    const ownerError = await requireProjectOwner(id, user.id)
+    if (ownerError) return ownerError
 
     // 1. Fetch project from PostgreSQL
     const project = await prisma.project.findUnique({ where: { id } })

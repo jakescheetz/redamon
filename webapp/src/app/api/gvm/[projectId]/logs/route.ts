@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 
 const RECON_ORCHESTRATOR_URL = process.env.RECON_ORCHESTRATOR_URL || 'http://localhost:8010'
 
@@ -7,7 +8,13 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   const { projectId } = await params
+
+  const ownerError = await requireProjectOwner(projectId, user.id)
+  if (ownerError) return ownerError
 
   // Proxy the SSE stream from the recon orchestrator
   const response = await fetch(`${RECON_ORCHESTRATOR_URL}/gvm/${projectId}/logs`, {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 import { unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -54,12 +55,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PUT /api/projects/[id] - Update project params
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
+
+    const ownerError = await requireProjectOwner(id, user.id)
+    if (ownerError) return ownerError
+
     const body = await request.json()
 
     // Remove fields that shouldn't be updated directly
-    const { userId, createdAt, updatedAt, user, ...updateData } = body
+    const { userId, createdAt, updatedAt, user: _user, ...updateData } = body
 
     const project = await prisma.project.update({
       where: { id },
@@ -86,8 +94,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/projects/[id] - Delete project and all associated data
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
+
+    const ownerError = await requireProjectOwner(id, user.id)
+    if (ownerError) return ownerError
 
     // 1. Delete project from PostgreSQL
     await prisma.project.delete({

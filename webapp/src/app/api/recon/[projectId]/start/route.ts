@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 
 const RECON_ORCHESTRATOR_URL = process.env.RECON_ORCHESTRATOR_URL || 'http://localhost:8010'
 const WEBAPP_URL = process.env.WEBAPP_URL || 'http://localhost:3000'
@@ -9,10 +10,15 @@ interface RouteParams {
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { projectId } = await params
 
-    // Verify project exists
+    const ownerError = await requireProjectOwner(projectId, user.id)
+    if (ownerError) return ownerError
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, userId: true, name: true, targetDomain: true }

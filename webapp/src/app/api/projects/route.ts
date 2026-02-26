@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
-// GET /api/projects - List projects (optional user_id filter)
-export async function GET(request: NextRequest) {
+// GET /api/projects - List authenticated user's projects
+export async function GET() {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
     const projects = await prisma.project.findMany({
-      where: userId ? { userId } : undefined,
+      where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -40,30 +41,23 @@ export async function GET(request: NextRequest) {
 
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const body = await request.json()
-    const { userId, name, targetDomain, ...optionalParams } = body
+    const { name, targetDomain, ...optionalParams } = body
 
-    if (!userId || !name || !targetDomain) {
+    if (!name || !targetDomain) {
       return NextResponse.json(
-        { error: 'userId, name, and targetDomain are required' },
+        { error: 'name and targetDomain are required' },
         { status: 400 }
       )
     }
 
-    // Verify user exists
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Create project with required fields and any optional params
     const project = await prisma.project.create({
       data: {
-        userId,
+        userId: user.id,
         name,
         targetDomain,
         ...optionalParams

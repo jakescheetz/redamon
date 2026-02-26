@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui'
 import styles from './PublicHeader.module.css'
 
@@ -37,7 +36,6 @@ export function PublicHeader() {
       </nav>
 
       <div className={styles.actions}>
-        <ThemeToggle />
         <Button href="/sign-in" variant="ghost" size="sm">
           Log in
         </Button>

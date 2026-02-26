@@ -29,10 +29,9 @@ export type FullProject = Project & {
   }
 }
 
-// Fetch all projects or filter by userId
-async function fetchProjects(userId?: string): Promise<ProjectListItem[]> {
-  const url = userId ? `/api/projects?userId=${userId}` : '/api/projects'
-  const response = await fetch(url)
+// Fetch authenticated user's projects (server resolves userId from session)
+async function fetchProjects(): Promise<ProjectListItem[]> {
+  const response = await fetch('/api/projects')
   if (!response.ok) {
     throw new Error('Failed to fetch projects')
   }
@@ -48,9 +47,8 @@ async function fetchProject(projectId: string): Promise<FullProject> {
   return response.json()
 }
 
-// Create a new project
+// Create a new project (server injects userId from session)
 async function createProject(data: {
-  userId: string
   name: string
   targetDomain: string
   [key: string]: unknown
@@ -93,10 +91,10 @@ async function deleteProject(projectId: string): Promise<void> {
 }
 
 // Hook to fetch all projects
-export function useProjects(userId?: string) {
+export function useProjects() {
   return useQuery({
-    queryKey: ['projects', userId],
-    queryFn: () => fetchProjects(userId),
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
   })
 }
 

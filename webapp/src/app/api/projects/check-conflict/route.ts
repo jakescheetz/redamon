@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 interface ConflictCheckRequest {
   targetDomain: string
@@ -22,6 +23,9 @@ interface ConflictResult {
 
 // POST /api/projects/check-conflict - Check if a project would conflict with existing ones
 export async function POST(request: NextRequest): Promise<NextResponse<ConflictResult>> {
+  const [, authError] = await requireAuth()
+  if (authError) return authError as NextResponse<ConflictResult>
+
   try {
     const body: ConflictCheckRequest = await request.json()
     const { targetDomain, subdomainList, excludeProjectId } = body

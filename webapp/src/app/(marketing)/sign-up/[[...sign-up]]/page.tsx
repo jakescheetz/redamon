@@ -1,10 +1,10 @@
+import { SignUp } from '@clerk/nextjs'
 import styles from './page.module.css'
 
-export default function SignUpPlaceholder() {
+export default function SignUpPage() {
   return (
-    <div className={styles.placeholder}>
-      <h1 className={styles.title}>Sign up</h1>
-      <p className={styles.body}>Registration will be available when Clerk is configured (Phase 2).</p>
+    <div className={styles.authContainer}>
+      <SignUp />
     </div>
   )
 }

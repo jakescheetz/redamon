@@ -4,9 +4,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Crosshair, FolderOpen } from 'lucide-react'
+import { UserButton } from '@clerk/nextjs'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { ProjectSelector } from './ProjectSelector'
-import { UserSelector } from './UserSelector'
 import styles from './GlobalHeader.module.css'
 
 const navItems = [
@@ -53,7 +53,14 @@ export function GlobalHeader() {
 
         <div className={styles.divider} />
 
-        <UserSelector />
+        <UserButton
+          afterSignOutUrl="/"
+          appearance={{
+            elements: {
+              avatarBox: { width: 24, height: 24 },
+            },
+          }}
+        />
       </div>
     </header>
   )

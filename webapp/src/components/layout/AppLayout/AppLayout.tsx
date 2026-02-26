@@ -1,7 +1,7 @@
 'use client'
 
-import { GlobalHeader } from '../GlobalHeader'
-import { Footer } from '../Footer'
+import { Sidebar } from '../Sidebar'
+import { useSidebarState } from '@/hooks/useSidebarState'
 import styles from './AppLayout.module.css'
 
 interface AppLayoutProps {
@@ -9,11 +9,12 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  const { isCollapsed, toggle } = useSidebarState()
+
   return (
     <div className={styles.layout}>
-      <GlobalHeader />
+      <Sidebar isCollapsed={isCollapsed} onToggle={toggle} />
       <main className={styles.main}>{children}</main>
-      <Footer />
     </div>
   )
 }

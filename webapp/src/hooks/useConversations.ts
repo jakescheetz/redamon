@@ -25,14 +25,14 @@ export interface ConversationWithMessages extends Conversation {
   }>
 }
 
-export function useConversations(projectId: string, userId: string) {
+export function useConversations(projectId: string) {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const fetchConversations = useCallback(async () => {
-    if (!projectId || !userId) return
+    if (!projectId) return
 
     // Abort any in-flight request
     abortRef.current?.abort()
@@ -43,7 +43,7 @@ export function useConversations(projectId: string, userId: string) {
       setLoading(true)
       setError(null)
       const res = await fetch(
-        `/api/conversations?projectId=${projectId}&userId=${userId}`,
+        `/api/conversations?projectId=${projectId}`,
         { signal: controller.signal }
       )
       if (!res.ok) throw new Error('Failed to fetch conversations')
@@ -56,16 +56,16 @@ export function useConversations(projectId: string, userId: string) {
     } finally {
       setLoading(false)
     }
-  }, [projectId, userId])
+  }, [projectId])
 
   const createConversation = useCallback(async (sessionId: string): Promise<Conversation | null> => {
-    if (!projectId || !userId) return null
+    if (!projectId) return null
 
     try {
       const res = await fetch('/api/conversations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, userId, sessionId }),
+        body: JSON.stringify({ projectId, sessionId }),
       })
       if (!res.ok) throw new Error('Failed to create conversation')
       const conversation = await res.json()
@@ -76,7 +76,7 @@ export function useConversations(projectId: string, userId: string) {
       setError(err.message)
       return null
     }
-  }, [projectId, userId])
+  }, [projectId])
 
   const deleteConversation = useCallback(async (id: string) => {
     try {

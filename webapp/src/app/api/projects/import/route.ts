@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 import { getSession } from '@/app/api/graph/neo4j'
 import JSZip from 'jszip'
 import { randomUUID } from 'crypto'
@@ -59,17 +60,11 @@ interface ExportedRelationship {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const userId = request.nextUrl.searchParams.get('userId')
-    if (!userId) {
-      return NextResponse.json({ error: 'userId query parameter is required' }, { status: 400 })
-    }
+  const [authUser, authError] = await requireAuth()
+  if (authError) return authError
 
-    // Verify user exists
-    const user = await prisma.user.findUnique({ where: { id: userId } })
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
+  try {
+    const userId = authUser.id
 
     // Parse uploaded ZIP
     const formData = await request.formData()

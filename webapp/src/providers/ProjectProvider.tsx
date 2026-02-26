@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 
 export interface ProjectSummary {
   id: string
@@ -21,36 +22,98 @@ interface ProjectContextValue {
   setCurrentProject: (project: ProjectSummary | null) => void
   projectId: string | null
   userId: string | null
-  setUserId: (id: string | null) => void
   isLoading: boolean
 }
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
 const STORAGE_KEY_PROJECT = 'parallax-current-project'
-const STORAGE_KEY_USER = 'parallax-current-user'
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
   const [currentProject, setCurrentProjectState] = useState<ProjectSummary | null>(null)
-  const [userId, setUserIdState] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { isSignedIn, isLoaded, getToken } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
-  // Initialize from URL or localStorage
+  // Resolve Clerk user → Prisma DB user on mount
   useEffect(() => {
-    const urlProjectId = searchParams.get('project')
-    const savedProjectId = localStorage.getItem(STORAGE_KEY_PROJECT)
-    const savedUserId = localStorage.getItem(STORAGE_KEY_USER)
-    const projectIdToLoad = urlProjectId || savedProjectId
-
-    // Load user ID
-    if (savedUserId) {
-      setUserIdState(savedUserId)
+    if (!isLoaded) return
+    if (!isSignedIn) {
+      setUserId(null)
+      setIsLoading(false)
+      return
     }
 
-    // Load project
+    let cancelled = false
+
+    async function syncUser() {
+      // Wait for Clerk session to be ready (token available)
+      // This prevents 401s right after sign-up when the cookie hasn't propagated
+      let token: string | null = null
+      try {
+        token = await getToken()
+      } catch {
+        // Token not ready yet — will retry below
+      }
+
+      const MAX_RETRIES = 3
+      const RETRY_DELAY = 1000
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        if (cancelled) return
+
+        try {
+          // Pass the token as Bearer header so the server can authenticate
+          // even if the HTTP-only session cookie hasn't been set yet
+          const headers: HeadersInit = {}
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+          }
+          const res = await fetch('/api/me', { headers })
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.id && !cancelled) {
+              setUserId(data.id)
+              return
+            }
+          }
+
+          // 401 on first attempts = session not yet propagated, retry
+          if (res.status === 401 && attempt < MAX_RETRIES - 1) {
+            await new Promise(r => setTimeout(r, RETRY_DELAY))
+            // Re-fetch token in case it became available during the delay
+            try { token = await getToken() } catch { /* ignore */ }
+            continue
+          }
+
+          throw new Error(`/api/me failed: ${res.status}`)
+        } catch (err) {
+          if (attempt === MAX_RETRIES - 1) {
+            console.error('Auth sync failed after retries:', err)
+            if (!cancelled) router.push('/sign-in')
+          }
+        }
+      }
+    }
+
+    syncUser().finally(() => {
+      if (!cancelled) setIsLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [isSignedIn, isLoaded, getToken, router])
+
+  // Initialize project from URL or localStorage
+  useEffect(() => {
+    if (!userId) return
+
+    const urlProjectId = searchParams.get('project')
+    const savedProjectId = localStorage.getItem(STORAGE_KEY_PROJECT)
+    const projectIdToLoad = urlProjectId || savedProjectId
+
     if (projectIdToLoad) {
       fetch(`/api/projects/${projectIdToLoad}`)
         .then(res => res.ok ? res.json() : null)
@@ -72,22 +135,17 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             })
             localStorage.setItem(STORAGE_KEY_PROJECT, project.id)
           } else {
-            // Remove stale project ID from localStorage if project no longer exists
             localStorage.removeItem(STORAGE_KEY_PROJECT)
           }
         })
         .catch(console.error)
-        .finally(() => setIsLoading(false))
-    } else {
-      setIsLoading(false)
     }
-  }, [searchParams])
+  }, [userId, searchParams])
 
   const setCurrentProject = useCallback((project: ProjectSummary | null) => {
     setCurrentProjectState(project)
     if (project) {
       localStorage.setItem(STORAGE_KEY_PROJECT, project.id)
-      // Update URL without navigation if we're on a page that uses project context
       if (pathname.startsWith('/graph') || pathname.startsWith('/projects')) {
         const params = new URLSearchParams(searchParams.toString())
         params.set('project', project.id)
@@ -95,7 +153,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       }
     } else {
       localStorage.removeItem(STORAGE_KEY_PROJECT)
-      // Remove project from URL
       const params = new URLSearchParams(searchParams.toString())
       params.delete('project')
       const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname
@@ -103,22 +160,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   }, [searchParams, router, pathname])
 
-  const setUserId = useCallback((id: string | null) => {
-    setUserIdState(id)
-    if (id) {
-      localStorage.setItem(STORAGE_KEY_USER, id)
-    } else {
-      localStorage.removeItem(STORAGE_KEY_USER)
-    }
-  }, [])
-
   return (
     <ProjectContext.Provider value={{
       currentProject,
       setCurrentProject,
       projectId: currentProject?.id || null,
       userId,
-      setUserId,
       isLoading,
     }}>
       {children}

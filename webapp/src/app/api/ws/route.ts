@@ -6,11 +6,14 @@
  */
 
 import { NextRequest } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const [, authError] = await requireAuth()
+  if (authError) return authError
   const backendWsUrl = process.env.AGENT_WS_URL || 'ws://localhost:8090/ws/agent'
 
   // For Next.js, we can't directly proxy WebSocket in API routes

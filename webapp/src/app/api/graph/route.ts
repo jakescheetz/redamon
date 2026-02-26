@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 import { getSession } from './neo4j'
 
 interface Neo4jNode {
@@ -16,6 +17,9 @@ interface Neo4jRelationship {
 }
 
 export async function GET(request: NextRequest) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   const searchParams = request.nextUrl.searchParams
   const projectId = searchParams.get('projectId')
 
@@ -25,6 +29,9 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     )
   }
+
+  const ownerError = await requireProjectOwner(projectId, user.id)
+  if (ownerError) return ownerError
 
   const session = getSession()
 
@@ -181,6 +188,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   const searchParams = request.nextUrl.searchParams
   const nodeId = searchParams.get('nodeId')
   const projectId = searchParams.get('projectId')
@@ -191,6 +201,9 @@ export async function DELETE(request: NextRequest) {
       { status: 400 }
     )
   }
+
+  const ownerError = await requireProjectOwner(projectId, user.id)
+  if (ownerError) return ownerError
 
   const session = getSession()
 

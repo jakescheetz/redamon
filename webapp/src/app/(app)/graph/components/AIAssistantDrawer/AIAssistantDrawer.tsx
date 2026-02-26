@@ -163,7 +163,7 @@ export function AIAssistantDrawer({
     createConversation,
     deleteConversation,
     loadConversation,
-  } = useConversations(projectId, userId)
+  } = useConversations(projectId)
 
   const { saveMessage, updateConversation: updateConvMeta } = useChatPersistence(conversationId)
 
@@ -212,12 +212,12 @@ export function AIAssistantDrawer({
 
   // Fetch conversations when history panel opens, auto-refresh every 5s
   useEffect(() => {
-    if (showHistory && projectId && userId) {
+    if (showHistory && projectId) {
       fetchConversations()
       const interval = setInterval(fetchConversations, 5000)
       return () => clearInterval(interval)
     }
-  }, [showHistory, projectId, userId, fetchConversations])
+  }, [showHistory, projectId, fetchConversations])
 
   // Reset state when session changes (skip if switching to a loaded conversation)
   const isRestoringConversation = useRef(false)
@@ -439,12 +439,15 @@ export function AIAssistantDrawer({
     }
   }, [todoList])
 
+  // Only connect WebSocket when all identifiers are available
+  const wsReady = !!(userId && projectId && sessionId)
+
   // Initialize WebSocket
   const { status, isConnected, reconnectAttempt, sendQuery, sendApproval, sendAnswer, sendGuidance, sendStop, sendResume } = useAgentWebSocket({
-    userId: userId || process.env.NEXT_PUBLIC_USER_ID || 'default_user',
-    projectId: projectId || process.env.NEXT_PUBLIC_PROJECT_ID || 'default_project',
-    sessionId: sessionId || process.env.NEXT_PUBLIC_SESSION_ID || 'default_session',
-    enabled: isOpen,
+    userId,
+    projectId,
+    sessionId,
+    enabled: isOpen && wsReady,
     onMessage: handleWebSocketMessage,
     onError: (error) => {
       // Only show connection errors once, not for every retry
@@ -466,7 +469,7 @@ export function AIAssistantDrawer({
     if (!question || !isConnected || awaitingApproval || awaitingQuestion) return
 
     // Auto-create conversation on first user message
-    if (!conversationId && projectId && userId && sessionId) {
+    if (!conversationId && projectId && sessionId) {
       const conv = await createConversation(sessionId)
       if (conv) {
         setConversationId(conv.id)
@@ -511,7 +514,7 @@ export function AIAssistantDrawer({
         setIsLoading(false)
       }
     }
-  }, [inputValue, isConnected, isLoading, awaitingApproval, awaitingQuestion, sendQuery, sendGuidance, conversationId, projectId, userId, sessionId, createConversation, saveMessage, updateConvMeta, chatItems])
+  }, [inputValue, isConnected, isLoading, awaitingApproval, awaitingQuestion, sendQuery, sendGuidance, conversationId, projectId, sessionId, createConversation, saveMessage, updateConvMeta, chatItems])
 
   const handleApproval = useCallback((decision: 'approve' | 'modify' | 'abort') => {
     // Prevent double submission using ref (immediate check, not async state)

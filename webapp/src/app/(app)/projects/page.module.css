@@ -34,28 +34,6 @@
   gap: var(--space-2);
 }
 
-.userSelector {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-default);
-}
-
-.userSelectorLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  font-size: var(--text-xs);
-  font-weight: var(--font-medium);
-  color: var(--text-secondary);
-}
-
-.userSelector .select {
-  min-width: 250px;
-}
 
 .grid {
   display: grid;
@@ -100,44 +78,3 @@
   max-width: 400px;
 }
 
-.modalOverlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--space-5);
-  width: 100%;
-  max-width: 400px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.modalTitle {
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.modal form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}

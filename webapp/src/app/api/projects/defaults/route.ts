@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 const RECON_ORCHESTRATOR_URL = process.env.RECON_ORCHESTRATOR_URL || 'http://localhost:8010'
 const AGENT_API_URL = process.env.AGENT_API_URL || 'http://localhost:8090'
 
 // GET /api/projects/defaults - Get default project settings from recon + agent backends
 export async function GET() {
+  const [, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     // Fetch from both backends in parallel
     const [reconResult, agentResult] = await Promise.allSettled([

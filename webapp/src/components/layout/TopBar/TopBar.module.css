@@ -1,0 +1,39 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TopBar — minimal horizontal bar above content area
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--topbar-height);
+  padding: 0 var(--space-4);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Starfield texture — dark theme only */
+[data-theme="dark"] .topBar::before,
+:root:not([data-theme="light"]) .topBar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: radial-gradient(circle at 15px 18px, rgba(255, 255, 255, 0.9) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 45px 10px, rgba(255, 255, 255, 0.7) 0.5px, transparent 0.5px),
+    radial-gradient(circle at 80px 18px, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px);
+  background-size: 100px 40px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border-default);
+}

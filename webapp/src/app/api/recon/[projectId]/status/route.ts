@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 
 const RECON_ORCHESTRATOR_URL = process.env.RECON_ORCHESTRATOR_URL || 'http://localhost:8010'
 
@@ -7,8 +8,14 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { projectId } = await params
+
+    const ownerError = await requireProjectOwner(projectId, user.id)
+    if (ownerError) return ownerError
 
     // Call recon orchestrator to get status
     const response = await fetch(`${RECON_ORCHESTRATOR_URL}/recon/${projectId}/status`, {

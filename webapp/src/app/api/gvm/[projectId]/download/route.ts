@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth, requireProjectOwner } from '@/lib/auth'
 import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
@@ -12,10 +13,15 @@ interface RouteParams {
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { projectId } = await params
 
-    // Verify project exists
+    const ownerError = await requireProjectOwner(projectId, user.id)
+    if (ownerError) return ownerError
+
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true, name: true }
@@ -64,18 +70,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // Also support HEAD request to check if data exists
 export async function HEAD(request: NextRequest, { params }: RouteParams) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { projectId } = await params
 
-    // Verify project exists
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      select: { id: true }
-    })
-
-    if (!project) {
-      return new NextResponse(null, { status: 404 })
-    }
+    const ownerError = await requireProjectOwner(projectId, user.id)
+    if (ownerError) return ownerError
 
     const jsonFilePath = path.join(GVM_OUTPUT_PATH, `gvm_${projectId}.json`)
 

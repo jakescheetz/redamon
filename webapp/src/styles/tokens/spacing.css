@@ -36,6 +36,9 @@
   --header-padding-y: var(--space-4);
   --drawer-width: 300px;
   --drawer-padding: var(--space-6);
+  --sidebar-width-expanded: 240px;
+  --sidebar-width-collapsed: 56px;
+  --topbar-height: 40px;
 
   /* ═══════════════════════════════════════════════════════════════════════════
      BORDER RADIUS

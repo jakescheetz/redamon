@@ -73,10 +73,10 @@ export default function GraphPage() {
   }>({ activeCount: 0, conversations: [] })
 
   useEffect(() => {
-    if (!projectId || !userId) return
+    if (!projectId) return
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/conversations?projectId=${projectId}&userId=${userId}`)
+        const res = await fetch(`/api/conversations?projectId=${projectId}`)
         if (!res.ok) return
         const convs = await res.json()
         const active = convs.filter((c: any) => c.agentRunning)
@@ -86,7 +86,7 @@ export default function GraphPage() {
     fetchStatus()
     const interval = setInterval(fetchStatus, 5000)
     return () => clearInterval(interval)
-  }, [projectId, userId])
+  }, [projectId])
 
   // Recon status hook - must be before useGraphData to provide isReconRunning
   const {

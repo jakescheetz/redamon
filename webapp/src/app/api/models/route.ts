@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
+import { requireAuth } from '@/lib/auth'
 
 const AGENT_API_URL = process.env.AGENT_API_URL || 'http://localhost:8090'
 
 // GET /api/models - Fetch available AI models from all configured providers
 export async function GET() {
+  const [, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const res = await fetch(`${AGENT_API_URL}/models`, {
       method: 'GET',

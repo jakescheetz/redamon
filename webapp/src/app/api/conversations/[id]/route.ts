@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth } from '@/lib/auth'
 
 // GET /api/conversations/[id] - Get conversation with all messages
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
 
@@ -25,6 +29,10 @@ export async function GET(
       )
     }
 
+    if (conversation.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     return NextResponse.json(conversation)
   } catch (error) {
     console.error('Failed to fetch conversation:', error)
@@ -40,8 +48,24 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id },
+      select: { userId: true },
+    })
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+    }
+    if (conversation.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
 
     const allowedFields = ['title', 'status', 'agentRunning', 'currentPhase', 'iterationCount']
@@ -52,12 +76,12 @@ export async function PATCH(
       }
     }
 
-    const conversation = await prisma.conversation.update({
+    const updated = await prisma.conversation.update({
       where: { id },
       data,
     })
 
-    return NextResponse.json(conversation)
+    return NextResponse.json(updated)
   } catch (error) {
     console.error('Failed to update conversation:', error)
     return NextResponse.json(
@@ -72,8 +96,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const [user, authError] = await requireAuth()
+  if (authError) return authError
+
   try {
     const { id } = await params
+
+    const conversation = await prisma.conversation.findUnique({
+      where: { id },
+      select: { userId: true },
+    })
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
+    }
+    if (conversation.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     await prisma.conversation.delete({ where: { id } })
 
