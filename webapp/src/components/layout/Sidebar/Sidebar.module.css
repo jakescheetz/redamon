@@ -10,6 +10,7 @@
   flex-shrink: 0;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-default);
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
   overflow: visible;
   white-space: nowrap;
   transition: width var(--transition-slow);
@@ -28,15 +29,21 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
 }
 
 /* Glassmorphic treatment — dark theme only */
 [data-theme="dark"] .sidebar,
 :root:not([data-theme="light"]) .sidebar {
-  background: rgba(14, 22, 48, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right-color: rgba(255, 255, 255, 0.08);
+  background: rgba(14, 22, 48, 0.38);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-color: rgba(255, 255, 255, 0.1);
+  border-left: none;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25),
+              inset -1px 0 0 rgba(255, 255, 255, 0.07),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06),
+              inset 0 -1px 0 rgba(255, 255, 255, 0.03);
 }
 
 /* Starfield texture */
@@ -47,6 +54,7 @@
   inset: 0;
   pointer-events: none;
   opacity: 0.025;
+  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
   background-image: radial-gradient(circle at 15px 30px, rgba(255, 255, 255, 0.9) 0.5px, transparent 0.5px),
     radial-gradient(circle at 45px 80px, rgba(255, 255, 255, 0.7) 0.5px, transparent 0.5px),
     radial-gradient(circle at 80px 55px, rgba(255, 255, 255, 0.5) 0.5px, transparent 0.5px),
@@ -95,40 +103,94 @@
   color: var(--accent-primary);
 }
 
-/* ── Logo ─────────────────────────────────────────────────────────────── */
+/* ── Branded logo header ─────────────────────────────────────────────── */
 
-.logo {
+.logoHeader {
   display: flex;
   align-items: center;
-  gap: var(--space-2-5);
-  padding: var(--space-4) var(--space-3);
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-3);
   text-decoration: none;
   color: var(--text-primary);
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ambient glow behind logo */
+.logoGlow {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-full);
+  background: rgba(34, 211, 238, 0.08);
+  filter: blur(20px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-default);
+}
+
+[data-theme="dark"] .logoGlow,
+:root:not([data-theme="light"]) .logoGlow {
+  opacity: 1;
 }
 
 .logoImg {
   object-fit: contain;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 [data-theme="dark"] .logoImg,
 :root:not([data-theme="light"]) .logoImg {
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.35));
+  filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.4));
+}
+
+.logoTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebarCollapsed .logoTextGroup {
+  opacity: 0;
+  width: 0;
 }
 
 .logoText {
   font-size: var(--text-lg);
   font-weight: var(--font-bold);
   letter-spacing: var(--tracking-tight);
-  opacity: 1;
-  transition: opacity var(--transition-fast);
-  overflow: hidden;
+  line-height: 1.1;
 }
 
-.sidebarCollapsed .logoText {
-  opacity: 0;
-  width: 0;
+[data-theme="dark"] .logoText,
+:root:not([data-theme="light"]) .logoText {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(34, 211, 238, 0.9) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logoTagline {
+  font-size: 9px;
+  font-weight: var(--font-medium);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  line-height: 1;
+}
+
+[data-theme="dark"] .logoTagline,
+:root:not([data-theme="light"]) .logoTagline {
+  color: rgba(34, 211, 238, 0.45);
 }
 
 /* ── Divider ──────────────────────────────────────────────────────────── */
@@ -147,19 +209,38 @@
 
 /* ── Navigation ───────────────────────────────────────────────────────── */
 
+.navSection {
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  flex-shrink: 0;
+}
+
+.navSectionLabel {
+  font-size: 9px;
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-tertiary);
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.sidebarCollapsed .navSectionLabel {
+  opacity: 0;
+}
+
 .nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0-5);
-  padding: var(--space-2) var(--space-2);
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
   flex-shrink: 0;
 }
 
 .navItem {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1-5) var(--space-2);
+  gap: var(--space-2-5);
+  padding: var(--space-2) var(--space-2-5);
   color: var(--text-secondary);
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
@@ -252,13 +333,6 @@
   width: 0;
   padding: 0;
   border: none;
-}
-
-/* ── Project Selector section ─────────────────────────────────────────── */
-
-.projectSection {
-  padding: var(--space-2) var(--space-2);
-  flex-shrink: 0;
 }
 
 /* ── Spacer ───────────────────────────────────────────────────────────── */

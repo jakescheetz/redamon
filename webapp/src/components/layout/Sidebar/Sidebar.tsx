@@ -13,7 +13,6 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { UserButton, useUser } from '@clerk/nextjs'
-import { SidebarProjectSelector } from './SidebarProjectSelector'
 import styles from './Sidebar.module.css'
 
 interface NavItem {
@@ -82,13 +81,22 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
       {/* Inner wrapper — clips text during collapse animation */}
       <div className={styles.inner}>
-        {/* Logo */}
-        <Link href="/projects" className={styles.logo}>
+        {/* Branded logo header */}
+        <Link href="/projects" className={styles.logoHeader}>
+          <div className={styles.logoGlow} />
           <Image src="/logo.png" alt="Parallax" width={44} height={44} className={styles.logoImg} />
-          <span className={styles.logoText}>Parallax</span>
+          <div className={styles.logoTextGroup}>
+            <span className={styles.logoText}>Parallax</span>
+            <span className={styles.logoTagline}>Attack Surface Intel</span>
+          </div>
         </Link>
 
         <div className={styles.divider} />
+
+        {/* Navigation label */}
+        <div className={styles.navSection}>
+          <span className={styles.navSectionLabel}>Navigation</span>
+        </div>
 
         {/* Navigation */}
         <nav className={styles.nav}>
@@ -122,13 +130,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
             )
           })}
         </nav>
-
-        <div className={styles.divider} />
-
-        {/* Project Selector */}
-        <div className={styles.projectSection}>
-          <SidebarProjectSelector isCollapsed={isCollapsed} />
-        </div>
 
         {/* Spacer */}
         <div className={styles.spacer} />
